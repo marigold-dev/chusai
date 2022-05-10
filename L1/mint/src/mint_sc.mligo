@@ -27,11 +27,11 @@ let create_chusai () : chusai =
 
 let transaction_of_mint (ticket:chusai) =
     let sender_contract : wallet_parameter contract =
-      Tezos.get_contract_with_error (Tezos.sender) "Contract not found. Cannot send ticket" in
+      Tezos.get_contract_with_error (Tezos.sender) "mint_sc : Contract not found. Cannot send ticket" in
     Tezos.transaction (Store ticket) 0tez sender_contract
 
 let mint () : operation list = 
-    let _check = if( Tezos.amount < minimum_amount) then failwith "no ticket for less than ..." in    
+    let _check = if( Tezos.amount < minimum_amount) then failwith "mint_sc : no ticket for less than ..." in    
     let ticket = create_chusai () in
     let op = transaction_of_mint ticket in
     [op]
@@ -39,13 +39,13 @@ let mint () : operation list =
 (* REDEEMING *)
 let transaction_of_redeem (requested:nat)  = 
     let sender_contract : wallet_parameter contract =
-      Tezos.get_contract_with_error (Tezos.sender) "Contract not found. Cannot redeem" in
+      Tezos.get_contract_with_error (Tezos.sender) "mint_sc : Contract not found. Cannot redeem" in
     Tezos.transaction Nope (chusai_to_xtz requested ) sender_contract
 
 let redeem (ticket:chusai) : operation list = 
     let (addr, (payload, total)), _ticket = Tezos.read_ticket ticket in
-    let _check = if( addr <> (chusai_ticketer ())) then failwith "wrong ticketer" in   
-    let _check = if( payload <> chusai_payload) then failwith "wrong payload" in
+    let _check = if( addr <> (chusai_ticketer ())) then failwith "mint_sc : wrong ticketer" in   
+    let _check = if( payload <> chusai_payload) then failwith "mint_sc : wrong payload" in
     let op = transaction_of_redeem total in
     [op]
 
