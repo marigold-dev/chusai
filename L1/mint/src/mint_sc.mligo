@@ -1,4 +1,4 @@
-#include "../../common/mint_part.mligo"
+#include "../../commons/mint_part.mligo"
 
 (* CONFIGURATION *)
 let tax_rate = 15n // in %
