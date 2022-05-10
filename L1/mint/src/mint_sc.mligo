@@ -1,12 +1,4 @@
-type chusai = bytes ticket
-type mint_parameter =
-      Mint 
-    | Redeem of chusai
-type wallet_parameter =
-    Store of chusai
-    | Go_mint of address
-    | Go_redeem of address
-    | Nope
+#include "../../common/mint_part.mligo"
 
 (* CONFIGURATION *)
 let tax_rate = 15n // in %
@@ -20,12 +12,13 @@ let chusai_to_xtz (chusai:nat) =
     let n = (chusai * abs(100n - tax_rate)) / 100n in
     n * 1mutez 
 
-let test_conversion_mutez = assert ((xtz_to_chusai 1mutez) = 1n)
-let test_conversion_tez = assert ((xtz_to_chusai 1tez) = 1000000n)
-let test_conversion_42tez = assert ((xtz_to_chusai 42tez) = 42000000n)
-let test_conversion_chusai_tez = assert ((chusai_to_xtz 1000000n) = 850000mutez)
-let test_conversion_chusai_100mutez = assert ((chusai_to_xtz 100n) = 85mutez)
-let test_conversion_chusai_1mutez = assert ((chusai_to_xtz 1n) = 0mutez)
+(* inline tests *)
+let test_inline_conversion_mutez = assert ((xtz_to_chusai 1mutez) = 1n)
+let test_inline_conversion_tez = assert ((xtz_to_chusai 1tez) = 1000000n)
+let test_inline_conversion_42tez = assert ((xtz_to_chusai 42tez) = 42000000n)
+let test_inline_conversion_chusai_tez = assert ((chusai_to_xtz 1000000n) = 850000mutez)
+let test_inline_conversion_chusai_100mutez = assert ((chusai_to_xtz 100n) = 85mutez)
+let test_inline_conversion_chusai_1mutez = assert ((chusai_to_xtz 1n) = 0mutez)
 
 (* MINTING *)
 let create_chusai () : chusai =
@@ -56,9 +49,14 @@ let redeem (ticket:chusai) : operation list =
     let op = transaction_of_redeem total in
     [op]
 
+
+
+
 (* ENDPOINTS *)
 let main (action, _store : mint_parameter * unit) : operation list * unit = 
     (match action with
           Mint  -> mint ()
         | Redeem ticket -> redeem ticket)
     , ()
+
+
