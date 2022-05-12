@@ -1,22 +1,34 @@
 # Chusai
 
-# Developer instructions
-## Prerequisites
+## Developer instructions
+
+### Prerequisites
+
 You need to have docker installed. This is used to run the Ligo compiler
 
-## Building
+## Development environment
+
+```shellsession
+$ opam update
+$ opam switch create . ocaml-base-compiler.4.14.0 --deps-only -y
+$ eval $(opam env)
 ```
+
+### Building
+
+```shellsession
 $ make build
 ```
 
-## Testing
-```
+### Testing
+
+```shellsession
 $ make test
 ```
 
-## Running the metrics
+### Running the metrics
 This will print on stdout the existing metrics 
 
-```
+```shellsession
 $ make metrics
 ```

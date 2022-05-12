@@ -1,0 +1,46 @@
+description: """
+You should seriously take the time to write a comprehensive
+description explaining that this OPAM file is essentially
+present to facilitate the creation of the development switch.
+"""
+
+opam-version: "2.0"
+version: "dev"
+synopsis: "We should write a longer synopsis"
+maintainer: "contact@marigold.dev"
+authors: [ "Marigold <contact@marigold.dev>" ]
+
+license: "MIT"
+tags: [ "tezos" "optimistic" "rollup" ]
+homepage: "https://github.com/marigold-dev/chusai"
+dev-repo: "git+https://github.com/marigold-dev/chusai.git"
+bug-reports: "https://github.com/marigold-dev/chusai/issues"
+
+build: [
+  [ "dune" "subst" ] {dev}
+  [ "dune" "build" "-p" name "-j" jobs ]
+  [ "dune" "runtest" "-p" name ] {with-test}
+  [ "dune" "build" "@doc" "-p" name ] {with-doc}
+]
+
+depends: [
+  "ocaml" { >= "4.11.1" }
+  "dune" { >= "3.0" }
+  "lwt" { >= "5.3.0" }
+  "data-encoding" { >= "0.4" }
+  "tezos-base" { >= "12.3" }
+  "tezos-stdlib" { >= "12.3" }
+  "tezos-stdlib-unix" { >= "12.3" }
+  "utop" {build}
+  "merlin" {build}
+  "ocamlformat" {build}
+  "ocp-indent" {build}
+  "odoc" {with-doc}
+  "alcotest" {with-test}
+  "tezt" {pinned & with-test}
+
+]
+
+pin-depends: [
+  ["tezt.1.0.0" "git+https://gitlab.com/tezos/tezos.git"]
+]
