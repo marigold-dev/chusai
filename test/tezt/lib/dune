@@ -1,0 +1,3 @@
+(library
+ (name tezt_chusai_lib)
+ (libraries tezt data-encoding tezos-base tezos-base.unix tezos-stdlib-unix))
