@@ -15,14 +15,14 @@ let _ = Test.set_baker(baker1)
   a minimum test implementation of wallet contract
   used as a proxy to test the mint
 *)
-type wallet_storage = chusai option
+type wallet_storage = chusai_ticket option
 type wallet_parameter =
-    Store of chusai
+    Store of chusai_ticket
     | Go_mint of address
     | Go_redeem of address
     | Nope
 let wallet_test_main 
-  (check_ticket: chusai -> chusai) 
+  (check_ticket: chusai_ticket-> chusai_ticket) 
   (action, store : wallet_parameter * wallet_storage) 
     : operation list * wallet_storage = 
     match action with
@@ -48,7 +48,7 @@ let wallet_test_main
 (* *********************************** *)
 (* Origination wrappers  *)
 type originated_wallet = (wallet_parameter,wallet_storage) originated
-let originate_wallet (check_ticket: chusai -> chusai) : originated_wallet = 
+let originate_wallet (check_ticket: chusai_ticket-> chusai_ticket) : originated_wallet = 
     originate_full 
       ((wallet_test_main check_ticket )
       ,(None : wallet_storage)
@@ -65,7 +65,7 @@ let originate_mint () : originated_mint = originate_full (main,(),0tez, "Mint co
 type mint_param = 
 {
   wallet : originated_wallet;
-  amount_ : tez ; 
+  amount_ : tez ; //0tz when redeeming (not used)
   mint : address 
 }
 
@@ -110,7 +110,7 @@ let test_mint_first_ticket =
   let result = mint_  ({wallet = wallet; amount_ = 1tz ; mint = mint.addr  } ) init_result in
   (* asserts *)
   let result = assert_ ((Test.get_balance wallet.addr) = 0tz) "wallet balance should be 0" result in 
-  assert_ ((Test.get_balance mint.addr) = 1tz) "mint balance should be 1tez" init_result 
+  assert_ ((Test.get_balance mint.addr) = 1tz) "mint balance should be 1tez" result 
   end
 
 (* we sent an inappropriate amount 
@@ -121,7 +121,7 @@ let test_mint_first_ticket_mutez =
   begin
   log_ "test_mint_first_ticket_mutez";
   let mint = originate_mint () in
-  let wallet = originate_wallet (fun (t:chusai) -> t) in
+  let wallet = originate_wallet (fun (t:chusai_ticket) -> t) in
   (* minting *)
   let result = mint_  ({wallet = wallet; amount_ = 1mutez ; mint = mint.addr  } ) init_result in
   (* asserts *)
@@ -138,7 +138,7 @@ let test_mint_first_ticket_0tez =
   begin
   log_ "test_mint_first_ticket_0tez";
   let mint = originate_mint () in
-  let wallet = originate_wallet (fun (t:chusai) -> t) in
+  let wallet = originate_wallet (fun (t:chusai_ticket) -> t) in
   (* minting *)
   let result = mint_  ({wallet = wallet; amount_ = 0mutez ; mint = mint.addr  } ) init_result in
   (* asserts *)
@@ -170,6 +170,36 @@ let test_mint_and_redeem =
   assert_ ((Test.get_balance wallet.addr) = 85tz) "taxes should have been deduced" result 
   end
 
+(* we mint and redeem at same Mint
+  - balances should change
+  - taxes should be deduced
+  - ticket should be burned after redeeming
+*)
+let turn_into_0value (ticket:chusai_ticket):chusai_ticket = 
+  let (_,(_,amount_)),ticket = Tezos.read_ticket ticket in
+  let opt : (chusai_ticket*chusai_ticket) option= Tezos.split_ticket ticket (0n,amount_)  in
+  let ticket0,_ticket = Option.unopt(opt) in
+  ticket0
+
+let test_redeem_0value_ticket = 
+  begin
+  log_ "test_redeem_0value_ticket";
+  let mint = originate_mint () in
+  let ticket_asserts : ticket_asserts= {addr = Some mint.addr ; payload = Some chusai_payload; amount_ = Some 100000000n } in
+  let wallet = originate_wallet (turn_into_0value ) in
+  (* minting *)
+  let result = mint_  ({wallet = wallet; amount_ = 100tz ; mint = mint.addr  } ) init_result in
+  let result = assert_is_ok "sanity check : Minting should have succeeded" result in 
+  let result = assert_ ((Test.get_balance wallet.addr) = 0tz) "sanity check : wallet balance should be 0" result in 
+  (* redeeming *)
+  let result = redeem_  ({wallet = wallet; amount_ = 0tz ; mint = mint.addr  } ) result in
+  (* asserts *)
+  let result = assert_rejected_at mint.addr "should have refused to redeem" result in
+  let result = assert_ ((Test.get_balance wallet.addr) = 0tz) "wallet balance should be 0" result in 
+  let result = assert_ ((Test.get_balance mint.addr) = 100tz) "mint should have kept all funds" result in 
+  result
+  end
+
 
 (* we mint at 1 mint and redeem at another
   - should fail
@@ -194,3 +224,4 @@ let test_redeem_at_wrong_mint =
   let result = assert_ ((Test.get_balance mint_2.addr) = 0tz) "balance of mint 2 should be 0tez" result in 
   assert_rejected_at mint_2.addr "should be rejected by second mint" result 
   end 
+

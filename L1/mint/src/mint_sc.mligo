@@ -14,7 +14,7 @@ let chusai_to_xtz (chusai:nat) =
 
 
 (* MINTING *)
-let create_chusai () : chusai =
+let create_chusai () : chusai_ticket=
     let n : nat = xtz_to_chusai Tezos.amount  in
     Tezos.create_ticket chusai_payload n
 
@@ -29,6 +29,7 @@ let redeem (ticket,unit_callback:chusai_ticket * unit contract) : operation list
     let (addr, (payload, total)), _ticket = Tezos.read_ticket ticket in
     let _check = if( addr <> (chusai_ticketer ())) then failwith "mint_sc : wrong ticketer" in   
     let _check = if( payload <> chusai_payload) then failwith "mint_sc : wrong payload" in
+    let _check = if( total = 0n) then failwith "mint_sc : 0-value ticket" in
     let op = Tezos.transaction unit (chusai_to_xtz total ) unit_callback in
     [op]
 
