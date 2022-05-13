@@ -1,21 +1,6 @@
 #include "../src/mint_sc.mligo"
 #include "test_utils.mligo"
 
-let main_test (test_mint: unit -> unit) (test_redeem : chusai -> chusai) (action, _store : mint_parameter * unit) : operation list * unit = 
-    (match action with
-          Mint  -> 
-          begin
-            test_mint ();
-            mint ()
-          end
-        | Redeem ticket -> 
-          begin
-            let ticket:chusai = test_redeem ticket in
-            redeem ticket
-          end)
-    , ()
-
-
 let _u = Test.reset_state 5n ([] : tez list)
 let baker1 = Test.nth_bootstrap_account(0)
 let admin = Test.nth_bootstrap_account(1)
@@ -31,6 +16,11 @@ let _ = Test.set_baker(baker1)
   used as a proxy to test the mint
 *)
 type wallet_storage = chusai option
+type wallet_parameter =
+    Store of chusai
+    | Go_mint of address
+    | Go_redeem of address
+    | Nope
 let wallet_test_main 
   (check_ticket: chusai -> chusai) 
   (action, store : wallet_parameter * wallet_storage) 
@@ -46,11 +36,13 @@ let wallet_test_main
           [],store
         | Go_mint addr -> 
             let mint_contr : mint_parameter contract= Tezos.get_contract_with_error addr "No mint to mint" in
-            [Tezos.transaction Mint Tezos.amount mint_contr ],store
+            let mint_cb : chusai_ticket contract = Tezos.self "%store" in
+            [Tezos.transaction (Mint mint_cb) Tezos.amount mint_contr ],store
         | Go_redeem addr -> 
             let ticket = Option.unopt store in
             let mint_contr : mint_parameter contract = Tezos.get_contract_with_error addr "No mint to redeem" in
-            [Tezos.transaction (Redeem ticket) 0tz mint_contr ],None
+            let redeem_cb : unit contract = Tezos.self "%nope" in            
+            [Tezos.transaction (Redeem (ticket,redeem_cb)) 0tz mint_contr ],None
 
 
 (* *********************************** *)
@@ -87,6 +79,13 @@ let redeem_ (param  : mint_param) (previous:test_exec_result)=
 (* *********************************** *)
 (* TESTS *)
 
+(* Tests of pure functions *)
+let test_inline_conversion_mutez = assert ((xtz_to_chusai 1mutez) = 1n)
+let test_inline_conversion_tez = assert ((xtz_to_chusai 1tez) = 1000000n)
+let test_inline_conversion_42tez = assert ((xtz_to_chusai 42tez) = 42000000n)
+let test_inline_conversion_chusai_tez = assert ((chusai_to_xtz 1000000n) = 850000mutez)
+let test_inline_conversion_chusai_100mutez = assert ((chusai_to_xtz 100n) = 85mutez)
+let test_inline_conversion_chusai_1mutez = assert ((chusai_to_xtz 1n) = 0mutez)
 
 (* simple check of initial storage/balance *)
 let test_mint_origination = 

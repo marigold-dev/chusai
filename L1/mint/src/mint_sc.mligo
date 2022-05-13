@@ -12,51 +12,31 @@ let chusai_to_xtz (chusai:nat) =
     let n = (chusai * abs(100n - tax_rate)) / 100n in
     n * 1mutez 
 
-(* inline tests *)
-let test_inline_conversion_mutez = assert ((xtz_to_chusai 1mutez) = 1n)
-let test_inline_conversion_tez = assert ((xtz_to_chusai 1tez) = 1000000n)
-let test_inline_conversion_42tez = assert ((xtz_to_chusai 42tez) = 42000000n)
-let test_inline_conversion_chusai_tez = assert ((chusai_to_xtz 1000000n) = 850000mutez)
-let test_inline_conversion_chusai_100mutez = assert ((chusai_to_xtz 100n) = 85mutez)
-let test_inline_conversion_chusai_1mutez = assert ((chusai_to_xtz 1n) = 0mutez)
 
 (* MINTING *)
 let create_chusai () : chusai =
     let n : nat = xtz_to_chusai Tezos.amount  in
     Tezos.create_ticket chusai_payload n
 
-let transaction_of_mint (ticket:chusai) =
-    let sender_contract : wallet_parameter contract =
-      Tezos.get_contract_with_error (Tezos.sender) "mint_sc : Contract not found. Cannot send ticket" in
-    Tezos.transaction (Store ticket) 0tez sender_contract
-
-let mint () : operation list = 
+let mint (chusai_ticket_contr: chusai_ticket contract) : operation list = 
     let _check = if( Tezos.amount < minimum_amount) then failwith "mint_sc : no ticket for less than ..." in    
     let ticket = create_chusai () in
-    let op = transaction_of_mint ticket in
+    let op = Tezos.transaction ticket 0tez chusai_ticket_contr in
     [op]
 
 (* REDEEMING *)
-let transaction_of_redeem (requested:nat)  = 
-    let sender_contract : wallet_parameter contract =
-      Tezos.get_contract_with_error (Tezos.sender) "mint_sc : Contract not found. Cannot redeem" in
-    Tezos.transaction Nope (chusai_to_xtz requested ) sender_contract
-
-let redeem (ticket:chusai) : operation list = 
+let redeem (ticket,unit_callback:chusai_ticket * unit contract) : operation list = 
     let (addr, (payload, total)), _ticket = Tezos.read_ticket ticket in
     let _check = if( addr <> (chusai_ticketer ())) then failwith "mint_sc : wrong ticketer" in   
     let _check = if( payload <> chusai_payload) then failwith "mint_sc : wrong payload" in
-    let op = transaction_of_redeem total in
+    let op = Tezos.transaction unit (chusai_to_xtz total ) unit_callback in
     [op]
-
-
-
 
 (* ENDPOINTS *)
 let main (action, _store : mint_parameter * unit) : operation list * unit = 
     (match action with
-          Mint  -> mint ()
-        | Redeem ticket -> redeem ticket)
+          Mint chusai_ticket_contr -> mint chusai_ticket_contr
+        | Redeem (ticket,unit_callback) -> redeem (ticket,unit_callback))
     , ()
 
 
