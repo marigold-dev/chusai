@@ -1,15 +1,25 @@
 #include "../../commons/mint_part.mligo"
 
 (* CONFIGURATION *)
+(*
+    Configuration of the mint.
+    Could probably be in a module or smthg. 
+    Should be parametrized in any case, but I'm not sure how.
+*)
+
+(* a tax rate for amount kept during withdrawal, in %*)
 let tax_rate = 15n // in %
-let chusai_payload = 0x7070
+(* the payload, fixed for the mint *)
+let chusai_payload = 0x00
+(* the ticketer, checked for withdrawal *)
 let chusai_ticketer () = Tezos.self_address
+(* minimum amount accepted by the mint. *)
+let minimum_amount = 1tez
 
 (* XTZ <-> CHUSAI*)
-let minimum_amount = 1tez
 let xtz_to_chusai (xtz:tez) = xtz /1mutez
-let chusai_to_xtz (chusai:nat) = 
-    let n = (chusai * abs(100n - tax_rate)) / 100n in
+let chusai_to_xtz (chusai_amount:nat) = 
+    let n = (chusai_amount * abs(100n - tax_rate)) / 100n in
     n * 1mutez 
 
 
@@ -25,6 +35,7 @@ let mint (chusai_ticket_contr: chusai_ticket contract) : operation list =
     [op]
 
 (* REDEEMING *)
+(* checks the ticket's kind, and refuses 0-value tickets *)
 let redeem (ticket,unit_callback:chusai_ticket * unit contract) : operation list = 
     let (addr, (payload, total)), _ticket = Tezos.read_ticket ticket in
     let _check = if( addr <> (chusai_ticketer ())) then failwith "mint_sc : wrong ticketer" in   

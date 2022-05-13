@@ -1,4 +1,10 @@
 
+(* *********************************** *)
+(* Origination functions *)
+(*
+    Defines a polymorphic origination function that wrap the result in a record containing 
+    the different usefull values (typed address, and corresponding contract and address)
+*)
 let debug = false
 let log_ (type a) (msg:a) = if debug then Test.log msg
 (* ORIGINATED *)
@@ -8,7 +14,7 @@ type  ('a , 'b) originated = {
     contr : 'a contract ; 
     addr : address
 }
-(* polymorphic origination : 
+(* 'polymorphic' origination : 
     let my_originated = originate_full (main,storage,balance,"My Contract") in
     ... my_originated.taddr ... is typed_address
     ... my_originated.addr ... is contract
@@ -22,11 +28,23 @@ let originate_full (type a b) (main,storage,bal,log :  (a * b -> operation list 
   {taddr = my_taddr ; contr = my_contr ; addr = my_addr}
 
 
+(* *********************************** *)
 (* EXECUTION RESULT PROPAGATION *)
 (*
-    Test.transfer_to_contract returns a "test_exec_result" indicating if the operation failed or succeeded
+    The LIGO Test module, defines type test_exec_result, to be returned by Test.transfer_to_contract, indicating if the operation failed or succeeded.
+    Here are some functions taking inspiration from that, allowing to apply operations depending on the result of the previous one, and adding asserts.
+    We don't define operators to make binding and such more readable, 'cause LIGO does not allow it 
+    
+    So to use it, do smthg like :
+    let result = transfer_to_contract ... init_result in
+    let result = assert_ ... result in
+    let result = assert_ ... result in
+    let result = assert_ ... result in
+    result
 
-    We provide a few functions to chain operation and propagate Fail and Success accordingly
+    What's expected at the end is "Success n".
+
+    Kinda ugly, but does the job as a first draft. Note that those functions are not pure, as transfer_to_contract has side effects.
 *)
 let init_result = Success 0n
 
@@ -91,16 +109,27 @@ let assert_is_ok (msg:string) (previous:test_exec_result) =
     | Success _ -> previous
 
 
+(* *********************************** *)
 (* TICKET COMPARAISON *)
-(* a record containing informations on a ticket. Values set at "None" are not checked. Only possible payload is "bytes" *)
-(* the reason to fix the payload is that we need to provide the comparaison function for each type of value *)
+
+(* a record containing informations on a ticket. 
+    - Values set at "None" are not checked. 
+    - Only possible payload is "bytes" (so only useful for `bytes ticket`)
+    the reason to fix the payload is that we need to provide the comparaison function for each type of value
+    and who cares about non bytes payload ! amiright ? hu ? hu ?
+ *)
 type ticket_asserts = {
   addr : address option;
   payload : bytes option;
   amount_ : nat option
   }
+
+(* a record with no assertion, 
+    can be used for functionnal update, e.r. {no_assert with amount_ = Some 10n }
+*)
 let no_assert : ticket_asserts = {addr = None ; payload = None ; amount_ = None }
-(* asserts executed only if not None *)
+
+(* polymorphic asserts executed only if not None *)
 let assert_with_errors_opt (type a) (equal:(a*a) -> bool) (expected:a option) (actual:a) (msg:string) =
     match expected with
         | None -> ()

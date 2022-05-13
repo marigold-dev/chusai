@@ -2,11 +2,6 @@
 #include "test_utils.mligo"
 
 let _u = Test.reset_state 5n ([] : tez list)
-let baker1 = Test.nth_bootstrap_account(0)
-let admin = Test.nth_bootstrap_account(1)
-
-let _ = Test.set_source(admin)
-let _ = Test.set_baker(baker1)
 
 
 (* *********************************** *)
@@ -14,13 +9,20 @@ let _ = Test.set_baker(baker1)
 (* 
   a minimum test implementation of wallet contract
   used as a proxy to test the mint
+  doesn't join tickets or anything fancy
+
+  takes a function "check_ticket" that allows injection of operation on the ticket received.
+  Note : at the moment the Test module doesn't allows get_storage in the presence of tickets, 
+    the check_ticket function can be used to go around the pb
+
+  To obtain a main function that can be originated, use currying
 *)
 type wallet_storage = chusai_ticket option
 type wallet_parameter =
-    Store of chusai_ticket
-    | Go_mint of address
-    | Go_redeem of address
-    | Nope
+    Store of chusai_ticket // callback to receive ticket
+    | Go_mint of address   // to start minting process from implicit account
+    | Go_redeem of address // to start redeem process from implicit account
+    | Nope                 // callback to receive money
 let wallet_test_main 
   (check_ticket: chusai_ticket-> chusai_ticket) 
   (action, store : wallet_parameter * wallet_storage) 
@@ -47,7 +49,11 @@ let wallet_test_main
 
 (* *********************************** *)
 (* Origination wrappers  *)
+(*
+  Based on originate_full function in test utils. 
+*)
 type originated_wallet = (wallet_parameter,wallet_storage) originated
+(* originates a wallet, given a function to be applied on the ticket when receiving one *)
 let originate_wallet (check_ticket: chusai_ticket-> chusai_ticket) : originated_wallet = 
     originate_full 
       ((wallet_test_main check_ticket )
@@ -56,6 +62,7 @@ let originate_wallet (check_ticket: chusai_ticket-> chusai_ticket) : originated_
       , "Wallet contract")
 
 type originated_mint = (mint_parameter,unit) originated
+(* originates a mint *)
 let originate_mint () : originated_mint = originate_full (main,(),0tez, "Mint contract")
 
 
