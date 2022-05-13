@@ -1,0 +1,67 @@
+{ parameter
+    (or (contract %mint (ticket bytes)) (pair %redeem (ticket bytes) (contract unit))) ;
+  storage unit ;
+  code { PUSH bytes 0x7070 ;
+         SWAP ;
+         CAR ;
+         UNIT ;
+         SWAP ;
+         IF_LEFT
+           { PUSH mutez 1000000 ;
+             AMOUNT ;
+             COMPARE ;
+             LT ;
+             IF { PUSH string "mint_sc : no ticket for less than ..." ; FAILWITH } {} ;
+             AMOUNT ;
+             PUSH mutez 1 ;
+             SWAP ;
+             EDIV ;
+             IF_NONE { PUSH string "DIV by 0" ; FAILWITH } {} ;
+             CAR ;
+             SWAP ;
+             PUSH mutez 0 ;
+             DIG 2 ;
+             DIG 4 ;
+             TICKET ;
+             TRANSFER_TOKENS ;
+             NIL operation ;
+             SWAP ;
+             CONS }
+           { UNPAIR ;
+             READ_TICKET ;
+             SWAP ;
+             DROP ;
+             UNPAIR ;
+             SWAP ;
+             UNPAIR ;
+             SELF_ADDRESS ;
+             DIG 3 ;
+             COMPARE ;
+             NEQ ;
+             IF { PUSH string "mint_sc : wrong ticketer" ; FAILWITH } {} ;
+             DIG 4 ;
+             SWAP ;
+             COMPARE ;
+             NEQ ;
+             IF { PUSH string "mint_sc : wrong payload" ; FAILWITH } {} ;
+             SWAP ;
+             PUSH nat 100 ;
+             PUSH nat 15 ;
+             PUSH nat 100 ;
+             SUB ;
+             ABS ;
+             DIG 3 ;
+             MUL ;
+             EDIV ;
+             IF_NONE { PUSH string "DIV by 0" ; FAILWITH } {} ;
+             CAR ;
+             PUSH mutez 1 ;
+             SWAP ;
+             MUL ;
+             UNIT ;
+             TRANSFER_TOKENS ;
+             NIL operation ;
+             SWAP ;
+             CONS } ;
+         PAIR } }
+
