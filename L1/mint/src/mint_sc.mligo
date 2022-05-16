@@ -36,7 +36,7 @@ let mint (chusai_ticket_contr: chusai_ticket contract) : operation list =
 
 (* REDEEMING *)
 (* checks the ticket's kind, and refuses 0-value tickets *)
-let redeem (ticket,unit_callback:chusai_ticket * unit contract) : operation list = 
+let redeem (ticket, unit_callback:chusai_ticket * unit contract) : operation list = 
     let (addr, (payload, total)), _ticket = Tezos.read_ticket ticket in
     let _check = if( addr <> (chusai_ticketer ())) then failwith "mint_sc : wrong ticketer" in   
     let _check = if( payload <> chusai_payload) then failwith "mint_sc : wrong payload" in
@@ -48,7 +48,7 @@ let redeem (ticket,unit_callback:chusai_ticket * unit contract) : operation list
 let main (action, _store : mint_parameter * unit) : operation list * unit = 
     (match action with
           Mint chusai_ticket_contr -> mint chusai_ticket_contr
-        | Redeem (ticket,unit_callback) -> redeem (ticket,unit_callback))
+        | Redeem (ticket, unit_callback) -> redeem (ticket, unit_callback))
     , ()
 
 
