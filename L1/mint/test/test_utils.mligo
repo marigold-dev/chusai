@@ -6,7 +6,7 @@
     the different usefull values (typed address, and corresponding contract and address)
 *)
 let debug = false
-let log_ (type a) (msg:a) = if debug then Test.log msg
+let log_ (type a) (msg : a) = if debug then Test.log msg
 (* ORIGINATED *)
 (* a record with multiple informations on a contract *)
 type  ('a, 'b) originated = {  
@@ -49,16 +49,16 @@ let originate_full (type a b) (main, storage, bal, log :  (a * b -> operation li
 let init_result = Success 0n
 
 (* wrap a message in a "Fail" statement *)
-let fail (msg:string) = Fail (Other msg)
+let fail (msg : string) = Fail (Other msg)
 
 (* "transfer_to_contract" wraps Test.transfer_to_contract such that it is only applied if the previous operation resulted in Success *)
-let transfer_to_contract (type a) (contr: a contract) (param : a) (amount_:tez) (previous:test_exec_result) =
+let transfer_to_contract (type a) (contr : a contract) (param : a) (amount_ : tez) (previous : test_exec_result) =
   match previous with
     | Success _ -> Test.transfer_to_contract contr param amount_ 
     | Fail _ -> previous 
 
 (* "assert_" wraps an assertion in Fail or Success, or propagate previous Fail *)
-let assert_ (b:bool) (msg:string) (previous:test_exec_result) = 
+let assert_ (b : bool) (msg : string) (previous : test_exec_result) = 
   match previous with
     | Fail _ -> 
         begin
@@ -67,18 +67,18 @@ let assert_ (b:bool) (msg:string) (previous:test_exec_result) =
         end
     | Success _ -> if b then Success 0n else fail msg
 
-let is_none (type a) (opt:a option) =
+let is_none (type a) (opt : a option) =
     match opt with
         | None -> true
         | Some _t -> false
 
 (* "assert_none_" wraps an assertion in Fail (not None) or Success (is None) , or propagate previous Fail *)
-let assert_none_ (type a) (opt:a option) (msg:string) (previous:test_exec_result) = 
+let assert_none_ (type a) (opt : a option) (msg : string) (previous : test_exec_result) = 
     assert_ (is_none opt) msg previous
 
 (* "assert_rejected_at" check that the result is a Fail
     of type Rejected, emitted at a certain address, or propagates a Fail *)
-let assert_rejected_at (at:address) (msg:string) (result:test_exec_result) =
+let assert_rejected_at (at : address) (msg : string) (result : test_exec_result) =
     match result with
         | Success _ -> 
             begin
@@ -89,8 +89,8 @@ let assert_rejected_at (at:address) (msg:string) (result:test_exec_result) =
             if at = contr_rejecting then Success 0n
             else
                 begin 
-                log_ (("assert_rejected_at : wrong address -> "^msg), result);
-                fail ("assert_rejected_at : wrong address -> "^msg)
+                log_ (("assert_rejected_at : wrong address -> " ^ msg), result);
+                fail ("assert_rejected_at : wrong address -> " ^ msg)
                 end
         | _ -> 
             begin
@@ -99,12 +99,12 @@ let assert_rejected_at (at:address) (msg:string) (result:test_exec_result) =
             end
 
 (* interrupt if last action was a fail, and replace fail message *)
-let assert_is_ok (msg:string) (previous:test_exec_result) =
+let assert_is_ok (msg : string) (previous : test_exec_result) =
   match previous with
     | Fail _ -> 
         begin
         log_ ("assert_is_ok : was not ok, there was a fail ", previous);
-        fail ("assert_is_ok : "^msg)
+        fail ("assert_is_ok : " ^ msg)
         end
     | Success _ -> previous
 
@@ -130,18 +130,18 @@ type ticket_asserts = {
 let no_assert : ticket_asserts = {addr = None ; payload = None ; amount_ = None }
 
 (* polymorphic asserts executed only if not None *)
-let assert_with_errors_opt (type a) (equal:(a*a) -> bool) (expected:a option) (actual:a) (msg:string) =
+let assert_with_errors_opt (type a) (equal : (a * a) -> bool) (expected : a option) (actual : a) (msg : string) =
     match expected with
         | None -> ()
         | Some v -> assert_with_error (equal (v, actual)) msg
 
 (* check that a ticket is conform to a set of assertion *)
-let check_ticket (asserts:ticket_asserts) (t:bytes ticket) = 
+let check_ticket (asserts : ticket_asserts) (t : bytes ticket) = 
     let (addr, (payload, total)), ticket = Tezos.read_ticket t in
     begin
-    assert_with_errors_opt (fun (a, b:address*address) -> a=b)   asserts.addr addr "compare_tickets : wrong address";
-    assert_with_errors_opt (fun (a, b:bytes*bytes) -> a=b)   asserts.payload payload "compare_tickets : wrong payload";
-    assert_with_errors_opt (fun (a, b:nat*nat) -> a=b)   asserts.amount_  total"compare_tickets : wrong amount";
+    assert_with_errors_opt (fun (a, b : address * address) -> a=b)   asserts.addr addr "compare_tickets : wrong address";
+    assert_with_errors_opt (fun (a, b : bytes * bytes) -> a=b)   asserts.payload payload "compare_tickets : wrong payload";
+    assert_with_errors_opt (fun (a, b : nat * nat) -> a=b)   asserts.amount_  total"compare_tickets : wrong amount";
     ticket
     end
 

@@ -16,32 +16,32 @@ let chusai_ticketer () = Tezos.self_address
 (* minimum amount accepted by the mint. *)
 let minimum_amount = 1tez
 
-(* XTZ <-> CHUSAI*)
-let xtz_to_chusai (xtz:tez) = xtz /1mutez
-let chusai_to_xtz (chusai_amount:nat) = 
+(* XTZ <-> Chusai ticket amount*)
+let xtz_to_chusai_amount (xtz : tez) : nat = xtz /1mutez
+let chusai_amount_to_xtz (chusai_amount : nat) : tez =
     let n = (chusai_amount * abs(100n - tax_rate)) / 100n in
     n * 1mutez 
 
 
 (* MINTING *)
-let create_chusai () : chusai_ticket=
-    let n : nat = xtz_to_chusai Tezos.amount  in
+let create_chusai_ticket () : chusai_ticket=
+    let n : nat = xtz_to_chusai_amount Tezos.amount  in
     Tezos.create_ticket chusai_payload n
 
-let mint (chusai_ticket_contr: chusai_ticket contract) : operation list = 
-    let _check = if( Tezos.amount < minimum_amount) then failwith "mint_sc : no ticket for less than ..." in    
-    let ticket = create_chusai () in
+let mint (chusai_ticket_contr : chusai_ticket contract) : operation list =
+    let _check = if Tezos.amount < minimum_amount then failwith "mint_sc : no ticket for less than ..." in
+    let ticket = create_chusai_ticket () in
     let op = Tezos.transaction ticket 0tez chusai_ticket_contr in
     [op]
 
 (* REDEEMING *)
 (* checks the ticket's kind, and refuses 0-value tickets *)
-let redeem (ticket, unit_callback:chusai_ticket * unit contract) : operation list = 
+let redeem (ticket, unit_callback : chusai_ticket * unit contract) : operation list =
     let (addr, (payload, total)), _ticket = Tezos.read_ticket ticket in
-    let _check = if( addr <> (chusai_ticketer ())) then failwith "mint_sc : wrong ticketer" in   
-    let _check = if( payload <> chusai_payload) then failwith "mint_sc : wrong payload" in
-    let _check = if( total = 0n) then failwith "mint_sc : 0-value ticket" in
-    let op = Tezos.transaction unit (chusai_to_xtz total ) unit_callback in
+    let _check = if total = 0n then failwith "mint_sc : 0-value ticket" in
+    let _check = if addr <> (chusai_ticketer ()) then failwith "mint_sc : wrong ticketer" in
+    let _check = if payload <> chusai_payload then failwith "mint_sc : wrong payload" in
+    let op = Tezos.transaction unit (chusai_amount_to_xtz total) unit_callback in
     [op]
 
 (* ENDPOINTS *)

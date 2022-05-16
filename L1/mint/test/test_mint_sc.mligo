@@ -24,7 +24,7 @@ type wallet_parameter =
     | Go_redeem of address // to start redeem process from implicit account
     | Nope                 // callback to receive money
 let wallet_test_main 
-  (check_ticket: chusai_ticket-> chusai_ticket) 
+  (check_ticket : chusai_ticket-> chusai_ticket) 
   (action, store : wallet_parameter * wallet_storage) 
     : operation list * wallet_storage = 
     match action with
@@ -54,7 +54,7 @@ let wallet_test_main
 *)
 type originated_wallet = (wallet_parameter, wallet_storage) originated
 (* originates a wallet, given a function to be applied on the ticket when receiving one *)
-let originate_wallet (check_ticket: chusai_ticket-> chusai_ticket) : originated_wallet = 
+let originate_wallet (check_ticket : chusai_ticket-> chusai_ticket) : originated_wallet = 
     originate_full 
       ((wallet_test_main check_ticket)
       , (None : wallet_storage)
@@ -76,10 +76,10 @@ type mint_param =
   mint : address 
 }
 
-let mint_ (param : mint_param) (previous:test_exec_result)=
+let mint_ (param : mint_param) (previous : test_exec_result)=
   transfer_to_contract param.wallet.contr (Go_mint param.mint) param.amount_ previous 
 
-let redeem_ (param : mint_param) (previous:test_exec_result)=
+let redeem_ (param : mint_param) (previous : test_exec_result)=
   transfer_to_contract param.wallet.contr (Go_redeem param.mint) 0tz previous 
 
 
@@ -87,12 +87,12 @@ let redeem_ (param : mint_param) (previous:test_exec_result)=
 (* TESTS *)
 
 (* Tests of pure functions *)
-let test_inline_conversion_mutez = assert ((xtz_to_chusai 1mutez) = 1n)
-let test_inline_conversion_tez = assert ((xtz_to_chusai 1tez) = 1000000n)
-let test_inline_conversion_42tez = assert ((xtz_to_chusai 42tez) = 42000000n)
-let test_inline_conversion_chusai_tez = assert ((chusai_to_xtz 1000000n) = 850000mutez)
-let test_inline_conversion_chusai_100mutez = assert ((chusai_to_xtz 100n) = 85mutez)
-let test_inline_conversion_chusai_1mutez = assert ((chusai_to_xtz 1n) = 0mutez)
+let test_inline_conversion_mutez = assert ((xtz_to_chusai_amount 1mutez) = 1n)
+let test_inline_conversion_tez = assert ((xtz_to_chusai_amount 1tez) = 1000000n)
+let test_inline_conversion_42tez = assert ((xtz_to_chusai_amount 42tez) = 42000000n)
+let test_inline_conversion_chusai_tez = assert ((chusai_amount_to_xtz 1000000n) = 850000mutez)
+let test_inline_conversion_chusai_100mutez = assert ((chusai_amount_to_xtz 100n) = 85mutez)
+let test_inline_conversion_chusai_1mutez = assert ((chusai_amount_to_xtz 1n) = 0mutez)
 
 (* simple check of initial storage/balance *)
 let test_mint_origination = 
@@ -128,7 +128,7 @@ let test_mint_first_ticket_mutez =
   begin
   log_ "test_mint_first_ticket_mutez";
   let mint = originate_mint () in
-  let wallet = originate_wallet (fun (t:chusai_ticket) -> t) in
+  let wallet = originate_wallet (fun (t : chusai_ticket) -> t) in
   (* minting *)
   let result = mint_  ({wallet = wallet ; amount_ = 1mutez ; mint = mint.addr} ) init_result in
   (* asserts *)
@@ -145,7 +145,7 @@ let test_mint_first_ticket_0tez =
   begin
   log_ "test_mint_first_ticket_0tez";
   let mint = originate_mint () in
-  let wallet = originate_wallet (fun (t:chusai_ticket) -> t) in
+  let wallet = originate_wallet (fun (t : chusai_ticket) -> t) in
   (* minting *)
   let result = mint_  ({wallet = wallet ; amount_ = 0mutez ; mint = mint.addr} ) init_result in
   (* asserts *)
@@ -182,7 +182,7 @@ let test_mint_and_redeem =
   - taxes should be deduced
   - ticket should be burned after redeeming
 *)
-let turn_into_0value (ticket:chusai_ticket):chusai_ticket = 
+let turn_into_0value (ticket : chusai_ticket) : chusai_ticket = 
   let (_, (_, amount_)), ticket = Tezos.read_ticket ticket in
   let opt : (chusai_ticket*chusai_ticket) option= Tezos.split_ticket ticket (0n, amount_)  in
   let ticket0, _ticket = Option.unopt(opt) in
