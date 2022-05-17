@@ -1,12 +1,10 @@
 # A Simple Mint
-- create tickets with amount equal to nb of mutez sent
-- redeem ticket for mutez
+- creates tickets with amount equal to number of mutez sent
+- redeems ticket for mutez. Only tickets created by the mint can be redeemed, others fail tbe transaction.
 
-# Interface
-```
-type chusai_payload = bytes
-type chusai_ticket = chusai_payload ticket
-type mint_parameter =
-      Mint of chusai_ticket contract
-    | Redeem of chusai_ticket * unit contract
-```
+# Callbacks
+The `mint_sc` doesn't know anything about any `wallet_sc`. It uses callbacks to send the new ticket or to send back xtz.
+
+# Parametrization
+Some values, such as the payload of the tickets, are *parametrized* : they are provided in the storage defined at origination.
+
