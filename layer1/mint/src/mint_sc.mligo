@@ -17,9 +17,7 @@ let tax_rate = 15n // %
 
 (* XTZ <-> Chusai ticket amount*)
 let xtz_to_chusai_amount (xtz : tez) : nat = xtz /1mutez
-let chusai_amount_to_xtz (chusai_amount : nat) : tez =
-    let n = (chusai_amount * abs(100n - tax_rate)) / 100n in
-    n * 1mutez 
+let chusai_amount_to_xtz (chusai_amount : nat) : tez = chusai_amount * 1mutez 
 
 
 (* MINTING *)

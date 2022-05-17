@@ -35,7 +35,7 @@ let originate_full (type a b) (main, storage, bal, log :  (a * b -> operation li
     Here are some functions taking inspiration from that, allowing to apply operations depending on the result of the previous one, and adding asserts.
     We don't define operators to make binding and such more readable, 'cause LIGO does not allow it 
     
-    So to use it, do smthg like :
+    So to use it, do something like :
     let result = transfer_to_contract ... init_result in
     let result = assert_ ... result in
     let result = assert_ ... result in
@@ -66,6 +66,9 @@ let assert_ (b : bool) (msg : string) (previous : test_exec_result) =
         previous 
         end
     | Success _ -> if b then Success 0n else fail msg
+
+let assert__ (b : bool) (msg : string) = assert_ b msg init_result
+
 
 let is_none (type a) (opt : a option) =
     match opt with

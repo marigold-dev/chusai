@@ -19,7 +19,7 @@ let _u = Test.reset_state 5n ([] : tez list)
 *)
 type wallet_storage = chusai_ticket option
 type wallet_parameter =
-    Store of chusai_ticket // callback to receive ticket
+      Store of chusai_ticket // callback to receive ticket
     | Go_mint of address   // to start minting process from implicit account
     | Go_redeem of address // to start redeem process from implicit account
     | Nope                 // callback to receive money
@@ -88,12 +88,12 @@ let redeem_ (param : mint_param) (previous : test_exec_result)=
 (* TESTS *)
 
 (* Tests of pure functions *)
-let test_inline_conversion_mutez = assert ((xtz_to_chusai_amount 1mutez) = 1n)
-let test_inline_conversion_tez = assert ((xtz_to_chusai_amount 1tez) = 1000000n)
-let test_inline_conversion_42tez = assert ((xtz_to_chusai_amount 42tez) = 42000000n)
-let test_inline_conversion_chusai_tez = assert ((chusai_amount_to_xtz 1000000n) = 850000mutez)
-let test_inline_conversion_chusai_100mutez = assert ((chusai_amount_to_xtz 100n) = 85mutez)
-let test_inline_conversion_chusai_1mutez = assert ((chusai_amount_to_xtz 1n) = 0mutez)
+let test_inline_conversion_mutez = assert__ ((xtz_to_chusai_amount 1mutez) = 1n) "1 ticket per mutez"
+let test_inline_conversion_tez = assert__ ((xtz_to_chusai_amount 1tez) = 1000000n) "1 ticket per mutez"
+let test_inline_conversion_42tez = assert__ ((xtz_to_chusai_amount 42tez) = 42000000n) "1 ticket per mutez"
+let test_inline_conversion_chusai_tez = assert__ ((chusai_amount_to_xtz 1000000n) = 1000000mutez) "1 mutez per ticket" 
+let test_inline_conversion_chusai_100mutez = assert__ ((chusai_amount_to_xtz 100n) = 100mutez) "1 mutez per ticket"
+let test_inline_conversion_chusai_1mutez = assert__ ((chusai_amount_to_xtz 1n) = 1mutez) "1 mutez per ticket"
 
 (* simple check of initial storage/balance *)
 let test_mint_origination = 
@@ -175,8 +175,8 @@ let test_mint_and_redeem =
   let result = redeem_  ({wallet = wallet ; amount_ = 0tz ; mint = mint.addr} ) result in
   (* asserts *)
   let result = assert_none_ (Test.get_storage wallet.taddr ) "there should be no ticket left in wallet storage" result in  
-  let result = assert_ ((Test.get_balance mint.addr) > 0tz) "mint should have retained taxes" result in 
-  assert_ ((Test.get_balance wallet.addr) = 85tz) "taxes should have been deduced" result 
+  let result = assert_ ((Test.get_balance mint.addr) = 0tz) "mint should have nothing left" result in 
+  assert_ ((Test.get_balance wallet.addr) = 100tz) "wallet should have gotten xtz back" result 
   end
 
 (* we try to redeem a 0-value ticket
