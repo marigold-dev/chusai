@@ -53,7 +53,6 @@ module ListExt =
 
     let concat (type a) (left : a list) (right : a list) : a list =
       let acc (x,ys : (a * a list)) : a list = x :: ys in
-      //FIXME: check if tail recursion can be used instead
       List.fold_right acc left right
 
     let join (type a) (lists : a list list) : a list =
