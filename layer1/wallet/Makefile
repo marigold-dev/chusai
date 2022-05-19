@@ -1,17 +1,17 @@
-COMPILER_ARGS=--protocol ithaca
-LIGO=ligo compile contract $(COMPILER_ARGS) 
 BUILD_DIR=../../_build/layer1/
-
-TEST_MAIN=test/test_main.mligo
 
 build: src/wallet_sc.mligo
 		mkdir -p $(BUILD_DIR)
-		$(LIGO) src/wallet_sc.mligo > $(BUILD_DIR)/wallet_sc.tez
+		$(LIGO_BUILD) wallet/src/wallet_sc.mligo > $(BUILD_DIR)/wallet_sc.tez
 
 test:
-		ligo run test  $(COMPILER_ARGS) $(TEST_MAIN)
+		$(LIGO_TEST) stdlib_ext/test/test_main.mligo
+		$(LIGO_TEST) wallet/test/test_main.mligo
+
+metrics:
+		$(LIGO_TEST) wallet/metrics/metrics.mligo
 
 clean:
 		rm -rf $(BUILD_DIR)
 
-.PHONY: test build clean
+.PHONY: test build clean metrics

@@ -1,6 +1,6 @@
 #include "../../src/wallet_sc.mligo"
 #include "fakes.mligo"
-#include "utils.mligo"
+#include "tools.mligo"
 
 (* Tests for wallet_sc/send *)
 
@@ -43,7 +43,7 @@ let run_main_send_test
     } in
   unit
  
-let test_sending =
+let test_Wallet_sc_sending =
    let amount_to_deposit = 10n in
    let wallet_ticket = Some (create_ticket dummy_payload amount_to_deposit) in
    run_main_send_test 
@@ -54,7 +54,7 @@ let test_sending =
         let _ = assert (Wallet.extract_ticket_from_storage  wallet_storage = 0n) in
         assert (Bridge.extract_ticket_from_storage  bridge_storage  = amount_to_deposit))
  
-let test_sending_when_storage_is_none =
+let test_Wallet_sc_sending_when_storage_is_none =
    run_main_send_test 
      (None : chusai_ticket option)
      (fun (contr: wallet_parameter contract) (ticket : chusai_ticket_storage) ->

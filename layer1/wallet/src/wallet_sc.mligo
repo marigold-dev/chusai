@@ -1,6 +1,5 @@
-#include "ticket_api_workaround.mligo"
 #include "../../common/common.mligo"
-#include "../../common/tools.mligo"
+#include "../../stdlib_ext/src/stdlibext.mligo"
 
 let contract_name : string = "wallet_sc"
 let error_message (msg : string) : string = String.concat contract_name (String.concat ":" msg)
@@ -31,7 +30,8 @@ let mint_xtz_cb (ticket_to_add, {mint_address; bridge_address; ticket_storage} :
     let joined_tickets = join_tickets existing_ticket ticket_to_add in
     let _ =  if (OptionExt.is_none joined_tickets) then throw_error "Ticket payload is invalid" in
     joined_tickets in 
-  let joined_tickets  : chusai_ticket option = OptionExt.bind ticket_storage join_or_fail in
+  let joined_tickets : chusai_ticket option = OptionExt.bind ticket_storage join_or_fail in
+
   let new_ticket_storage : chusai_ticket option = OptionExt.or_else joined_tickets (Some ticket_to_add) in
   let new_storage = {
     mint_address = mint_address;

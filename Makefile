@@ -16,3 +16,6 @@ clean:
 
 package: build
 		tar czvf _build/chusai-layer1-$(VERSION).tar.gz _build/layer1/*.tez
+
+metrics:
+	make -C layer1 metrics

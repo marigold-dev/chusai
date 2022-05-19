@@ -1,6 +1,6 @@
 #include "../../src/wallet_sc.mligo"
 #include "fakes.mligo"
-#include "utils.mligo"
+#include "tools.mligo"
 
 type main_redeem_test_props = {
   wallet_storage : wallet_storage;
@@ -41,7 +41,7 @@ let run_main_redeem_xtz_test
       mint_balance = mint_balance;
     } 
 
-let test_redeem_xtz_with_ticket =
+let test_Wallet_sc_redeem_xtz_with_ticket =
   let ticket_amount = 10n in
   let ticket = create_ticket dummy_payload ticket_amount in
   run_main_redeem_xtz_test 
@@ -55,7 +55,7 @@ let test_redeem_xtz_with_ticket =
       let _ = assert (mint_balance  =  0tez) in
       unit)
 
-let test_redeem_xtz_with_storage_None =
+let test_Wallet_sc_redeem_xtz_with_storage_None =
   let ticket_amount = 10n in
   run_main_redeem_xtz_test 
     (ticket_amount * 1tez)

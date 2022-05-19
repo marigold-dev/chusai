@@ -1,7 +1,6 @@
 #include "../../src/wallet_sc.mligo"
-#include "../../../common/tools.mligo"
 #include "fakes.mligo"
-#include "utils.mligo"
+#include "tools.mligo"
 
 type main_mint_test_props = {
   wallet_storage : wallet_storage;
@@ -40,7 +39,7 @@ let run_main_mint_xtz_test
     } in
   unit
 
-let test_mint_xtz_with_0tez =
+let test_Wallet_sc_mint_xtz_with_0tez =
   run_main_mint_xtz_test 
     (fun (contr : wallet_parameter contract) -> [Test.transfer_to_contract contr Mint_xtz 0tez])
     (fun (exec_result:test_exec_result list) ({wallet_storage; wallet_balance; mint_balance} : main_mint_test_props) -> 
@@ -50,7 +49,7 @@ let test_mint_xtz_with_0tez =
       assert (wallet_balance  = 0tez))
 
 
-let test_mint_xtz_with_10tez =
+let test_Wallet_sc_mint_xtz_with_10tez =
   run_main_mint_xtz_test
     (fun (contr : wallet_parameter contract) -> [Test.transfer_to_contract contr Mint_xtz 10tez])
     (fun (_:test_exec_result list) ({wallet_storage; wallet_balance; mint_balance} : main_mint_test_props) -> 
@@ -60,7 +59,7 @@ let test_mint_xtz_with_10tez =
       let _ = assert (wallet_balance  = 0tez) in 
       unit)
 
-let test_minted_ticket_and_join_with_existed_ticket_in_storage =
+let test_Wallet_sc_minted_ticket_and_join_with_existed_ticket_in_storage =
   run_main_mint_xtz_test 
     (fun (contr : wallet_parameter contract) ->
       [ Test.transfer_to_contract contr Mint_xtz 15tez;
@@ -73,7 +72,7 @@ let test_minted_ticket_and_join_with_existed_ticket_in_storage =
       let _ = assert (wallet_balance  = 0tez) in
       unit)
 
-let test_join_arbitary_ticket_and_ticket_in_storage =
+let test_Wallet_sc_join_arbitary_ticket_and_ticket_in_storage =
   run_main_mint_xtz_test 
     (fun (contr : wallet_parameter contract) ->
       let ticket = create_ticket (Bytes.pack "test") 10n in
