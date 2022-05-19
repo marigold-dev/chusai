@@ -7,12 +7,11 @@ export LIGO_TEST=$(LIGO)  run test $(COMPILER_ARGS)
 
 build:
 	make -C wallet build
+	make -C mint build
 
 test:
 	make -C wallet test
-
-clean:
-	make -C wallet clean
+	make -C mint test
 
 metrics:
 	make -C wallet metrics

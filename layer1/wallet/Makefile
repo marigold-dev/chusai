@@ -11,7 +11,4 @@ test:
 metrics:
 		$(LIGO_TEST) wallet/metrics/metrics.mligo
 
-clean:
-		rm -rf $(BUILD_DIR)
-
-.PHONY: test build clean metrics
+.PHONY: test build metrics
