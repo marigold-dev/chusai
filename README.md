@@ -22,3 +22,10 @@ $ make build
 ```
 $ make test
 ```
+
+## Running the metrics
+This will print on stdout the existing metrics 
+
+```
+$ make metrics
+```
