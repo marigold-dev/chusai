@@ -1,4 +1,5 @@
-#include "../../common/common.mligo"
+#include "../../commons/mint_interface.mligo"
+#include "../../commons/wallet_interface.mligo"
 #include "../../stdlib_ext/src/stdlibext.mligo"
 
 let contract_name : string = "wallet_sc"

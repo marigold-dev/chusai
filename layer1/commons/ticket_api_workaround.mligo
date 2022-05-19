@@ -13,9 +13,10 @@ Steps:
 7. commit
 *)
 
+type chusai_payload = bytes
+
 // Real impleentation that we use for testing the correctness in terms of linearity
 ////////////
-// type chusai_payload = bytes
 // type chusai_ticket = chusai_payload ticket
 // let create_ticket (b : bytes) (v : nat) : chusai_ticket = Tezos.create_ticket b v
 // let join_tickets (l : chusai_ticket) (r : chusai_ticket) : chusai_ticket option= 
@@ -29,7 +30,7 @@ Steps:
 // Dummy implementation that doesn't use tickets so we can actually run the tests even 
 // with the current bug in the LIGO compiler
 ////////////////
-type chusai_ticket = DummyTicket of (bytes * nat)
+type chusai_ticket = DummyTicket of (chusai_payload * nat)
 let create_ticket (b : bytes) (v : nat) : chusai_ticket = DummyTicket (b, v)
 
 let join_tickets (left : chusai_ticket) (right : chusai_ticket) : chusai_ticket option= 
@@ -40,7 +41,7 @@ let join_tickets (left : chusai_ticket) (right : chusai_ticket) : chusai_ticket 
     else
       None
 
-let read_ticket (t : chusai_ticket) : (address * (bytes * nat)) * chusai_ticket =
+let read_ticket (t : chusai_ticket) : (address * (chusai_payload * nat)) * chusai_ticket =
  match t with
    DummyTicket (b, v) ->
      let some_address = ("tz1KqTpEZ7Yob7QbPE4Hy4Wo8fHG8LhKxZSx" : address) in 

@@ -139,8 +139,8 @@ let assert_with_errors_opt (type a) (equal : (a * a) -> bool) (expected : a opti
         | Some v -> assert_with_error (equal (v, actual)) msg
 
 (* check that a ticket is conform to a set of assertion *)
-let check_ticket (asserts : ticket_asserts) (t : bytes ticket) = 
-    let (addr, (payload, total)), ticket = Tezos.read_ticket t in
+let check_ticket (asserts : ticket_asserts) (t : chusai_ticket) = 
+    let (addr, (payload, total)), ticket = read_ticket t in
     begin
     assert_with_errors_opt (fun (a, b : address * address) -> a=b)   asserts.addr addr "compare_tickets : wrong address";
     assert_with_errors_opt (fun (a, b : bytes * bytes) -> a=b)   asserts.payload payload "compare_tickets : wrong payload";

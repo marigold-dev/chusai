@@ -2,10 +2,6 @@
 
 type chusai_ticket_storage = chusai_ticket option
 
-type mint_parameter 
-  = Mint of (chusai_ticket contract)
-  | Redeem of chusai_ticket * unit contract
-
 type wallet_storage = {
   mint_address : address;
   bridge_address : address;

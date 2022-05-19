@@ -2,7 +2,6 @@
 let dummy_address : address = ("tz1KqTpEZ7Yob7QbPE4Hy4Wo8fHG8LhKxZSx" : address)
 let dummy_payload : bytes = 0x00
 
-
 module Bridge = 
   struct
     let extract_ticket_from_storage (storage : bridge_storage) : nat = 

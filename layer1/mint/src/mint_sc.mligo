@@ -1,4 +1,4 @@
-#include "../../commons/mint_part.mligo"
+#include "../../commons/mint_interface.mligo"
 
 (* CONFIGURATION *)
 (*
@@ -23,7 +23,7 @@ let chusai_amount_to_xtz (chusai_amount : nat) : tez = chusai_amount * 1mutez
 (* MINTING *)
 let create_chusai_ticket (payload : chusai_payload) : chusai_ticket=
     let n : nat = xtz_to_chusai_amount Tezos.amount  in
-    Tezos.create_ticket payload n
+    create_ticket payload n
 
 let mint (chusai_ticket_contr, store : chusai_ticket contract * storage) : operation list =
     let _check = if Tezos.amount < store.minimum_amount then failwith "mint_sc : no ticket for less than minimum amount" in
@@ -34,7 +34,7 @@ let mint (chusai_ticket_contr, store : chusai_ticket contract * storage) : opera
 (* REDEEMING *)
 (* checks the ticket's kind, and refuses 0-value tickets *)
 let redeem (ticket, unit_callback, store : chusai_ticket * unit contract * storage) : operation list =
-    let (addr, (payload, total)), _ticket = Tezos.read_ticket ticket in
+    let (addr, (payload, total)), _ticket = read_ticket ticket in
     let _check = if total = 0n then failwith "mint_sc : 0-value ticket" in
     let _check = if addr <> Tezos.self_address then failwith "mint_sc : wrong ticketer" in
     let _check = if payload <> store.payload then failwith "mint_sc : wrong payload" in
