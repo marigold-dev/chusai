@@ -1,6 +1,7 @@
 #include "../../src/wallet_sc.mligo"
 #include "fakes.mligo"
 #include "tools.mligo"
+#include "../../../stdlib_ext/src/stdlibtestext.mligo"
 
 type main_mint_test_props = {
   wallet_storage : wallet_storage;
@@ -42,11 +43,19 @@ let run_main_mint_xtz_test
 let test_Wallet_sc_mint_xtz_with_0tez =
   run_main_mint_xtz_test 
     (fun (contr : wallet_parameter contract) -> [Test.transfer_to_contract contr Mint_xtz 0tez])
-    (fun (exec_result:test_exec_result list) ({wallet_storage; wallet_balance; mint_balance} : main_mint_test_props) -> 
-      let _ = assert (match exec_result with [Fail (Rejected _)] -> true | v -> false) in
+    (fun (exec_results:test_exec_result list) ({wallet_storage; wallet_balance; mint_balance} : main_mint_test_props) -> 
+      let _ = 
+        TestExt.assert_cond 
+          exec_results 
+          (fun (results : test_exec_result list) -> 
+            let expected_error : michelson_program = Test.compile_value "wallet_sc:Amount should be non-zero" in 
+            match results with 
+              [Fail (Rejected (error , _))] -> if error = expected_error then true else false
+              | _ -> false) in
       let {mint_address; bridge_address; ticket_storage} = wallet_storage in
-      let _ = assert (OptionExt.is_none ticket_storage) in
-      assert (wallet_balance  = 0tez))
+      let _ = TestExt.assert_equals ticket_storage (None : chusai_ticket_storage) in
+      let _ = TestExt.assert_equals wallet_balance  0tez in
+      unit)
 
 
 let test_Wallet_sc_mint_xtz_with_10tez =
@@ -54,9 +63,9 @@ let test_Wallet_sc_mint_xtz_with_10tez =
     (fun (contr : wallet_parameter contract) -> [Test.transfer_to_contract contr Mint_xtz 10tez])
     (fun (_:test_exec_result list) ({wallet_storage; wallet_balance; mint_balance} : main_mint_test_props) -> 
       let {mint_address; bridge_address; ticket_storage} = wallet_storage in
-      let _ = assert (Wallet.extract_ticket_from_storage wallet_storage = 10n) in
-      let _ = assert (mint_balance  = 10tez) in
-      let _ = assert (wallet_balance  = 0tez) in 
+      let _ = TestExt.assert_equals (Wallet.extract_ticket_from_storage wallet_storage) 10n in
+      let _ = TestExt.assert_equals mint_balance 10tez in
+      let _ = TestExt.assert_equals wallet_balance 0tez in 
       unit)
 
 let test_Wallet_sc_minted_ticket_and_join_with_existed_ticket_in_storage =
@@ -67,9 +76,9 @@ let test_Wallet_sc_minted_ticket_and_join_with_existed_ticket_in_storage =
       ])
     (fun (_:test_exec_result list) ({wallet_storage; wallet_balance; mint_balance} : main_mint_test_props) -> 
       let {mint_address; bridge_address; ticket_storage} = wallet_storage in
-      let _ = assert (Wallet.extract_ticket_from_storage  wallet_storage = 25n) in
-      let _ = assert (mint_balance  = 25tez) in
-      let _ = assert (wallet_balance  = 0tez) in
+      let _ = TestExt.assert_equals (Wallet.extract_ticket_from_storage  wallet_storage) 25n in
+      let _ = TestExt.assert_equals mint_balance 25tez in
+      let _ = TestExt.assert_equals wallet_balance 0tez in
       unit)
 
 let test_Wallet_sc_join_arbitary_ticket_and_ticket_in_storage =
@@ -78,10 +87,17 @@ let test_Wallet_sc_join_arbitary_ticket_and_ticket_in_storage =
       let ticket = create_ticket (Bytes.pack "test") 10n in
       [ Test.transfer_to_contract contr Mint_xtz 10tez;
         Test.transfer_to_contract contr (Mint_xtz_cb ticket) 0tez])
-    (fun (exec_result: test_exec_result list) ({wallet_storage; wallet_balance; mint_balance} : main_mint_test_props) -> 
+    (fun (exec_results: test_exec_result list) ({wallet_storage; wallet_balance; mint_balance} : main_mint_test_props) -> 
       let {mint_address; bridge_address; ticket_storage} = wallet_storage in
-      let _ = assert (match exec_result with [Success _; Fail (Rejected _)] -> true | v -> false) in
-      let _ = assert (Wallet.extract_ticket_from_storage  wallet_storage = 10n) in
-      let _ = assert (mint_balance  = 10tez) in
-      let _ = assert (wallet_balance  = 0tez) in
+      let _ = 
+        TestExt.assert_cond 
+          exec_results 
+          (fun (results : test_exec_result list) -> 
+            let expected_error : michelson_program = Test.compile_value "wallet_sc:Ticket payload is invalid" in 
+            match results with 
+              [Success _ ; Fail (Rejected (error , _))] -> if error = expected_error then true else false
+              | _ -> false ) in
+      let _ = TestExt.assert_equals (Wallet.extract_ticket_from_storage  wallet_storage) 10n in
+      let _ = TestExt.assert_equals mint_balance 10tez in
+      let _ = TestExt.assert_equals wallet_balance 0tez in
       unit)

@@ -1,3 +1,4 @@
+#include "../../../stdlib_ext/src/stdlibtestext.mligo"
 #include "../../src/wallet_sc.mligo"
 #include "fakes.mligo"
 #include "tools.mligo"
@@ -50,9 +51,9 @@ let test_Wallet_sc_redeem_xtz_with_ticket =
     (fun (contr : wallet_parameter contract) ->[Test.transfer_to_contract contr Redeem_xtz 0tez])
     (fun (_:test_exec_result list) ({wallet_storage; wallet_balance; mint_balance} : main_redeem_test_props) -> 
       let {mint_address; bridge_address; ticket_storage} = wallet_storage in
-      let _ = assert (OptionExt.is_none ticket_storage) in
-      let _ = assert (wallet_balance  = (ticket_amount * 1tez)) in
-      let _ = assert (mint_balance  =  0tez) in
+      let _ = TestExt.assert_equals ticket_storage (None : chusai_ticket_storage) in
+      let _ = TestExt.assert_equals wallet_balance  (ticket_amount * 1tez) in
+      let _ = TestExt.assert_equals mint_balance  0tez in
       unit)
 
 let test_Wallet_sc_redeem_xtz_with_storage_None =
@@ -62,8 +63,15 @@ let test_Wallet_sc_redeem_xtz_with_storage_None =
     (None : chusai_ticket option)
     (fun (contr: wallet_parameter contract) ->
       [Test.transfer_to_contract contr Redeem_xtz 0tez])
-    (fun (exec_result:test_exec_result list) ({wallet_storage; wallet_balance; mint_balance} : main_redeem_test_props) -> 
-      let _ = assert (match exec_result with [Fail (Rejected _)] -> true | v -> false) in
-      let _ = assert (wallet_balance  = (0tez)) in
-      let _  = assert (mint_balance  =  (ticket_amount * 1tez)) in
+    (fun (exec_results:test_exec_result list) ({wallet_storage; wallet_balance; mint_balance} : main_redeem_test_props) -> 
+      let _ =
+        TestExt.assert_cond 
+          exec_results 
+          (fun (results : test_exec_result list) -> 
+            let expected_error : michelson_program = Test.compile_value "wallet_sc:No ticket found in storage" in 
+            match results with 
+              [Fail (Rejected (error , _))] -> if error = expected_error then true else false
+              | _ -> false ) in
+      let _ = TestExt.assert_equals wallet_balance  0tez in
+      let _ = TestExt.assert_equals mint_balance (ticket_amount * 1tez) in
       unit)

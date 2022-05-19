@@ -1,3 +1,4 @@
+#include "../../../stdlib_ext/src/stdlibtestext.mligo"
 #include "../../src/wallet_sc.mligo"
 #include "fakes.mligo"
 #include "tools.mligo"
@@ -51,15 +52,24 @@ let test_Wallet_sc_sending =
       (fun (contr: wallet_parameter contract) (ticket : chusai_ticket_storage) ->
         [Test.transfer_to_contract contr Send 0tez])
       (fun (exec_result:test_exec_result list) ({wallet_storage;bridge_storage} : main_send_test_props) -> 
-        let _ = assert (Wallet.extract_ticket_from_storage  wallet_storage = 0n) in
-        assert (Bridge.extract_ticket_from_storage  bridge_storage  = amount_to_deposit))
+        let _ = TestExt.assert_equals (Wallet.extract_ticket_from_storage  wallet_storage) 0n in
+        let _ = TestExt.assert_equals (Bridge.extract_ticket_from_storage  bridge_storage) amount_to_deposit in
+        unit )
  
 let test_Wallet_sc_sending_when_storage_is_none =
    run_main_send_test 
      (None : chusai_ticket option)
      (fun (contr: wallet_parameter contract) (ticket : chusai_ticket_storage) ->
         [Test.transfer_to_contract contr Send 0tez])
-     (fun (exec_result:test_exec_result list) ({wallet_storage;bridge_storage} : main_send_test_props) -> 
-        let _ = assert (match exec_result with [Fail (Rejected _)] -> true | v -> false) in
-        let _ = assert (Wallet.extract_ticket_from_storage  wallet_storage = 0n) in
-       assert (Bridge.extract_ticket_from_storage bridge_storage  = 0n))
+     (fun (exec_results : test_exec_result list) ({wallet_storage;bridge_storage} : main_send_test_props) -> 
+        let _ = 
+          TestExt.assert_cond 
+            exec_results 
+            (fun (results : test_exec_result list) -> 
+              let expected_error : michelson_program = Test.compile_value "wallet_sc:No ticket found in storage" in 
+              match results with 
+                [Fail (Rejected (error , _))] -> if error = expected_error then true else false
+                | _ -> false ) in
+        let _ = TestExt.assert_equals (Wallet.extract_ticket_from_storage  wallet_storage) 0n in
+        let _ = TestExt.assert_equals (Bridge.extract_ticket_from_storage bridge_storage) 0n in 
+        unit )

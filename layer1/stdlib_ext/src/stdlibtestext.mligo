@@ -30,17 +30,28 @@ module TestExt =
       go results 0n
 
     let assert_equals (type a) (actual : a) (expected : a) : unit=
-      if (not (Test.michelson_equal (Test.compile_value actual) (Test.compile_value expected)))
+      if (Test.michelson_equal (Test.compile_value actual) (Test.compile_value expected))
       then
-        let _ = Test.log "******  Failure *********" in
-        let _ = Test.log "Actual:" in
-        let _ = Test.log actual in
-        let _ = Test.log "Expected:" in
-        let _ = Test.log expected in
-        let _ = Test.log "*************************" in
-        failwith "Assertion failed!"
-      else
         unit
+      else
+        let _ = Test.log "******  Assertion failed. Values are not equal *********" in
+        let _ = Test.log "Actual value:" in
+        let _ = Test.log actual in
+        let _ = Test.log "Expected value:" in
+        let _ = Test.log expected in
+        let _ = Test.log "********************************************************" in
+        failwith "Assertion failed!"
+
+    let assert_cond (type a) (actual : a) (predicate : a -> bool) : unit=
+      if (predicate actual)
+      then
+        unit
+      else
+        let _ = Test.log "****** Assertion failed. The predicate returned 'false' *********" in
+        let _ = Test.log "Actual value:" in
+        let _ = Test.log actual in
+        let _ = Test.log "*****************************************************************" in
+        failwith "Assertion failed!"
   end
 
 type metric = {
