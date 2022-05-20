@@ -29,7 +29,7 @@ let wallet_test_main
     : operation list * wallet_storage = 
     match action with
         Store ticket ->         
-          let (addr, (payload, total)), ticket = Tezos.read_ticket ticket in
+          let (addr, (payload, total)), ticket = read_ticket ticket in
           begin
             let ticket = check_ticket ticket in
             [], (Some ticket)
@@ -184,8 +184,8 @@ let test_mint_and_redeem =
 *)
 (* function used to split ticket in wallet after minting, will produce a 0-value ticket *)
 let turn_into_0value (ticket : chusai_ticket) : chusai_ticket = 
-  let (_, (_, amount_)), ticket = Tezos.read_ticket ticket in
-  let opt : (chusai_ticket*chusai_ticket) option= Tezos.split_ticket ticket (0n, amount_)  in
+  let (_, (_, amount_)), ticket = read_ticket ticket in
+  let opt : (chusai_ticket*chusai_ticket) option= split_ticket ticket (0n, amount_)  in
   let ticket0, _ticket = Option.unopt(opt) in
   ticket0
 (* test *)
