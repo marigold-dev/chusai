@@ -1,0 +1,12 @@
+{
+  "name": "Chusai Wallet",
+  "description": "Contract to demo the interaction with Chusai optimistic rollup",
+  "homepage": "https://github.com/marigold-dev/chusai",
+  "authors": [
+    "https://github.com/orgs/marigold-dev/teams/chusai"
+  ],
+  "interfaces": [
+    "TZIP-16"
+  ],
+  "version": "@@VERSION@@"
+}
