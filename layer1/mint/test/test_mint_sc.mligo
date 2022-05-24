@@ -117,7 +117,7 @@ let _test_mint_first_ticket  () =
   let ticket_asserts : ticket_asserts = {addr = Some mint.addr ; payload = Some mint_default_storage.payload ; amount_ = Some 1000000n } in
   let wallet = originate_wallet (check_ticket ticket_asserts) in
   (* minting *)
-  let status = mint_  ({wallet = wallet; amount_ = 1tz ; mint = mint.addr} ) (Atom.start) in
+  let status = mint_  {wallet = wallet; amount_ = 1tz ; mint = mint.addr}  Atom.start in
   (* asserts *)
   Atom.and_list [
     Atom.assert_is_ok status "Mint transaction should be OK" ;
@@ -136,7 +136,7 @@ let _test_mint_first_ticket_mutez () =
   let mint = originate_mint {payload = 0x00 ; minimum_amount = 100tez} in
   let wallet = originate_wallet (fun (t : chusai_ticket) -> t) in
   (* minting *)
-  let status = mint_  ({wallet = wallet ; amount_ = 1tez ; mint = mint.addr} ) Atom.start in // 1tez is less than minimum (100tez)
+  let status = mint_  {wallet = wallet ; amount_ = 1tez ; mint = mint.addr}  Atom.start in // 1tez is less than minimum (100tez)
   (* asserts *)
   Atom.and_list [
     Atom.assert_rejected_at status mint.addr "should be rejected 'cause less than minimum amount"  ;
@@ -155,7 +155,7 @@ let _test_mint_first_ticket_0tez () =
   let mint = originate_mint mint_default_storage in
   let wallet = originate_wallet (fun (t : chusai_ticket) -> t) in
   (* minting *)
-  let status = mint_  ({wallet = wallet ; amount_ = 0mutez ; mint = mint.addr} ) Atom.start in
+  let status = mint_  {wallet = wallet ; amount_ = 0mutez ; mint = mint.addr}  Atom.start in
   (* asserts *)
   Atom.and_list [
     Atom.assert_rejected_at status mint.addr "should be rejected 'cause less than minimum amount" ;
@@ -177,13 +177,13 @@ let _test_mint_and_redeem () =
   let ticket_asserts : ticket_asserts= {addr = Some mint.addr ; payload = Some mint_default_storage.payload ; amount_ = Some 100000000n} in
   let wallet = originate_wallet (check_ticket ticket_asserts) in
   (* minting *)
-  let status = mint_  ({wallet = wallet ; amount_ = 100tz ; mint = mint.addr} ) Atom.start in
+  let status = mint_ {wallet = wallet ; amount_ = 100tz ; mint = mint.addr}  Atom.start in
   let status = 
     Atom.and 
       (Atom.assert_is_ok status "sanity check : Minting should have succeeded") 
       (Atom.assert_  ((Test.get_balance wallet.addr) = 0tz) "sanity check : wallet balance should be 0")  in 
   (* redeeming *)
-  let status = redeem_  ({wallet = wallet ; amount_ = 0tz ; mint = mint.addr} ) status in
+  let status = redeem_  {wallet = wallet ; amount_ = 0tz ; mint = mint.addr}  status in
   (* asserts *)
   Atom.and_list [
     Atom.assert_is_ok status "Redeem transaction should be OK" ;
@@ -211,12 +211,12 @@ let _test_redeem_0value_ticket () =
   let ticket_asserts : ticket_asserts= {addr = Some mint.addr ; payload = Some mint_default_storage.payload ; amount_ = Some 100000000n} in
   let wallet = originate_wallet (turn_into_0value ) in
   (* minting *)
-  let status = mint_  ({wallet = wallet ; amount_ = 100tz ; mint = mint.addr} ) Atom.start in
+  let status = mint_  {wallet = wallet ; amount_ = 100tz ; mint = mint.addr}  Atom.start in
   let status = Atom.and 
     (Atom.assert_is_ok status  "sanity check : Minting should have succeeded")
     (Atom.assert_ ((Test.get_balance wallet.addr) = 0tz) "sanity check : wallet balance should be 0") in
   (* redeeming *)
-  let status = redeem_  ({wallet = wallet ; amount_ = 0tz ; mint = mint.addr} ) status in
+  let status = redeem_  {wallet = wallet ; amount_ = 0tz ; mint = mint.addr} status in
   (* asserts *)
   Atom.and_list [
     Atom.assert_rejected_at status mint.addr "should have refused to redeem"  ;
@@ -239,12 +239,12 @@ let _test_redeem_at_wrong_mint () =
   let ticket_asserts : ticket_asserts = {no_assert with addr = Some mint_1.addr} in
   let wallet = originate_wallet (check_ticket ticket_asserts) in  
   (* minting *)
-  let status = mint_  ({wallet = wallet ; amount_ = 100tz ; mint = mint_1.addr} ) Atom.start in
+  let status = mint_  {wallet = wallet ; amount_ = 100tz ; mint = mint_1.addr}  Atom.start in
   let status = Atom.and 
     (Atom.assert_is_ok status "sanity check : Minting should have succeeded")
     (Atom.assert_  ((Test.get_balance wallet.addr) = 0tz) "sanity check : balance should be 0") in
   (* redeeming *)
-  let status = redeem_  ({wallet = wallet ; amount_ = 0tz ; mint = mint_2.addr} ) status in
+  let status = redeem_  {wallet = wallet ; amount_ = 0tz ; mint = mint_2.addr}  status in
   (* asserts *)
   Atom.and_list [
     Atom.assert_rejected_at status mint_2.addr "should be rejected by second mint" ;
@@ -254,18 +254,41 @@ let _test_redeem_at_wrong_mint () =
   ]
   end 
 
-let test_mint_sc = Atom.run_tests [
-  _test_inline_conversion_mutez              ;
-  _test_inline_conversion_tez                ;
-  _test_inline_conversion_42tez              ;
-  _test_inline_conversion_chusai_tez         ;
-  _test_inline_conversion_chusai_100mutez    ;
-  _test_inline_conversion_chusai_1mutez      ;
-  _test_mint_origination                     ;
-  _test_mint_first_ticket                    ;
-  _test_mint_first_ticket_mutez              ;
-  _test_mint_first_ticket_0tez               ;
-  _test_mint_and_redeem                      ;
-  _test_redeem_0value_ticket                 ;
-  _test_redeem_at_wrong_mint 
+
+
+// let test_mint_sc = Atom.run_tests [
+//   _test_inline_conversion_mutez              ;
+//   _test_inline_conversion_tez                ;
+//   _test_inline_conversion_42tez              ;
+//   _test_inline_conversion_chusai_tez         ;
+//   _test_inline_conversion_chusai_100mutez    ;
+//   _test_inline_conversion_chusai_1mutez      ;
+//   _test_mint_origination                     ;
+//   _test_mint_first_ticket                    ;
+//   _test_mint_first_ticket_mutez              ;
+//   _test_mint_first_ticket_0tez               ;
+//   _test_mint_and_redeem                      ;
+//   _test_redeem_0value_ticket                 ;
+//   _test_redeem_at_wrong_mint  
+// ]
+
+
+let suite = Atom.make_suite
+"test mint sc"
+[
+  Atom.make_test "inline_conversion_mutez" ""  _test_inline_conversion_mutez              ;
+  Atom.make_test "inline_conversion_tez" "" _test_inline_conversion_tez                ;
+  Atom.make_test "inline_conversion_42tez" "" _test_inline_conversion_42tez              ;
+  Atom.make_test "inline_conversion_chusai_tez" "" _test_inline_conversion_chusai_tez         ;
+  Atom.make_test "inline_conversion_chusai_100mutez" "" _test_inline_conversion_chusai_100mutez    ;
+  Atom.make_test "inline_conversion_chusai_1mutez" "" _test_inline_conversion_chusai_1mutez      ;
+  Atom.make_test "mint_origination" "" _test_mint_origination                     ;
+  Atom.make_test "mint_first_ticket" "" _test_mint_first_ticket                    ;
+  Atom.make_test "Test avec erreur" "Ceci est la description" (fun () -> Atom.fail "Erreur ")                    ;
+  Atom.make_test "mint_first_ticket_mutez" "" _test_mint_first_ticket_mutez ;
+  Atom.make_test "mint_first_ticket_0tez" "" _test_mint_first_ticket_0tez               ;
+  Atom.make_test "mint_and_redeem" "" _test_mint_and_redeem                      ;
+  Atom.make_test "redeem_0value_ticket" "" _test_redeem_0value_ticket                 ;
+  Atom.make_test "redeem_at_wrong_mint" "" _test_redeem_at_wrong_mint               
 ]
+

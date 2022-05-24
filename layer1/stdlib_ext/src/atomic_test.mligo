@@ -1,17 +1,62 @@
+
+
 type gas = nat
+
+type failure_reason 
+   = Message of string
+   | Execution of  test_exec_error
+
 type status
-    = Status_Fail of string
+    = Status_Fail of failure_reason
     | Status_Fail_exec of test_exec_error
     | Status_Success of gas
     
+type test = { 
+  name: string
+; desc: string
+; action : (unit -> status)
+}
+
+type test_suite = {
+  suite_name: string
+; tests: test list
+}
+
+type test_result = {
+  test_name: string
+; test_desc: string
+; test_result: status
+}
+
+let make_test (name:string) (desc:string) (action:unit -> status) = {
+  name = name
+; desc = desc
+; action = action
+}
+
+let make_suite (name:string) (tests: test list) = {
+  suite_name = name
+; tests = tests
+}
+
+let perform_test ({ name; desc; action }:test) = 
+  let result = action () in 
+  { test_name = name; test_desc = desc; test_result = result }
+
+let pp_test_result ({ test_name; test_desc; test_result }:test_result) = 
+  match test_result with 
+  | Status_Success g -> Test.log ("✅ "^ test_name ^ " - "^ test_desc, g)
+  | Status_Fail_exec error -> Test.log ("❌ "^ test_name ^" - "^ test_desc, error)
+  | Status_Fail reason -> Test.log ("❌ " ^ test_name^" - " ^ test_desc, reason)
+
 let succeed () = Status_Success 0n
-let fail (msg:string) = Status_Fail msg
+let fail (msg:string) = Status_Fail (Message msg)
 let start = Status_Success 0n
 
 let wrap_exec (result:test_exec_result) = 
     match result with
         | Success g -> Status_Success g
-        | Fail error -> Status_Fail_exec error
+        | Fail error -> Status_Fail_exec  error
 
 let and (s1:status) (s2:status) = 
     match s1,s2 with
@@ -102,3 +147,31 @@ let run_tests (tests:(unit -> status) list) = run_tests_
     (fun (a,b:status*status) -> and a b) 
     (succeed ()) 
     tests
+let is_failure (s:status):bool = 
+    match s with 
+        | Status_Success _ -> false
+        | _ -> true
+    
+let run_test_suite (suite: test_suite) = 
+  List.fold_left (fun (flag, test : bool * test ) -> 
+    begin
+      let result = perform_test test in
+      pp_test_result result;
+      flag || (is_failure result.test_result)
+    end     
+  ) false suite.tests 
+
+
+
+let run_suites (suites: test_suite list) = 
+  let final_result = List.fold_left (fun (flag, suite : bool * test_suite) -> 
+      begin
+        let result = run_test_suite suite in 
+        let _ = 
+           if result then Test.log("❌ " ^ suite.suite_name)
+           else Test.log("✅  " ^ suite.suite_name) 
+        in
+        flag || result
+       end
+    ) false suites
+    in if final_result then failwith "Errors" else ()
