@@ -64,4 +64,4 @@ tezos-client:
 fetch-binaries: tezos-node tezos-client
 
 tezt: build
-	dune exec test/tezt/tezt_chusai.exe -- --verbose --regression-dir test/tezt/_regressions
+	dune exec integration_tests/tezt/tezt_chusai.exe -- --verbose --regression-dir integration_tests/tezt/_regressions
