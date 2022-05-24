@@ -1,4 +1,4 @@
-#include "ticket_api_workaround.mligo"
+
 
 type mint_parameter =
       Mint of chusai_ticket contract

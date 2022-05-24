@@ -6,6 +6,7 @@ type status
     
 let succeed () = Status_Success 0n
 let fail (msg:string) = Status_Fail msg
+let start = Status_Success 0n
 
 let wrap_exec (result:test_exec_result) = 
     match result with
@@ -41,6 +42,13 @@ let assert (current:status) (b:bool) (msg:string) : status =
     // run current (fun () -> assert_  b msg) 
     and current (assert_ b msg)
 
+let assert_is_ok (current:status) (msg:string) : status = 
+    match current with
+        | Status_Fail _ -> fail msg
+        | Status_Fail_exec _ -> fail msg
+        | Status_Success _ -> current
+
+
 // let assert_rejected (current:status) (msg:string) : status =
 //     match current with
 //         | Status_Fail_exec (Rejected _) -> succeed ()
@@ -54,6 +62,11 @@ let assert_exec_error (current:status) (predicate:test_exec_error -> bool) (msg:
 let assert_rejected (current:status) (msg:string) : status =
     let predicate (e:test_exec_error) = match e with Rejected _ -> true | _ -> false in
     assert_exec_error current predicate msg
+
+let assert_rejected_at (current:status) (addr:address) (msg:string) : status = 
+    let predicate (e:test_exec_error) = match e with Rejected (_, contr_rejecting) -> addr = contr_rejecting |_ -> false in
+    assert_exec_error current predicate msg
+
 
 let equals_ (type a) (actual : a) (expected : a) : bool = 
     Test.michelson_equal (Test.compile_value actual) (Test.compile_value expected)

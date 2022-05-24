@@ -1,3 +1,4 @@
+#include "../../commons/ticket_api_workaround.mligo"
 #include "../../commons/mint_interface.mligo"
 #include "../../commons/wallet_interface.mligo"
 #include "../../stdlib_ext/src/stdlibext.mligo"
