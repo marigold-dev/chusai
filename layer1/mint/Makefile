@@ -1,7 +1,7 @@
 .PHONY:build test
 build:
-	ligo compile contract src/mint_sc.mligo > ../../_build/mint_sc.tz
+	$(LIGO_BUILD) mint/src/mint_sc.mligo > ../../_build/mint_sc.tz
 
 test:
-	ligo run test test/test_mint_sc.mligo
+	$(LIGO_TEST) mint/test/test_mint_sc.mligo
 
