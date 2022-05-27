@@ -1,15 +1,13 @@
-
-
 type gas = nat
 
 type failure_reason 
-   = Message of string
-   | Execution of  test_exec_error
+  = Message of string
+  | Execution of  test_exec_error
 
 type status
-    = Status_Fail of failure_reason
-    | Status_Fail_exec of test_exec_error
-    | Status_Success of gas
+  = Status_Fail of failure_reason
+  | Status_Fail_exec of test_exec_error
+  | Status_Success of gas
     
 type test = { 
   name: string
@@ -55,14 +53,14 @@ let start = Status_Success 0n
 
 let wrap_exec (result:test_exec_result) = 
     match result with
-        | Success g -> Status_Success g
-        | Fail error -> Status_Fail_exec  error
+    | Success g -> Status_Success g
+    | Fail error -> Status_Fail_exec  error
 
 let and (s1:status) (s2:status) = 
     match s1,s2 with
-        | Status_Success g1, Status_Success g2 -> Status_Success (g1 + g2)
-        | Status_Success _, _ -> s2
-        | _,_ -> s1
+    | Status_Success g1, Status_Success g2 -> Status_Success (g1 + g2)
+    | Status_Success _, _ -> s2
+    | _,_ -> s1
         
 
 let and_list (l:status list) = 
@@ -71,8 +69,8 @@ let and_list (l:status list) =
 
 let run (current:status)  (op: unit -> status)   =
     match current with
-        | Status_Success _ -> and current (op ())
-        | _ -> current
+    | Status_Success _ -> and current (op ())
+    | _ -> current
 
 let transfer_to_contract_ (type param) (contr : param contract) (action:param) (amount_:tez) =
     wrap_exec (Test.transfer_to_contract contr action amount_)
@@ -84,25 +82,20 @@ let assert_  (b:bool) (msg:string)  : status =
     if b then succeed () else fail msg
 
 let assert (current:status) (b:bool) (msg:string) : status = 
-    // run current (fun () -> assert_  b msg) 
     and current (assert_ b msg)
 
 let assert_is_ok (current:status) (msg:string) : status = 
     match current with
-        | Status_Fail _ -> fail msg
-        | Status_Fail_exec _ -> fail msg
-        | Status_Success _ -> current
+    | Status_Fail _ -> fail msg
+    | Status_Fail_exec _ -> fail msg
+    | Status_Success _ -> current
 
 
-// let assert_rejected (current:status) (msg:string) : status =
-//     match current with
-//         | Status_Fail_exec (Rejected _) -> succeed ()
-//         | _ -> fail msg
 
 let assert_exec_error (current:status) (predicate:test_exec_error -> bool) (msg:string) = 
     match current with
-        | Status_Fail_exec e -> assert_ (predicate e) msg
-        | _ -> fail msg
+    | Status_Fail_exec e -> assert_ (predicate e) msg
+    | _ -> fail msg
 
 let assert_rejected (current:status) (msg:string) : status =
     let predicate (e:test_exec_error) = match e with Rejected _ -> true | _ -> false in
@@ -120,7 +113,6 @@ let assert_equals_ (type a) (actual : a) (expected : a)  (msg:string) : status =
   assert_ (equals_ actual expected) msg
 
 let assert_equals (type a) (current:status)  (actual : a) (expected : a)  (msg:string) : status =
-    // run current (fun () -> assert_equals_  actual expected msg) 
     and current (assert_equals_  actual expected msg)
 
 
@@ -128,7 +120,6 @@ let assert_cond_ (type a) (actual : a) (predicate : a -> bool)  (msg:string) : s
     assert_ (predicate actual) msg
 
 let assert_cond (type a) (current:status)  (actual : a) (predicate : a -> bool)  (msg:string) : status =
-    // run current (fun () -> assert_cond_  actual predicate msg) 
     and current (assert_cond_  actual predicate msg)
 
 let run_tests_ (type a) (combine:a*a -> a) (seed:a) (tests:(unit -> a) list)  =
@@ -147,10 +138,11 @@ let run_tests (tests:(unit -> status) list) = run_tests_
     (fun (a,b:status*status) -> and a b) 
     (succeed ()) 
     tests
+    
 let is_failure (s:status):bool = 
     match s with 
-        | Status_Success _ -> false
-        | _ -> true
+    | Status_Success _ -> false
+    | _ -> true
     
 let run_test_suite (suite: test_suite) = 
   List.fold_left (fun (flag, test : bool * test ) -> 
@@ -168,8 +160,8 @@ let run_suites (suites: test_suite list) =
       begin
         let result = run_test_suite suite in 
         let _ = 
-           if result then Test.log("❌ " ^ suite.suite_name)
-           else Test.log("✅  " ^ suite.suite_name) 
+          if result then Test.log("❌ " ^ suite.suite_name)
+          else Test.log("✅  " ^ suite.suite_name) 
         in
         flag || result
        end

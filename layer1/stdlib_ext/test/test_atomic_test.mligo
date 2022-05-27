@@ -52,25 +52,20 @@ let _test_run_S_S () =
     Atom.run (Status_Success 1n) (fun () -> Status_Success 2n )
     = Status_Success 3n
 
-(* and does NOT allow partial evaluation *)        
-// let _test_and_F_F = 
-//     (Atom.and (Status_Fail "shown") (begin failwith ""; Status_Fail "hidden" end) ) = (Status_Fail "shown")
-
 let _test_assert_T () = 
     Atom.assert (Status_Success 42n) true ""
     = Status_Success 42n
 
 let tests = Atom.run_tests_bool
-    [
-        _test_and_S_S         ;
-        _test_and_S_F         ;
-        _test_and_F_S         ;
-        _test_and_F_F         ;
-        _test_and_S_l         ;
-        _test_and_S_F_l       ;
-        _test_run_F_failwith  ;
-        _test_run_F_F         ;
-        _test_run_S_F         ;
-        _test_run_S_S         ;
-        _test_assert_T        
+    [   _test_and_S_S         
+    ;   _test_and_S_F         
+    ;   _test_and_F_S         
+    ;   _test_and_F_F         
+    ;   _test_and_S_l         
+    ;   _test_and_S_F_l       
+    ;   _test_run_F_failwith  
+    ;   _test_run_F_F         
+    ;   _test_run_S_F         
+    ;   _test_run_S_S         
+    ;   _test_assert_T        
     ]

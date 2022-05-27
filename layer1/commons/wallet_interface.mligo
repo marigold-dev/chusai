@@ -1,5 +1,3 @@
-
-
 type chusai_ticket_storage = chusai_ticket option
 
 type wallet_storage = {
