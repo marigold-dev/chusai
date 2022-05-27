@@ -2,7 +2,6 @@ type gas = nat
 
 type failure_reason 
   = Message of string
-  | Execution of  test_exec_error
 
 type status
   = Status_Fail of failure_reason
