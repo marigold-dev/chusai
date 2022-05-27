@@ -1,11 +1,10 @@
 VERSION := $(shell git describe)
 
-_build:
-	mkdir -p _build
+MAKEFILE_PATH := $(abspath $(lastword $(MAKEFILE_LIST)))
+export BUILD_ROOT:= $(dir $(MAKEFILE_PATH))
 
-build: _build
+build:
 	make -C layer1 build
-	echo FIXME: an unify way to build mint and wallet
 
 test:
 	make -C layer1 test

@@ -1,8 +1,5 @@
-BUILD_DIR=../../_build/layer1/
-
 build: src/wallet_sc.mligo
-		mkdir -p $(BUILD_DIR)
-		$(LIGO_BUILD) wallet/src/wallet_sc.mligo > $(BUILD_DIR)/wallet_sc.tez
+		$(LIGO_BUILD) wallet/src/wallet_sc.mligo > $(LAYER1_BUILD_DIR)/wallet_sc.tez
 
 test:
 		$(LIGO_TEST) stdlib_ext/test/test_main.mligo
