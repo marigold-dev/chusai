@@ -92,13 +92,9 @@ let redeem_ (param : mint_param) (previous : Atom.status)=
 (* Tests of pure functions *)
 let _test_inline_conversion_mutez  () =  Atom.assert_ ((xtz_to_chusai_amount 1mutez) = 1n) "1 ticket per mutez"
 
-let _test_inline_conversion_tez  () =  Atom.assert_ ((xtz_to_chusai_amount 1tez) = 1000000n) "1 ticket per mutez"
-
 let _test_inline_conversion_42tez  () =  Atom.assert_ ((xtz_to_chusai_amount 42tez) = 42000000n) "1 ticket per mutez"
 
-let _test_inline_conversion_chusai_tez  () =  Atom.assert_ ((chusai_amount_to_xtz 1000000n) = 1000000mutez) "1 mutez per ticket" 
-
-let _test_inline_conversion_chusai_100mutez  () =  Atom.assert_ ((chusai_amount_to_xtz 100n) = 100mutez) "1 mutez per ticket"
+let _test_inline_conversion_chusai_tez  () =  Atom.assert_ ((chusai_amount_to_xtz 1000000n) = 1tez) "1 mutez per ticket" 
 
 let _test_inline_conversion_chusai_1mutez  () =  Atom.assert_ ((chusai_amount_to_xtz 1n) = 1mutez) "1 mutez per ticket"
 
@@ -138,7 +134,7 @@ let _test_mint_first_ticket  () =
 let _test_mint_first_ticket_mutez () = 
   begin
     log_ "test_mint_first_ticket_mutez";
-    let mint = originate_mint {payload = 0x00 ; minimum_amount = 100tez} in
+    let mint = originate_mint {payload = 0x00 ; minimum_amount = 100tez} in // fixes minimum amount at 100tea
     let wallet = originate_wallet (fun (t : chusai_ticket) -> t) in
     (* minting *)
     let status = mint_  {wallet = wallet ; amount_ = 1tez ; mint = mint.addr}  Atom.start in // 1tez is less than minimum (100tez)
@@ -259,21 +255,30 @@ let _test_redeem_at_wrong_mint () =
     ]
   end 
 
+(* Creation of test suite *)
 let suite = Atom.make_suite
-"test mint sc"
-[  Atom.make_test "inline_conversion_mutez" ""  _test_inline_conversion_mutez              
-;  Atom.make_test "inline_conversion_tez" "" _test_inline_conversion_tez                
-;  Atom.make_test "inline_conversion_42tez" "" _test_inline_conversion_42tez              
-;  Atom.make_test "inline_conversion_chusai_tez" "" _test_inline_conversion_chusai_tez         
-;  Atom.make_test "inline_conversion_chusai_100mutez" "" _test_inline_conversion_chusai_100mutez    
-;  Atom.make_test "inline_conversion_chusai_1mutez" "" _test_inline_conversion_chusai_1mutez      
-;  Atom.make_test "mint_origination" "" _test_mint_origination                     
-;  Atom.make_test "mint_first_ticket" "" _test_mint_first_ticket                    
-;  Atom.make_test "Test avec erreur" "Ceci est la description" (fun () -> Atom.fail "Erreur ")                    
-;  Atom.make_test "mint_first_ticket_mutez" "" _test_mint_first_ticket_mutez 
-;  Atom.make_test "mint_first_ticket_0tez" "" _test_mint_first_ticket_0tez               
-;  Atom.make_test "mint_and_redeem" "" _test_mint_and_redeem                      
-;  Atom.make_test "redeem_0value_ticket" "" _test_redeem_0value_ticket                 
-;  Atom.make_test "redeem_at_wrong_mint" "" _test_redeem_at_wrong_mint               
+"Test suite of Mint SC"
+[  Atom.make_test "Conversion tez / ticket" "conversion of mutez to number of ticket"  _test_inline_conversion_mutez           
+;  Atom.make_test "Conversion tez / ticket" "conversion of arbitrary amount of tez to number of ticket" _test_inline_conversion_42tez              
+;  Atom.make_test "Conversion ticket / tez" "conversion of 1 ticket into tez" _test_inline_conversion_chusai_1mutez      
+;  Atom.make_test "Conversion ticket / tez" "conversion of necessary nb of ticket into 1 tez" _test_inline_conversion_chusai_tez         
+;  Atom.make_test "Mint Origintation" "Test storage of Mint smart contract" _test_mint_origination                     
+;  Atom.make_test "Mint of ticket" "Mint of a ticket, check of balances" _test_mint_first_ticket                    
+// ;  Atom.make_test "Test avec erreur" "Ceci est la description" (fun () -> Atom.fail "Erreur ")                    
+;  Atom.make_test "Mint fails : less than min" "Fail to mint because amount sent is not enough" _test_mint_first_ticket_mutez 
+;  Atom.make_test "Mint fails : 0 fund" "Fail to mint because no fund is sent" _test_mint_first_ticket_0tez               
+;  Atom.make_test "Mint and redeem a ticket" "A ticket is mint, then redeemed at same mint" _test_mint_and_redeem                      
+;  Atom.make_test "Redeem fail : 0 value" "Fails to redeem a 0-value ticket" _test_redeem_0value_ticket                 
+;  Atom.make_test "Reddem fail : wrong mint" "Mint at mint 1, but try to redeem at other mint 2" _test_redeem_at_wrong_mint               
+]
+
+(* a test suite only used to illustrate what happens to the runner when a test fails*)
+let suite2 = Atom.make_suite
+"Test suite with artificial error to illustrate runner functionnality"
+[  Atom.make_test "Conversion tez / ticket" "conversion of mutez to number of ticket"  _test_inline_conversion_mutez           
+;  Atom.make_test "Conversion tez / ticket" "conversion of arbitrary amount of tez to number of ticket" _test_inline_conversion_42tez                  
+;  Atom.make_test "Test avec erreur" "Ceci est la description" (fun () -> Atom.fail "Erreur ")                                
+;  Atom.make_test "Redeem fail : 0 value" "Fails to redeem a 0-value ticket" _test_redeem_0value_ticket                 
+;  Atom.make_test "Reddem fail : wrong mint" "Mint at mint 1, but try to redeem at other mint 2" _test_redeem_at_wrong_mint               
 ]
 

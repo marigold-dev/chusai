@@ -1,5 +1,5 @@
 COMPILER_ARGS=--protocol ithaca
-LIGO_VERSION=0.41.0
+LIGO_VERSION=0.43.0
 
 LIGO=docker run --rm -v $(PWD)/layer1:$(PWD)/layer1 -w $(PWD)/layer1 ligolang/ligo:$(LIGO_VERSION)
 # LIGO=ligo

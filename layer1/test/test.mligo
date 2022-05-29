@@ -3,5 +3,5 @@
 
 let test = Atom.run_suites [
     Mint.suite
-  // ; Mint.suite 
+  ; Mint.suite2 
 ]

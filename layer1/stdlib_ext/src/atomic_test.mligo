@@ -1,3 +1,5 @@
+(* types *)
+
 type gas = nat
 
 type failure_reason 
@@ -8,6 +10,8 @@ type status
   = Status_Fail of failure_reason
   | Status_Success of gas
     
+(* Constructors *)
+
 let succeed () = Status_Success 0n
 let fail (msg:string) = Status_Fail (Message msg)
 let start = Status_Success 0n
@@ -52,8 +56,8 @@ let transfer_to_contract (type param) (current:status) (contr : param contract) 
 let assert_  (b:bool) (msg:string)  : status = 
     if b then succeed () else fail msg
 
-let assert (current:status) (b:bool) (msg:string) : status = 
-    and current (assert_ b msg)
+// let assert (current:status) (b:bool) (msg:string) : status = 
+//     and current (assert_ b msg)
 
 let assert_is_ok (current:status) (msg:string) : status = 
     match current with
@@ -79,33 +83,42 @@ let equals_ (type a) (actual : a) (expected : a) : bool =
 let assert_equals_ (type a) (actual : a) (expected : a)  (msg:string) : status =
   assert_ (equals_ actual expected) msg
 
-let assert_equals (type a) (current:status)  (actual : a) (expected : a)  (msg:string) : status =
-    and current (assert_equals_  actual expected msg)
+// let assert_equals (type a) (current:status)  (actual : a) (expected : a)  (msg:string) : status =
+//     and current (assert_equals_  actual expected msg)
 
 let assert_cond_ (type a) (actual : a) (predicate : a -> bool)  (msg:string) : status =
     assert_ (predicate actual) msg
 
-let assert_cond (type a) (current:status)  (actual : a) (predicate : a -> bool)  (msg:string) : status =
-    and current (assert_cond_  actual predicate msg)
+// let assert_cond (type a) (current:status)  (actual : a) (predicate : a -> bool)  (msg:string) : status =
+//     and current (assert_cond_  actual predicate msg)
 
+(* ********************************** *)
 (* RUNNER *)
 
+(* types *)
+(* Constructors are provided, should not be created/deconstructed directly *)
+
+(* a test to be run *)
 type test = { 
-  name: string
+  name: string 
 ; desc: string
 ; action : (unit -> status)
 }
 
+(* a list of test to be run *)
 type test_suite = {
   suite_name: string
 ; tests: test list
 }
 
+(* the result of a test *)
 type test_result = {
   test_name: string
 ; test_desc: string
 ; test_result: status
 }
+
+(* Constructors *)
 
 let make_test (name:string) (desc:string) (action:unit -> status) = {
   name = name
@@ -118,36 +131,23 @@ let make_suite (name:string) (tests: test list) = {
 ; tests = tests
 }
 
+(* log & pretty printing *)
+
+let log_OK (type a) (msg:string) (info:a) = Test.log ("ok "^msg, info)
+
+let log_KO (type a) (msg:string) (info:a) = Test.log ("KO "^msg, info)
+
+let pp_test_result ({ test_name; test_desc; test_result }:test_result) = 
+  match test_result with 
+  | Status_Success g -> log_OK ("   " ^test_name ^ " - "^ test_desc) g
+  | Status_Fail reason -> log_KO ("-> " ^test_name^" - " ^ test_desc) reason
+
+(* running a test *)    
+
 let perform_test ({ name; desc; action }:test) = 
   let result = action () in 
   { test_name = name; test_desc = desc; test_result = result }
 
-let pp_test_result ({ test_name; test_desc; test_result }:test_result) = 
-  match test_result with 
-  | Status_Success g -> Test.log ("✅ "^ test_name ^ " - "^ test_desc, g)
-  // | Status_Fail_exec error -> Test.log ("❌ "^ test_name ^" - "^ test_desc, error)
-  | Status_Fail reason -> Test.log ("❌ " ^ test_name^" - " ^ test_desc, reason)
-
-
-let run_tests_ (type a) (combine:a*a -> a) (seed:a) (tests:(unit -> a) list)  =
-  let results = List.map (fun (t:unit -> a) -> t ()) tests in
-  begin
-      Test.log results;
-      List.fold_left combine seed results
-  end
-
-let run_tests_bool (tests:(unit -> bool) list) = 
-  run_tests_ 
-    (fun (a,b:bool*bool) -> a && b) 
-    true 
-    tests
-
-// let run_tests (tests:(unit -> status) list) = run_tests_ 
-//     (fun (a,b:status*status) -> and a b) 
-//     (succeed ()) 
-//     tests
-    
-    
 let run_test_suite (suite: test_suite) = 
   List.fold_left 
     (fun (flag, test : bool * test ) -> 
@@ -164,8 +164,8 @@ let run_suites (suites: test_suite list) =
       begin
         let result = run_test_suite suite in 
         let _ = 
-          if result then Test.log("❌ " ^ suite.suite_name)
-          else Test.log("✅  " ^ suite.suite_name) 
+          if result then (log_KO suite.suite_name "Has failed test(s)")
+          else (log_OK suite.suite_name "All tests passed")
         in
         flag || result
        end
