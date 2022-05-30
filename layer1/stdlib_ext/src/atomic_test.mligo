@@ -56,9 +56,6 @@ let transfer_to_contract (type param) (current:status) (contr : param contract) 
 let assert_  (b:bool) (msg:string)  : status = 
     if b then succeed () else fail msg
 
-// let assert (current:status) (b:bool) (msg:string) : status = 
-//     and current (assert_ b msg)
-
 let assert_is_ok (current:status) (msg:string) : status = 
     match current with
     | Status_Fail _ -> fail msg
@@ -80,17 +77,12 @@ let assert_rejected_at (current:status) (addr:address) (msg:string) : status =
 let equals_ (type a) (actual : a) (expected : a) : bool = 
     Test.michelson_equal (Test.compile_value actual) (Test.compile_value expected)
 
-let assert_equals_ (type a) (actual : a) (expected : a)  (msg:string) : status =
+let assert_equals (type a) (actual : a) (expected : a)  (msg:string) : status =
   assert_ (equals_ actual expected) msg
 
-// let assert_equals (type a) (current:status)  (actual : a) (expected : a)  (msg:string) : status =
-//     and current (assert_equals_  actual expected msg)
 
-let assert_cond_ (type a) (actual : a) (predicate : a -> bool)  (msg:string) : status =
+let assert_cond (type a) (actual : a) (predicate : a -> bool)  (msg:string) : status =
     assert_ (predicate actual) msg
-
-// let assert_cond (type a) (current:status)  (actual : a) (predicate : a -> bool)  (msg:string) : status =
-//     and current (assert_cond_  actual predicate msg)
 
 (* ********************************** *)
 (* RUNNER *)
