@@ -3,7 +3,6 @@ build: src/wallet_sc.mligo
 
 test:
 		$(LIGO_TEST) stdlib_ext/test/test_main.mligo
-		$(LIGO_TEST) wallet/test/test_main.mligo
 
 metrics:
 		$(LIGO_TEST) wallet/metrics/metrics.mligo

@@ -74,6 +74,14 @@ let assert_rejected_at (current:status) (addr:address) (msg:string) : status =
     let predicate (e:test_exec_error) = match e with Rejected (_, contr_rejecting) -> addr = contr_rejecting |_ -> false in
     assert_exec_error current predicate msg
 
+let assert_rejected_with_error (current:status) (expected_error:michelson_program) (msg:string) = 
+  let predicate (e:test_exec_error) = 
+    match e with  
+    | Rejected (error , _) -> error = expected_error
+    | _ -> false
+  in
+  assert_exec_error current predicate msg
+
 let equals_ (type a) (actual : a) (expected : a) : bool = 
     Test.michelson_equal (Test.compile_value actual) (Test.compile_value expected)
 

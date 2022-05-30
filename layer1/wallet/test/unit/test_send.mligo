@@ -2,6 +2,7 @@
 #include "../../src/wallet_sc.mligo"
 #include "fakes.mligo"
 #include "tools.mligo"
+#import "../../../stdlib_ext/src/atomic_test.mligo" "Atom"
 
 (* Tests for wallet_sc/send *)
 
@@ -12,8 +13,8 @@ type main_send_test_props = {
 
 let run_main_send_test
     (wallet_ticket : chusai_ticket option)
-    (body : wallet_parameter contract -> chusai_ticket_storage -> test_exec_result list)  
-    (run_assertions : test_exec_result list -> main_send_test_props -> unit) = 
+    (body : wallet_parameter contract -> chusai_ticket_storage -> Atom.status)  
+    (run_assertions : Atom.status -> main_send_test_props -> Atom.status) = 
 
   let bridge_initial_storage = {
     tickets = (None : chusai_ticket option);
@@ -33,43 +34,44 @@ let run_main_send_test
   let wallet_contract = Test.to_contract wallet_type_address in
 
   let wallet_storage_before_body = Test.get_storage wallet_type_address in
-  let exec_results = body wallet_contract wallet_initial_storage.ticket_storage in
+  let exec_result = body wallet_contract wallet_initial_storage.ticket_storage in
 
   let wallet_storage = Test.get_storage wallet_type_address in
   let bridge_storage = Test.get_storage bridge_type_address in
 
-  let _ = run_assertions exec_results
+  run_assertions exec_result
     { wallet_storage = wallet_storage; 
       bridge_storage = bridge_storage;
-    } in
-  unit
+    } 
  
-let test_Wallet_sc_sending =
+let _test_Wallet_sc_sending () =
    let amount_to_deposit = 10n in
    let wallet_ticket = Some (create_ticket dummy_payload amount_to_deposit) in
    run_main_send_test 
       wallet_ticket
       (fun (contr: wallet_parameter contract) (ticket : chusai_ticket_storage) ->
-        [Test.transfer_to_contract contr Send 0tez])
-      (fun (exec_result:test_exec_result list) ({wallet_storage;bridge_storage} : main_send_test_props) -> 
-        let _ = TestExt.assert_equals (Wallet.extract_ticket_from_storage  wallet_storage) 0n in
-        let _ = TestExt.assert_equals (Bridge.extract_ticket_from_storage  bridge_storage) amount_to_deposit in
-        unit )
+        Atom.transfer_to_contract_ contr Send 0tez)
+      (fun (result : Atom.status) ({wallet_storage;bridge_storage} : main_send_test_props) -> 
+        Atom.and_list
+        [ Atom.assert_is_ok result ""
+        ; Atom.assert_equals (Wallet.extract_ticket_from_storage  wallet_storage) 0n ""
+        ; Atom.assert_equals (Bridge.extract_ticket_from_storage  bridge_storage) amount_to_deposit ""
+        ])
  
-let test_Wallet_sc_sending_when_storage_is_none =
+let _test_Wallet_sc_sending_when_storage_is_none () =
    run_main_send_test 
      (None : chusai_ticket option)
      (fun (contr: wallet_parameter contract) (ticket : chusai_ticket_storage) ->
-        [Test.transfer_to_contract contr Send 0tez])
-     (fun (exec_results : test_exec_result list) ({wallet_storage;bridge_storage} : main_send_test_props) -> 
-        let _ = 
-          TestExt.assert_cond 
-            exec_results 
-            (fun (results : test_exec_result list) -> 
-              let expected_error : michelson_program = Test.compile_value "wallet_sc:No ticket found in storage" in 
-              match results with 
-                [Fail (Rejected (error , _))] -> if error = expected_error then true else false
-                | _ -> false ) in
-        let _ = TestExt.assert_equals (Wallet.extract_ticket_from_storage  wallet_storage) 0n in
-        let _ = TestExt.assert_equals (Bridge.extract_ticket_from_storage bridge_storage) 0n in 
-        unit )
+        Atom.transfer_to_contract_ contr Send 0tez)
+     (fun (result : Atom.status) ({wallet_storage;bridge_storage} : main_send_test_props) -> 
+        Atom.and_list
+        [ Atom.assert_rejected_with_error result (Test.compile_value "wallet_sc:No ticket found in storage") ""
+        ; Atom.assert_equals (Wallet.extract_ticket_from_storage wallet_storage) 0n ""
+        ; Atom.assert_equals (Bridge.extract_ticket_from_storage bridge_storage) 0n ""
+        ])
+
+let suite = Atom.make_suite
+"Wallet_sc: Test suite for Send endpoint"
+[ Atom.make_test "Send ok" "sends a simple ticket"  _test_Wallet_sc_sending  
+; Atom.make_test "Send fail" "fails if no ticket" _test_Wallet_sc_sending_when_storage_is_none
+]
