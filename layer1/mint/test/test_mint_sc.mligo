@@ -186,8 +186,8 @@ let _test_mint_and_redeem () =
     (* redeeming *)
     let status = redeem_  {wallet = wallet ; amount_ = 0tz ; mint = mint.addr}  status in
     (* asserts *)
-    Atom.and_list [
-       Atom.assert_is_ok status "Redeem transaction should be OK" 
+    Atom.and_list 
+    [  Atom.assert_is_ok status "Redeem transaction should be OK" 
     ;  Atom.assert_  (Stdlib.OptionExt.is_none (Test.get_storage wallet.taddr)) "there should be no ticket left in wallet storage" 
     ;  Atom.assert_  ((Test.get_balance mint.addr) = 0tz) "mint should have nothing left" 
     ;  Atom.assert_  ((Test.get_balance wallet.addr) = 100tz) "wallet should have gotten xtz back"
@@ -264,7 +264,6 @@ let suite = Atom.make_suite
 ;  Atom.make_test "Conversion ticket / tez" "conversion of necessary nb of ticket into 1 tez" _test_inline_conversion_chusai_tez         
 ;  Atom.make_test "Mint Origintation" "Test storage of Mint smart contract" _test_mint_origination                     
 ;  Atom.make_test "Mint of ticket" "Mint of a ticket, check of balances" _test_mint_first_ticket                    
-// ;  Atom.make_test "Test avec erreur" "Ceci est la description" (fun () -> Atom.fail "Erreur ")                    
 ;  Atom.make_test "Mint fails : less than min" "Fail to mint because amount sent is not enough" _test_mint_first_ticket_mutez 
 ;  Atom.make_test "Mint fails : 0 fund" "Fail to mint because no fund is sent" _test_mint_first_ticket_0tez               
 ;  Atom.make_test "Mint and redeem a ticket" "A ticket is mint, then redeemed at same mint" _test_mint_and_redeem                      
@@ -277,7 +276,7 @@ let suite2 = Atom.make_suite
 "Test suite with artificial error to illustrate runner functionnality"
 [  Atom.make_test "Conversion tez / ticket" "conversion of mutez to number of ticket"  _test_inline_conversion_mutez           
 ;  Atom.make_test "Conversion tez / ticket" "conversion of arbitrary amount of tez to number of ticket" _test_inline_conversion_42tez                  
-;  Atom.make_test "Test avec erreur" "Ceci est la description" (fun () -> Atom.fail "Erreur ")                                
+;  Atom.make_test "Failing test" "This test artificially fails, just to illustrate how the runners works." (fun () -> Atom.fail "Erreur ")                                
 ;  Atom.make_test "Redeem fail : 0 value" "Fails to redeem a 0-value ticket" _test_redeem_0value_ticket                 
 ;  Atom.make_test "Reddem fail : wrong mint" "Mint at mint 1, but try to redeem at other mint 2" _test_redeem_at_wrong_mint               
 ]
