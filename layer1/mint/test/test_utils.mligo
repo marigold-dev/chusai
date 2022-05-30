@@ -61,7 +61,7 @@ let check_ticket (asserts : ticket_asserts) (t : chusai_ticket) =
     begin
         assert_with_errors_opt (fun (a, b : address * address) -> a=b)   asserts.addr addr "compare_tickets : wrong address";
         assert_with_errors_opt (fun (a, b : bytes * bytes) -> a=b)   asserts.payload payload "compare_tickets : wrong payload";
-        assert_with_errors_opt (fun (a, b : nat * nat) -> a=b)   asserts.amount_  total"compare_tickets : wrong amount";
+        assert_with_errors_opt (fun (a, b : nat * nat) -> a=b)   asserts.amount_  total "compare_tickets : wrong amount";
         ticket
     end
 
