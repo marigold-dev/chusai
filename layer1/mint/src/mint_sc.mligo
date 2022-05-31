@@ -1,3 +1,4 @@
+#include "../../commons/chusai_ticket_interface.mligo"
 #include "../../commons/mint_interface.mligo"
 
 (* CONFIGURATION *)
