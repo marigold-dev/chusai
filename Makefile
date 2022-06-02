@@ -51,13 +51,18 @@ endef
 
 build: build-layer1
 
-build-layer1: build-layer1-bootstrap
+build-layer1: build-layer1-bootstrap build-layer1-bridge
 
 # Build layer1/bootstrap
 build-layer1-bootstrap: make-build-dir
 	mkdir -p $(COMPILED_CONTRACTS_DIRECTORY)bootstrap
 	$(call build_contract,layer1/bootstrap/wallet_sc.mligo,bootstrap/wallet_sc)
 	$(call build_contract,layer1/bootstrap/mint_sc.mligo,bootstrap/mint_sc)
+
+# Build layer1/bridge
+build-layer1-bridge: make-build-dir
+	mkdir -p $(COMPILED_CONTRACTS_DIRECTORY)bridge
+	$(call build_contract,layer1/bridge/inbox_sc.mligo,bridge/inbox_sc)
 
 # Run all test-suites
 test: test-layer1
