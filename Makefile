@@ -1,64 +1,79 @@
-COMPILER_ARGS=--protocol ithaca
-LIGO_VERSION=0.41.0
-VERSION := $(shell git describe --always)
-LIGO=docker run --rm -v $(PWD):$(PWD) -w $(PWD) ligolang/ligo:$(LIGO_VERSION)
-export LIGO_BUILD=$(LIGO) compile contract $(COMPILER_ARGS)
-export LIGO_TEST=$(LIGO) run test $(COMPILER_ARGS)
-export LAYER1_BUILD_DIR=_build/layer1
+all: build
 
-.PHONY: build test metrics clean package
+# Environment variables
 
-build: build-layer1 build-layer2
-test: test-layer1 tezt
-metrics: metrics-layer1
+# LIGO compiler version
+LIGO_COMPILER_VERSION:=0.42.1
 
-clean:
-	dune clean
+# Defines the targeted protocol (mainly for the production of Michelson files)
+TEZOS_PROTOCOL:=ithaca
 
-check-lint:
-	dune build @fmt
+# Defines the Tezos's binaries version and provider
+TEZOS_BINARIES_VERSION:=v13.0-1
+TEZOS_BINARIES_REPO:=https://github.com/serokell/tezos-packaging/releases/download/
+TEZOS_BINARIES_URL:=$(TEZOS_BINARIES_REPO)$(TEZOS_BINARIES_VERSION)
 
-lint:
-	dune build @fmt --auto-promote
+# Describes the compilation target. Even though the artefacts produced by Dunes
+# are generated in this directory, it allows the Michelsons files to be located
+# there as well.
+BUILD_DIRECTORY:=_build/
 
-utop:
-	dune utop
+# Where compiled contracts should be moved
+COMPILED_CONTRACTS_DIRECTORY:=$(BUILD_DIRECTORY)contracts/
 
-doc:
-	dune build @doc
+# $GIT_SHORT_HASH returns a short version of the commit hash. It is used to
+# generate a tarball of the compiled Michelsons files.
+GIT_SHORT_HASH := $(shell git describe --always)
 
-build-layer2:
-	dune build
+# Run the Ligo compiler through a Docker image
+LIGO_DOCKER := docker run --rm  -v $(PWD):$(PWD) -w $(PWD) ligolang/ligo:$(LIGO_COMPILER_VERSION)
 
+# Functions
 
+# Transforms [x] into [_build/x.tez].
+define make_target
+  $(strip $(COMPILED_CONTRACTS_DIRECTORY))$(strip $(1)).tez
+endef
+
+# Compiles the file [mligo] given as the 1st argument to the target given as the
+# snd argument.
+define build_contract
+  $(LIGO_DOCKER) compile contract $(1) --protocol $(TEZOS_PROTOCOL) > $(call make_target, $(2))
+endef
+
+# Run a test file
+define test_ligo
+  $(LIGO_DOCKER) run test $(1) --protocol $(TEZOS_PROTOCOL)
+endef
+
+# Rules
+.PHONY: test build michelson-tarball
+
+build: build-layer1
+
+build-layer1: build-layer1-bootstrap
+
+# Build layer1/bootstrap
+build-layer1-bootstrap: make-build-dir
+	mkdir -p $(COMPILED_CONTRACTS_DIRECTORY)bootstrap
+	$(call build_contract,layer1/bootstrap/wallet_sc.mligo,bootstrap/wallet_sc)
+	$(call build_contract,layer1/bootstrap/mint_sc.mligo,bootstrap/mint_sc)
+
+# Run all test-suites
+test: test-layer1
+
+# Run Layer-1 test-suites
 test-layer1:
-	$(LIGO_TEST) layer1/stdlib_ext/test/test_main.mligo
-	$(LIGO_TEST) layer1/wallet/test/test_main.mligo
-	$(LIGO_TEST) layer1/mint/test/test_mint_sc.mligo
+	$(call test_ligo,layer1/test/test.mligo)
 
-build-layer1:
-	$(LIGO_BUILD) layer1/wallet/src/wallet_sc.mligo > $(LAYER1_BUILD_DIR)/wallet_sc.tez
-	$(LIGO_BUILD) layer1/mint/src/mint_sc.mligo > $(LAYER1_BUILD_DIR)/mint_sc.tez
+michelson-tarball:
+	tar czvf $(BUILD_DIRECTORY)contracts-$(GIT_SHORT_HASH).tar.gz \
+	   -C $(COMPILED_CONTRACTS_DIRECTORY) .
 
-metrics-layer1:
-	$(LIGO_TEST) layer1/wallet/metrics/metrics.mligo
-
-
-package:
-	tar czvf _build/chusai-layer1-$(VERSION).tar.gz _build/layer1/*.tez
-
-tezos-node:
-	wget https://github.com/serokell/tezos-packaging/releases/download/v13.0-1/tezos-node
-	chmod +x tezos-node
-
-tezos-client:
-	wget https://github.com/serokell/tezos-packaging/releases/download/v13.0-1/tezos-client
-	chmod +x tezos-client
-
-fetch-binaries: tezos-node tezos-client
-
-tezt: build
-	dune exec integration_tests/tezt/tezt_chusai.exe -- --verbose --regression-dir integration_tests/tezt/_regressions
+# Chore rules
+# A set of rules that are related to the maintenance of the project,
+# chores. (Recovering artefacts, packages from OPAM etc.)
+.PHONY: opam-deps opam-dev-deps get-tezos-binaries make-build-dir
 
 # Get the pinned OPAM deps (and pinned ones)
 opam-deps:
@@ -68,3 +83,16 @@ opam-deps:
 # Get the developping environment
 opam-dev-deps:
 	opam install utop merlin ocamlformat ocp-indent -y
+
+# Retreives [tezos-node] and [tezos-client] (into [_build/])
+get-tezos-binaries: make-build-dir
+	wget -O $(BUILD_DIRECTORY)tezos-node $(TEZOS_BINARIES_URL)/tezos-node
+	wget -O $(BUILD_DIRECTORY)tezos-client $(TEZOS_BINARIES_URL)/tezos-client
+	chmod +x $(BUILD_DIRECTORY)tezos-node
+	chmod +x $(BUILD_DIRECTORY)tezos-client
+
+# Initialize the build directory
+# (Even it should be done via `dune`)
+make-build-dir:
+	mkdir -p $(BUILD_DIRECTORY)
+	mkdir -p $(COMPILED_CONTRACTS_DIRECTORY)
