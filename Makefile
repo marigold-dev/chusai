@@ -12,12 +12,6 @@ build: build-layer1 build-layer2
 test: test-layer1 tezt
 metrics: metrics-layer1
 
-dev-setup:
-	opam update
-	opam switch create . ocaml-base-compiler.4.14.0 --deps-only -y
-	eval $(opam env)
-	opam install tezt -y
-
 clean:
 	dune clean
 
@@ -65,3 +59,12 @@ fetch-binaries: tezos-node tezos-client
 
 tezt: build
 	dune exec integration_tests/tezt/tezt_chusai.exe -- --verbose --regression-dir integration_tests/tezt/_regressions
+
+# Get the pinned OPAM deps (and pinned ones)
+opam-deps:
+	opam install . --deps-only --with-doc --with-test -y
+	opam install tezt -y
+
+# Get the developping environment
+opam-dev-deps:
+	opam install utop merlin ocamlformat ocp-indent -y
