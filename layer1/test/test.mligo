@@ -9,7 +9,6 @@
 
 let test = Atom.run_suites [
     Mint.suite
-  // ; Mint.suite2 
   ; Wallet_mint_xtz.suite
   ; Wallet_redeem_xtz.suite
   ; Wallet_send.suite

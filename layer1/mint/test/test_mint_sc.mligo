@@ -271,13 +271,4 @@ let suite = Atom.make_suite
 ;  Atom.make_test "Reddem fail : wrong mint" "Mint at mint 1, but try to redeem at other mint 2" _test_redeem_at_wrong_mint               
 ]
 
-(* a test suite only used to illustrate what happens to the runner when a test fails*)
-let suite2 = Atom.make_suite
-"Mint_sc: Test suite with artificial error to illustrate runner functionnality"
-[  Atom.make_test "Conversion tez / ticket" "conversion of mutez to number of ticket"  _test_inline_conversion_mutez           
-;  Atom.make_test "Conversion tez / ticket" "conversion of arbitrary amount of tez to number of ticket" _test_inline_conversion_42tez                  
-;  Atom.make_test "Failing test" "This test artificially fails, just to illustrate how the runners works." (fun () -> Atom.fail "Error")                                
-;  Atom.make_test "Redeem fail : 0 value" "Fails to redeem a 0-value ticket" _test_redeem_0value_ticket                 
-;  Atom.make_test "Reddem fail : wrong mint" "Mint at mint 1, but try to redeem at other mint 2" _test_redeem_at_wrong_mint               
-]
 
