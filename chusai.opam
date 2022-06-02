@@ -1,12 +1,14 @@
 description: """
-You should seriously take the time to write a comprehensive
-description explaining that this OPAM file is essentially
-present to facilitate the creation of the development switch.
+‍Optimistic rollups are a kind of Layer 2 that validate transactions on behalf of the main
+chain. They are called optimistic, because they work off the assumption that validation
+is correct until explicitly proven otherwise.
+Even though Optimistic rollups don’t lead to faster finality, they increase the throughput
+(TPS) significantly.
 """
 
 opam-version: "2.0"
 version: "dev"
-synopsis: "We should write a longer synopsis"
+synopsis: "Smart-contract rollups that runs in smart-contracts"
 maintainer: "contact@marigold.dev"
 authors: [ "Marigold <contact@marigold.dev>" ]
 
