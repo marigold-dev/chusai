@@ -69,13 +69,13 @@ let _test_ListExt_intercalate () =
 
 let suite = Atom.make_suite
   "stdlib: Test suite for ListExt"
-  [ Atom.make_test "ListExt"  "" _test_ListExt_reverse 
-  ; Atom.make_test "ListExt" "" _test_ListExt_concat 
-  ; Atom.make_test "ListExt" "" _test_ListExt_join 
-  ; Atom.make_test "ListExt" "" _test_ListExt_bind 
-  ; Atom.make_test "ListExt" "" _test_ListExt_find 
-  ; Atom.make_test "ListExt" "" _test_ListExt_filter 
-  ; Atom.make_test "ListExt" "" _test_ListExt_cat_options 
-  ; Atom.make_test "ListExt" "" _test_ListExt_sequence_options 
-  ; Atom.make_test "ListExt" "" _test_ListExt_intercalate 
+  [ Atom.make_test "ListExt" "simple tests: reverse" _test_ListExt_reverse 
+  ; Atom.make_test "ListExt" "simple tests: concat" _test_ListExt_concat 
+  ; Atom.make_test "ListExt" "simple tests: join" _test_ListExt_join 
+  ; Atom.make_test "ListExt" "simple tests: bind" _test_ListExt_bind 
+  ; Atom.make_test "ListExt" "simple tests: find" _test_ListExt_find 
+  ; Atom.make_test "ListExt" "simple tests: filter" _test_ListExt_filter 
+  ; Atom.make_test "ListExt" "simple tests: cat_options" _test_ListExt_cat_options 
+  ; Atom.make_test "ListExt" "simple tests: sequence options" _test_ListExt_sequence_options 
+  ; Atom.make_test "ListExt" "simple tests intercalate" _test_ListExt_intercalate 
   ]
