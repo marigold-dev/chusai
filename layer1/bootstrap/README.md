@@ -1,78 +1,32 @@
-# Documentation
-## Layer1
-### Wallet Smart Contract
+# Bootstrapping
 
-Wallet smart contract, implemented in `wallet_sc`, provides a way for participants to interact with rollup. Its functions includes minting a ticket via mint smart contract, implemented in `mint_sc`, sending a ticket to bridge and redeem xtz from `mint_sc`.
+> **Note** `Bootstrap` contains the set of contracts whose role is to _mint_ and
+> provision a _rollup_.
 
-#### Minting a ticket
-In Tezos, only tickets with the same *kind* can be joined(`join_ticket`) together. The *kind* consists of payload and ticketer. Therefore, we rely on `mint_sc` to create tickets with the same kind. `wallet_sc` allows participants to easily mint without worried details. When participants transfer xtz and call the entry of `wallet_sc` to mint a ticket, `wallet_sc` acts as a proxy to transfer xtz and call `mint_sc` to create a ticket. `mint_sc` will send a ticket back to `wallet_sc` and `wallet_sc` will store in its storage. There are two entrypoints related mint in `wallet_sc`:
+## Global workflow
 
-- `Mint_xtz`: For participants to initiate minting a ticket.
-- `Mint_xtz_cb`: The callback function for `mint_sc` to store a ticket in the storage of `wallet_sc`.
-
-```mermaid
-sequenceDiagram
-  actor u  as User
-  
-  rect rgb(100, 100, 100, .1)
-  note right of u: layer 1
-  
-  participant w as Wallet_sc
-  participant m as Mint_sc
-  
-  autonumber
-  
-  u ->> w : Mint_xtz entry with XTZ
-  w ->> m : Mint entry with xtz
-  m ->> w : Mint_xtz_cb with a minted ticket
-  end
-```
-
-
-#### Sending a ticket
-When participants perform a function of sending a ticket. The ticket in storage of `wallet_sc` will be sent to bridge. There is a entrypoint:
-
-- `Send`: For participants to initiate sending a ticket to bridge.
+1. the `user` call the endpoint `Request_mint` of `Wallet_sc` with a certain amount of
+   `xtz`.
+2. `Wallet_sc` call the `Mint` endpoint of `Mint_sc` with the amount of `xtz` it
+   receive
+3. `Mint_sc` creates a ticket with that amount and resend it to 
+   `Wallet_sc` by calling the `retreive_ticket` endpoint of `Wallet_sc`
+4. `Wallet_sc` send to `Inbox_sc` (a `deposit_ticket`) which stores it into the inbox storages
 
 ```mermaid
-sequenceDiagram
-  actor u as User
+flowchart LR
 
-  rect rgb(100, 100, 100, .1)
-  note right of u: layer 1
-  
-  participant w as Wallet_sc
-  participant b as Bridge_sc
+    subgraph Bootstrap
+        User
+        Wallet_sc
+        Mint_sc
+    end
+    subgraph Bridge
+        Inbox_sc
+    end
 
-  autonumber
-  
-   u ->> w : Send entry
-   w ->> b : Deposit entry with ticket
-
-   end
-```
-
-### Redeem XTZ
-Participants can redeem XTZ from `mint_sc`. Once participants call `wallet_sc` to redeem, `wallet_sc` send a ticket to `mint_sc` and `mint_sc` send XTZ back to `wallet_sc`. There are two entrypoints related redeem in `wallet_sc`:
-
-- `Redeem_xtz`: For participants to initiate redeeming a ticket from `wallet_sc`.
-- `Redeem_xtz_cb`: The callback function for `mint_sc` to credit xtz in balance of `wallet_sc`
-
-
-```mermaid
-sequenceDiagram
-  actor u  as User
-  
-  rect rgb(100, 100, 100, .1)
-  note right of u: layer 1
-  
-  participant w as Wallet_sc
-  participant m as Mint_sc
-  
-  autonumber
-  
-  u ->> w : Redeem_xtz entry with a ticket
-  w ->> m : Redeem entry
-  m ->> w : Redeem_xtz_cb with XTZ
-  end
+    User-- 1: mint -->Wallet_sc
+    Wallet_sc-- 2: mint -->Mint_sc
+    Mint_sc-- 3: store -->Wallet_sc
+    Wallet_sc-- 4: deposit --> Inbox_sc
 ```
