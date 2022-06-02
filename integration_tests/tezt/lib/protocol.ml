@@ -66,7 +66,7 @@ let node_name = function
 
 let next_protocol = function
   | Ithaca -> Some Jakarta
-  | Jakarta -> None
+  | Jakarta -> Some Alpha
   | Alpha -> None
 ;;
 

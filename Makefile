@@ -65,7 +65,7 @@ build-layer1-bridge: make-build-dir
 	$(call build_contract,layer1/bridge/inbox_sc.mligo,bridge/inbox_sc)
 
 # Run all test-suites
-test: test-layer1
+test: test-layer1 tezt
 
 # Run Layer-1 test-suites
 test-layer1:
@@ -74,6 +74,10 @@ test-layer1:
 michelson-tarball:
 	tar czvf $(BUILD_DIRECTORY)contracts-$(GIT_SHORT_HASH).tar.gz \
 	   -C $(COMPILED_CONTRACTS_DIRECTORY) .
+
+tezt: build
+	dune exec integration_tests/tezt/tezt_chusai.exe -- --verbose \
+		--regression-dir integration_tests/tezt/_regressions
 
 # Chore rules
 # A set of rules that are related to the maintenance of the project,

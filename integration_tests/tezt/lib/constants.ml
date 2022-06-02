@@ -1,2 +1,2 @@
-let tezos_client = "./tezos-client"
-let tezos_node = "./tezos-node"
+let tezos_client = "./_build/tezos-client"
+let tezos_node = "./_build/tezos-node"
