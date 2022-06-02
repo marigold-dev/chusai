@@ -1,52 +1,103 @@
-#include "../../commons/chusai_ticket_interface.mligo"
-#include "../../commons/mint_interface.mligo"
+(* MIT License
 
-(* CONFIGURATION *)
-(*
-    Configuration of the mint.
-    Parametrized value are in storage : they should be fixed at origination
-*)
-type storage = {
-    (* the payload, fixed for the mint *)
-    payload : chusai_payload;
-    (* minimum amount accepted by the mint. *)
-    minimum_amount : tez
+   Copyright (c) 2022 Marigold <contact@marigold.dev>
+
+   Permission is hereby granted, free of charge, to any person obtaining a copy
+   of this software and associated documentation files (the "Software"), to deal in
+   the Software without restriction, including without limitation the rights to
+   use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of
+   the Software, and to permit persons to whom the Software is furnished to do so,
+   subject to the following conditions:
+
+   The above copyright notice and this permission notice shall be included in all
+   copies or substantial portions of the Software.
+
+   THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+   IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+   FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+   AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+   LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+   OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+   SOFTWARE. *)
+
+
+#import "../common/helper.mligo" "Helper"
+#import "../common/ticket/chusai_ticket.mligo" "Ticket"
+#import "../common/mint_sc_entrypoints.mligo" "Entrypoints"
+
+(** Alias for entrypoint.  *)
+type entrypoint = Entrypoints.t
+(* FIXME: refer to Ligo Team
+
+   It is (IMHO) a little bit weird that [type t = k] introduces
+   all constructors into the local scope. For me, type aliases
+   should not introduces more than the fresh defined alias
+   in the scope. In OCaml, there is a shortcut for reintroducing
+   value constructors in the scope, using this kind of syntax:
+
+  ```
+  type t = O.t =
+    | Foo of int
+    | Bar of float
+  ```
+  (supposing that [O.t] is defined as [type t = Foo of int | Bar of int]). *)
+
+(** Initiation of the state. It should be initiated at the origination of
+    the contract. A configuration is a [storage] that does not change. A constant
+    [storage]. It is only used for accepting one particular kind of payload and
+    a minimal amount of XTZ for the participation. *)
+type configuration = {
+  fixed_payload: Ticket.payload
+; minimal_accepted_quantity: tez
 }
 
-(* a tax rate for amount kept during withdrawal, in %*)
-let tax_rate = 15n // %
+(** Create a ticket with the [fixed_payload], the function will fail if the
+    quantity si lower than the [minimal_accepted_quantity] *)
+let create_ticket (config : configuration) (quantity: tez) : Ticket.t =
+  if quantity >= config.minimal_accepted_quantity
+  then
+    let quantity_nat = Helper.tez_to_nat quantity in
+    let payload = config.fixed_payload in
+    Ticket.create_ticket payload quantity_nat
+  else
+    failwith "mint_sc: the given quantity is lower than the minimal accepted amount."
 
-(* XTZ <-> Chusai ticket amount*)
-let xtz_to_chusai_amount (xtz : tez) : nat = xtz /1mutez
-let chusai_amount_to_xtz (chusai_amount : nat) : tez = chusai_amount * 1mutez 
-
-
-(* MINTING *)
-let create_chusai_ticket (payload : chusai_payload) : chusai_ticket=
-    let n : nat = xtz_to_chusai_amount Tezos.amount  in
-    create_ticket payload n
-
-let mint (chusai_ticket_contr, store : chusai_ticket contract * storage) : operation list =
-    let _check = if Tezos.amount < store.minimum_amount then failwith "mint_sc : no ticket for less than minimum amount" in
-    let ticket = create_chusai_ticket store.payload in
-    let op = Tezos.transaction ticket 0tez chusai_ticket_contr in
-    [op]
-
-(* REDEEMING *)
-(* checks the ticket's kind, and refuses 0-value tickets *)
-let redeem (ticket, unit_callback, store : chusai_ticket * unit contract * storage) : operation list =
-    let (addr, (payload, total)), _ticket = read_ticket ticket in
-    let _check = if total = 0n then failwith "mint_sc : 0-value ticket" in
-    let _check = if addr <> Tezos.self_address then failwith "mint_sc : wrong ticketer" in
-    let _check = if payload <> store.payload then failwith "mint_sc : wrong payload" in
-    let op = Tezos.transaction unit (chusai_amount_to_xtz total) unit_callback in
-    [op]
-
-(* ENDPOINTS *)
-let main (action, store : mint_parameter * storage) : operation list * storage = 
-    (match action with
-          Mint chusai_ticket_contr -> mint (chusai_ticket_contr, store)
-        | Redeem (ticket, unit_callback) -> redeem (ticket, unit_callback, store))
-    , store
+(** [mint caller payload qty] creates a Chusai_ticket with the given payload and
+    the given quantity and resend-it (as a transaction) to the caller. *)
+let mint
+     (config: configuration)
+     (caller_contract: Ticket.t contract)
+     (quantity: tez) : operation list =
+  let created_ticket = create_ticket config quantity in
+  let operation = Tezos.transaction created_ticket 0tez caller_contract in
+  [ operation ]
 
 
+(** Main is the entrypoint of [min_sc] contract. *)
+let main
+    (action, config: entrypoint * configuration) : operation list * configuration
+  =
+  let operations =
+    match action with
+    | Mint_mint caller_contract ->
+      let quantity = Tezos.amount in
+      mint config caller_contract quantity
+  in (operations, config)
+(** FIXME: refer to Ligo Team
+
+    We cannot pattern-match on distant value constructor. ie:
+    ```
+    let operations =
+      match actions with
+      | Endpoints.Mint ... -> ...
+    in (operations, x)
+    ```
+   Will fail with this error:
+
+   ```
+   Ill-formed pattern matching.
+   At this point, if the pattern is complete, an arrow '->' is expected,
+   followed by an expression.
+   ```
+
+   Which strange since the pattern seems well formed. *)
