@@ -15,8 +15,6 @@ build:
 
 test:
 	$(LIGO_TEST) test/test.mligo
-	make -C wallet test
-	make -C mint test
 
 metrics:
 	make -C wallet metrics
