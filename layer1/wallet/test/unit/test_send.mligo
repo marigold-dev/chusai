@@ -1,4 +1,3 @@
-#include "../../../stdlib_ext/src/stdlibtestext.mligo"
 #include "../../src/wallet_sc.mligo"
 #include "fakes.mligo"
 #include "tools.mligo"

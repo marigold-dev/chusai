@@ -1,7 +1,6 @@
 #include "../../src/wallet_sc.mligo"
 #include "fakes.mligo"
 #include "tools.mligo"
-#include "../../../stdlib_ext/src/stdlibtestext.mligo"
 #import "../../../stdlib_ext/src/atomic_test.mligo" "Atom"
 
 type main_mint_test_props = {
