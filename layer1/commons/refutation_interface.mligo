@@ -10,7 +10,7 @@ type state =
     | Start  of segment
     | Bsplit of split 
     | Asplit of split 
-    | End    of segment
+    | End    of player * segment
 
 (* storage *)
 type game_id = nat    
@@ -27,5 +27,5 @@ type storage = {
 (* parameter *)
 type refutation_parameter =
     | Choose     of game_id * choice
-    | Split      of game_id * split
+    | Split      of game_id * split * choice
     | Start_game of segment * player * player
