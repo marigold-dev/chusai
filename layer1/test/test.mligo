@@ -6,6 +6,7 @@
 #import "../stdlib_ext/test/test_listext.mligo" "Listext"
 #import "../stdlib_ext/test/test_stringext.mligo" "Stringext"
 #import "../stdlib_ext/test/test_optionext.mligo" "Optionext"
+#import "../bridge/test/test_inbox_sc.mligo" "Inbox"
 
 let test = Atom.run_suites [
     Mint.suite
@@ -15,4 +16,5 @@ let test = Atom.run_suites [
   ; Listext.suite
   ; Stringext.suite
   ; Optionext.suite
+  ; Inbox.suite
 ]
