@@ -15,6 +15,15 @@ let _test_ListExt_concat () =
   ; Atom.assert_equals (ListExt.concat [1;2;3] [4;5;6]) ([1;2;3;4;5;6]) ""
   ]
 
+let _test_ListExt_concat_all () = 
+  Atom.and_list
+  [ Atom.assert_equals (ListExt.concat_all [empty_int_list]) (empty_int_list) ""
+  ; Atom.assert_equals (ListExt.concat_all [[1;2;3]]) ([1;2;3]) ""
+  ; Atom.assert_equals (ListExt.concat_all [[1;2;3];empty_int_list]) ([1;2;3]) ""
+  ; Atom.assert_equals (ListExt.concat_all [empty_int_list;[1;2;3]]) ([1;2;3]) ""
+  ; Atom.assert_equals (ListExt.concat_all [[1;2;3];[4;5;6];[7;8;9]]) ([1;2;3;4;5;6;7;8;9]) ""
+  ]
+
 let _test_ListExt_join () = 
   Atom.and_list 
   [ Atom.assert_equals (ListExt.join ([] : int list list)) empty_int_list ""
@@ -71,6 +80,7 @@ let suite = Atom.make_suite
   "stdlib: Test suite for ListExt"
   [ Atom.make_test "ListExt" "simple tests: reverse" _test_ListExt_reverse 
   ; Atom.make_test "ListExt" "simple tests: concat" _test_ListExt_concat 
+  ; Atom.make_test "ListExt" "simple tests: concat_all" _test_ListExt_concat_all
   ; Atom.make_test "ListExt" "simple tests: join" _test_ListExt_join 
   ; Atom.make_test "ListExt" "simple tests: bind" _test_ListExt_bind 
   ; Atom.make_test "ListExt" "simple tests: find" _test_ListExt_find 
