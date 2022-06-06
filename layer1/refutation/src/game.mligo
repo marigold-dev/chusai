@@ -37,8 +37,16 @@ let apply_split (split, choice, game : split * choice *  game) : game =
 
     | _                 -> (failwith "cannot apply split" : game)
     
-let apply_choice (_choice, game : choice * game) : game =
+let apply_choice (choice, game : choice * game) : game =
     match game.state with
-    | Asplit _old_split -> game
-    | Bsplit _old_split -> game
+    | Asplit old_split -> 
+        let segment = Seg.choose (choice, old_split) in 
+        let new_state = End (player_a,segment) in
+        { game with state = new_state}
+
+    | Bsplit old_split -> 
+        let segment = Seg.choose (choice, old_split) in 
+        let new_state = End (player_b,segment) in
+        { game with state = new_state}
+        
     | _                -> (failwith "cannot apply choice" : game)
