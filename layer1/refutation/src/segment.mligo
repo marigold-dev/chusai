@@ -1,5 +1,8 @@
 #include "../../commons/refutation_interface.mligo"
 
+let make_segment (start:hash) (end_:hash) (size:size) =
+    (start,end_,size)
+
 let size (s : segment ) =
     s.2
 
@@ -19,6 +22,3 @@ let check_split_against_segment ((s1,s2),segment : split * segment) : bool =
     && (end_ s1) = (start s2)
     && (size segment) = ((size s1) + (size s2))
     && (end_ segment) <> (end_ s2)    
-
-
- 

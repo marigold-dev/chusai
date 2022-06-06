@@ -3,12 +3,15 @@
 #import "../mint/test/test_mint_sc.mligo" "Mint"
 #import "../wallet/test/unit/suites.mligo" "Wallet"
 #import "../stdlib_ext/test/suites.mligo" "Stdlib_test"
+#import "../refutation/test/test_segment.mligo" "Refutation_segment"
 
 let test = 
   Unit.run_suites 
   ( ListExt.join
     [ Stdlib_test.suites
     ; Wallet.suites
-    ; [ Mint.suite ]
+    ; [ Mint.suite 
+      ; Refutation_segment.suite
+      ]
     ]
   )
