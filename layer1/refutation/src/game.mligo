@@ -18,35 +18,37 @@ let check_player (player, game : player * game) =
     | Asplit _ -> player <> player_b 
     | _        -> true 
 
-let apply_split (split, choice, game : split * choice *  game) : game = 
+let apply_split (split, choice, game : split * choice *  game) : game option = 
     match game.state with
     | Start segment        ->
-        // FIXME no use for 'choice' here, should be an option, checked against None ?
-        let _ = if not (Seg.check_split_against_segment (split, segment)) then failwith "Split incompatible with segment" in
-        {game with state = Bsplit(split)}
+        if not (Seg.check_split_against_segment (split, segment)) 
+        then None
+        else Some {game with state = Bsplit(split)}
 
     | Bsplit old_split -> 
         let segment = Seg.choose (choice,old_split) in
-        let _ = if not (Seg.check_split_against_segment (split, segment)) then failwith "Split incompatible with segment" in
-        {game with state = Asplit(split)}
+        if not (Seg.check_split_against_segment (split, segment)) 
+        then None
+        else Some {game with state = Asplit(split)}
 
     | Asplit old_split -> 
         let segment = Seg.choose (choice,old_split) in
-        let _ = if not (Seg.check_split_against_segment (split, segment)) then failwith "Split incompatible with segment" in
-        {game with state = Bsplit(split)}
+        if not (Seg.check_split_against_segment (split, segment)) 
+        then None
+        else Some {game with state = Bsplit(split)}
 
-    | _                 -> (failwith "cannot apply split" : game)
+    | _ -> None
     
-let apply_choice (choice, game : choice * game) : game =
+let apply_choice (choice, game : choice * game) : game option =
     match game.state with
     | Asplit old_split -> 
         let segment = Seg.choose (choice, old_split) in 
         let new_state = End (player_a,segment) in
-        { game with state = new_state}
+        Some { game with state = new_state}
 
     | Bsplit old_split -> 
         let segment = Seg.choose (choice, old_split) in 
         let new_state = End (player_b,segment) in
-        { game with state = new_state}
-        
-    | _                -> (failwith "cannot apply choice" : game)
+        Some { game with state = new_state}
+
+    | _ -> None
