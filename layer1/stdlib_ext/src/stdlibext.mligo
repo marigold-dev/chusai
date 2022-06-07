@@ -55,10 +55,6 @@ module ListExt =
       let acc (x,ys : (a * a list)) : a list = x :: ys in
       List.fold_right acc left right
 
-    let concat_all (type a) (lists : a list list) = 
-      let aux (i,acc : a list * a list ) = concat i acc in
-      List.fold_right aux lists ([]: a list)
-
     let join (type a) (lists : a list list) : a list =
       let acc (xs, ys : a list * a list) : a list = concat xs ys in
       List.fold_right acc lists ([] : a list)
