@@ -19,17 +19,6 @@ type mint_configuration = Mint.storage
 type mint_entrypoint = Mint_interface.mint_parameter
 
 
-
-(**
-autres scenarios de tests
-
-  1/ deposit raté parce que ticketer different ou payload différent ou les deux différent
-  2/ essayer de deposer des tickets de valeur 0
-  3/ faire 3 déposit avec deux au niveau n et le dernier au niveau n+1
-
-**)
-
-
 let empty_state : inbox_state = {
     rollup_level = 0n
 ;   ticket = None
