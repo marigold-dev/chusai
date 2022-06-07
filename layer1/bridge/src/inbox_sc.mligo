@@ -6,12 +6,16 @@ type message = Inbox.message
 type messages = (nat, message list) big_map
 
 type entrypoint = Inbox.entrypoint
+type ticket_key = {
+  ticketer: address
+; payload: Ticket.chusai_payload
+}
 
 type state = {
   rollup_level: nat
 ; ticket: Ticket.chusai_ticket option
+; fixed_ticket_key: ticket_key
 ; messages: (nat, message list) big_map
-; fixed_payload: bytes
 }
 
 type return = operation list * state
@@ -28,20 +32,23 @@ let push_message (state: state) (message: message) : messages =
   | None -> Big_map.add current_level [ message ] current_messages
   | Some xs -> Big_map.add current_level ( message :: xs ) current_messages
 
+let is_same_ticket_key (k1 : ticket_key) (ticketer, payload : address * Ticket.chusai_payload) : bool =
+  k1.ticketer = ticketer && k1.payload = payload
 
 let deposit (state: state) (owner: address) (ticket: Ticket.chusai_ticket) : return =
-  let (_, (payload, quantity)), fresh_ticket = Ticket.read_ticket ticket in
-  if state.fixed_payload = payload then
-    let message = make_deposit_message owner quantity in
+  let (addr, (payload, quantity)), fresh_ticket = Ticket.read_ticket ticket in
+  if is_same_ticket_key state.fixed_ticket_key (addr,payload) then
     let joined_ticket = 
       match state.ticket with
       | None -> Some fresh_ticket
-      | Some ticket -> Ticket.join_tickets ticket fresh_ticket in
+      | Some ticket -> 
+        Ticket.join_tickets ticket fresh_ticket in
+    let message = make_deposit_message owner quantity
     let new_messages = push_message state message in
     let new_state = { state with ticket = joined_ticket ; messages = new_messages} in
     ([], new_state)
   else
-    failwith "Inbox_sx: The rollup does not support this kind of payload"
+    failwith "Inbox_sc: The rollup does not support this kind of payload"
 
 
 let main (action, state : entrypoint * state) : return =
