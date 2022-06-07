@@ -1,0 +1,6 @@
+(executable
+ (name test_mtm)
+ (modes byte exe)
+ ; (flags
+ ;  (:standard -cclib -static -g))
+ (libraries alcotest qcheck-alcotest mtm containers))

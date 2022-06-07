@@ -1,0 +1,8 @@
+(library
+ (name mtm)
+ (modules_without_implementation hash_algo merklemap)
+ (libraries cryptokit containers bin_prot batteries tezos-base58)
+ ; (flags
+ ;  (:standard -cclib -static -g))
+ (preprocess
+  (pps ppx_deriving.eq ppx_deriving.show)))
