@@ -8,15 +8,7 @@
 #import "../../stdlib_ext/src/atomic_test.mligo" "Atom"
 #import "../../wallet/test/unit/tools.mligo" "Tools"
 
-
-let debug = false
-let log_ (type a) (msg : a) = if debug then Test.log msg
-
-type ('a, 'b) originated = {
-  originated_typed_address : ('a, 'b) typed_address
-; originated_contract : 'a contract
-; originated_address : address
-}
+#include "../../stdlib_ext/src/originate_utils.mligo"
 
 type inbox_state = Inbox.state
 type inbox_entrypoint = Inbox_interface.entrypoint
@@ -26,22 +18,35 @@ type wallet_state = Wallet_interface.wallet_storage
 type mint_configuration = Mint.storage
 type mint_entrypoint = Mint_interface.mint_parameter
 
+
+
+(**
+autres scenarios de tests
+
+  1/ deposit raté parce que ticketer different ou payload différent ou les deux différent
+  2/ essayer de deposer des tickets de valeur 0
+  3/ faire 3 déposit avec deux au niveau n et le dernier au niveau n+1
+
+**)
+
+
 let empty_state : inbox_state = {
     rollup_level = 0n
 ;   ticket = None
+;   fixed_ticket_key = {ticketer= Tools.dummy_address; payload= Tools.dummy_payload}
 ;   messages = (Big_map.empty : (nat, message list) big_map)
-;   fixed_payload = 0x00
 }
 
-let originate_full (type a b) (main : a * b -> operation list * b ) (storage : b) (bal : tez) (log : string) : (a, b) originated = 
-  let my_taddr, _, _ = Test.originate main storage bal in
-  let my_contr = Test.to_contract my_taddr in
-  let my_addr = Tezos.address my_contr in
-  let _ = log_ (log, storage, bal, my_addr) in
-  {originated_typed_address = my_taddr ; originated_contract = my_contr ; originated_address = my_addr}
+(**same payload but different ticketer**)
+let empty_state2 : inbox_state = {
+    rollup_level = 0n
+;   ticket = None
+;   fixed_ticket_key = {ticketer= ("tz1fVd2fmqYy1TagTo4Pahgad2n3n8GzUX1N" : address); payload= Tools.dummy_payload}
+;   messages = (Big_map.empty : (nat, message list) big_map)
+}
 
-let originate_inbox () : (inbox_entrypoint, inbox_state) originated =
-  originate_full Inbox.main empty_state 0tez "Originated Inbox_sc"
+let originate_inbox_with_state (state : inbox_state) : (inbox_entrypoint, inbox_state) originated =
+  originate_full Inbox.main state 0tez "Originated Inbox_sc"
 
 let originate_mint (configuration: mint_configuration) : (mint_entrypoint, mint_configuration) originated =
     originate_full Mint.main configuration 0tez "Originated Mint_sc" 
@@ -97,12 +102,12 @@ let compute_total_balance (inbox: (inbox_entrypoint,inbox_state) originated) : n
 
 let empty_ticket () : Ticket.chusai_ticket option = None
 
-let _test_deposit () =
+let _test_success_deposit () =
   begin
-    log_ "test deposit";
+    log_ "a successful scenario test for deposit";
     (**The wallets needs mint and rollup (inbox) addresses to be originate**)
     let mint = originate_mint_with () in
-    let rollup = originate_inbox () in
+    let rollup = originate_inbox_with_state empty_state in
 
     (** Wallets origination **)
     let gon = originate_wallet mint.originated_address rollup.originated_address (empty_ticket ()) in
@@ -125,8 +130,87 @@ let _test_deposit () =
     ] 
   end
 
+(**let _test_success_level_deposit () = **)
+
+let _test_fail_key_deposit1 () =
+  begin
+    log_ "_test_fail_key_deposit1";
+    let mint = originate_mint_with () in
+    let rollup = originate_inbox_with_state empty_state in
+    let gon = originate_wallet mint.originated_address rollup.originated_address (empty_ticket ()) in
+
+    (** Same ticketer because the empty state used at the rollup origination use dummy_address, and , 
+       the create_ticket use here is from the dummy implementation which use the same dummy address as a ticketer.
+       but we have different payload here**)
+    let jhon = originate_wallet mint.originated_address rollup.originated_address (Some (Ticket.create_ticket 0x01 10n)) in
+    let gon_mint_result = mint_ticket Atom.start gon 10tez in
+
+    let gon_deposit_result = deposit_ticket gon_mint_result gon in
+    let jhon_deposit_result = deposit_ticket gon_deposit_result jhon in
+
+    Atom.and_list
+    [ Atom.assert_is_ok jhon_deposit_result "should be false because of a different payload"
+    ]
+  end
+
+let _test_fail_key_deposit2 () =
+  begin
+    log_ "_test_fail_key_deposit2";
+    let mint = originate_mint_with () in
+    let rollup = originate_inbox_with_state empty_state2 in
+
+    (**Same payload but different ticketer thanks to empty_state2**)
+    let jhon = originate_wallet mint.originated_address rollup.originated_address (Some (Ticket.create_ticket 0x00 10n)) in
+    let jhon_deposit_result = deposit_ticket Atom.start jhon in
+
+    Atom.and_list
+    [ Atom.assert_is_ok jhon_deposit_result "should be false because of a different ticketer"
+    ]
+  end
+
+let _test_fail_key_deposit3 () =
+  begin
+    log_ "_test_fail_key_deposit3";
+    let mint = originate_mint_with () in
+    let rollup = originate_inbox_with_state empty_state2 in
+
+    (**different ticketer and payload**)
+    let jhon = originate_wallet mint.originated_address rollup.originated_address (Some (Ticket.create_ticket 0x01 10n)) in
+    let jhon_deposit_result = deposit_ticket Atom.start jhon in
+
+    Atom.and_list
+    [ Atom.assert_is_ok jhon_deposit_result "should be false because of a different ticketer and payload"
+    ]
+  end
+
+let _test_fail_0ticket_deposit () =
+  begin
+    log_ "a successful scenario test for deposit";
+    (**The wallets needs mint and rollup (inbox) addresses to be originate**)
+    let mint = originate_mint_with () in
+    let rollup = originate_inbox_with_state empty_state in
+
+    (** Wallets origination **)
+    let gon = originate_wallet mint.originated_address rollup.originated_address (empty_ticket ()) in
+
+    (** Mint tickets **)
+    let gon_mint_result = mint_ticket Atom.start gon 0tez in
+
+    (**Deposit the tickets**)
+    let gon_deposit_result = deposit_ticket gon_mint_result gon in
+
+    Atom.and_list 
+    [  Atom.assert_rejected_at gon_deposit_result gon.originated_address "should have refused to deposit because the quantity < minimum amount"
+    ] 
+  end
+
+
 let suite = Atom.make_suite
 "Bridge_sc: test suite of Bridge sc"
 [
-  Atom.make_test "deposit" "A entire scenario with 3 wallet which ask for tickets and deposit them" _test_deposit
+  Atom.make_test "successful deposit" "A entire scenario with 3 wallet which ask for tickets and deposit them" _test_success_deposit
+; Atom.make_test "failure deposit 1" "A fail test with a deposit with a different payload than the ones fixed at inbox originattion" _test_fail_key_deposit1
+; Atom.make_test "failure deposit 2" "A fail test with a deposit with a different ticketer than the ones fixed at inbox originattion" _test_fail_key_deposit2
+; Atom.make_test "failure deposit 3" "A fail test with a deposit with a different ticketer and payload than the ones fixed at inbox originattion" _test_fail_key_deposit3
+; Atom.make_test "failure deposit 4" "A fail test with a deposit with a 0-value ticket" _test_fail_0ticket_deposit
 ]

@@ -37,7 +37,7 @@ let join_tickets (left : chusai_ticket) (right : chusai_ticket) : chusai_ticket 
  match (left, right) with
    (DummyTicket (bl,vl)), (DummyTicket (br, vr)) ->
     if bl = br then
-      Some (DummyTicket (bl, (vl + vr)))
+      Some ((DummyTicket (bl, (vl + vr))) : chusai_ticket)
     else
       None
 
@@ -51,5 +51,5 @@ let split_ticket (ticket : chusai_ticket) (amount_left, amount_right : nat * nat
  match ticket with 
    DummyTicket (payload, ticket_value) ->
      if ticket_value = amount_left + amount_right
-     then Some (DummyTicket (payload, amount_left), DummyTicket (payload, amount_right))
+     then Some ((DummyTicket (payload, amount_left), DummyTicket (payload, amount_right)) : chusai_ticket * chusai_ticket)
      else None
