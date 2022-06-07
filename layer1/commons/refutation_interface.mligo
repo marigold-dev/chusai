@@ -8,8 +8,7 @@ type player = address
 (* States of game *)
 type state = 
     | Start  of segment
-    | Bsplit of split 
-    | Asplit of split 
+    | Split of player * split 
     | End    of player * segment
 
 (* storage *)
@@ -26,6 +25,6 @@ type storage = {
 
 (* parameter *)
 type refutation_parameter =
-    | Choose     of game_id * choice
-    | Split      of game_id * split * choice
-    | Start_game of segment * player * player
+    | Endpoint_Choose     of game_id * choice
+    | Endpoint_Split      of game_id * split * choice
+    | Endpoint_Start of segment * player * player

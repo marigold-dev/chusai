@@ -1,6 +1,7 @@
 #include "../../commons/refutation_interface.mligo"
 #import "../src/segment.mligo" "Seg"
 #import "../../stdlib_ext/src/atomic_test.mligo" "Atom"
+#include "utils.mligo"
 
 let _test_choose_left () = 
     let s1 = Seg.make_segment 0n 1n 2n in
@@ -22,15 +23,6 @@ let _test_check_split_against_segment (split,segment : split * segment) (expecte
     
 
 let suite = 
-    let a = 0n in
-    let b = 1n in
-    let c = 3n in
-    let d = 4n in
-    let ac (size:size) = Seg.make_segment a c size in
-    let ab (size:size) = Seg.make_segment a b size in
-    let ad (size:size) = Seg.make_segment a d size in
-    let bc (size:size) = Seg.make_segment b c size in
-    let bd (size:size) = Seg.make_segment b d size in
     Atom.make_suite
     "Refutation : test suite for Segment module of refutation game"
     [ Atom.make_test "Choose left" "choose Left (s1,s2)" _test_choose_left

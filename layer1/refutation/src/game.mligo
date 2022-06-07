@@ -2,51 +2,47 @@
 #include "../../commons/refutation_interface.mligo"
 #import "segment.mligo" "Seg"
 
-let make_game (seg, player_a ,player_b : segment * player * player) =
-    {  player_a = player_a
-    ;  player_b = player_b
-    ;  state    = Start seg
-    }
-
-(* LOGIC *)
-
-let check_player (player, game : player * game) =
+let check_player (proposer, game : player * game) =
     let {player_a; player_b; state} = game in
     match state with
-    | Start  _ -> player = player_b 
-    | Bsplit _ -> player = player_a 
-    | Asplit _ -> player = player_b 
+    | Start  _ -> proposer = player_b 
+    | Split (last_player,_) -> proposer <> last_player &&  (proposer = game.player_a ||proposer = player_b)
     | _        -> true
 
-let apply_split (split, choice, game : split * choice *  game) : game option = 
-    let apply_split_aux (segment,make_game : segment * (split -> game)) =
-         if not (Seg.check_split_against_segment (split, segment)) 
-        then None
-        else Some (make_game split) 
-    in
-    match game.state with
-    | Start segment        -> 
-        apply_split_aux ( segment, (fun (split:split) -> {game with state = Bsplit(split)}))
+let start_game (proposer, seg, player_a ,player_b : player * segment * player * player) =
+    if not (proposer = player_a) then None        
+    else
+        Some 
+            {  player_a = player_a
+            ;  player_b = player_b 
+            ;  state    = Start seg
+            }
 
-    | Bsplit old_split -> 
-        let segment = Seg.choose (choice,old_split) in
-        apply_split_aux ( segment, (fun (split:split) -> {game with state = Asplit(split)}))
+let apply_split (proposer, split, choice, game : player * split * choice *  game) : game option = 
+    if not (check_player (proposer, game)) then None        
+    else
+        let aux (segment : segment ) =
+            if Seg.check_split_against_segment (split, segment) 
+            then Some {game with state = Split(proposer,split)}
+            else None
+        in
+        match game.state with
+        | Start segment        -> 
+            aux segment
 
-    | Asplit old_split -> 
-        let segment = Seg.choose (choice,old_split) in
-        apply_split_aux ( segment, (fun (split:split) -> {game with state = Bsplit(split)}))
-    | _ -> None
+        | Split (_,old_split) -> 
+            let segment = Seg.choose (choice,old_split) in
+            aux segment
+
+        | _ -> None
     
-let apply_choice (choice, game : choice * game) : game option =
-    match game.state with
-    | Asplit old_split -> 
-        let segment = Seg.choose (choice, old_split) in 
-        let new_state = End (game.player_a,segment) in
-        Some { game with state = new_state}
+let apply_choice (proposer, choice, game : player * choice * game) : game option =
+    if not (check_player (proposer, game)) then None        
+    else
+        match game.state with
+        | Split (last_player,old_split) -> 
+            let segment = Seg.choose (choice, old_split) in 
+            if Seg.size segment > 1n then None
+            else Some { game with state = End (last_player,segment)}
 
-    | Bsplit old_split -> 
-        let segment = Seg.choose (choice, old_split) in 
-        let new_state = End (game.player_b,segment) in
-        Some { game with state = new_state}
-
-    | _ -> None
+        | _ -> None

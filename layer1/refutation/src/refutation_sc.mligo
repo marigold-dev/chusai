@@ -16,26 +16,26 @@ let update_game_in_store (id,new_game,store : game_id * game * storage) =
     {max_id = store.max_id; games = Big_map.update id (Some new_game) store.games} 
 
 let start_game (seg, player_a ,player_b ,store : segment * player * player * storage)  =
-    let new_game = Option.unopt_with_error (Game.make_game (seg, player_a ,player_b)) "refutation_sc: could not start game" in
+    let new_game = Option.unopt_with_error (Game.make_game (Tezos.source, seg, player_a ,player_b)) "refutation_sc: could not start game" in
     let new_id = store.max_id + 1n in
     // FIXME: need a way to communicate game id to players -> views ?
     {max_id = new_id; games = Big_map.update new_id (Some new_game) store.games} 
-
+000
 
 let action_split (id, split, choice, store : game_id * split * choice * storage) : storage =
     let game = find_game (id, store) in
-    let new_game = Option.unopt_with_error (Game.apply_split (split,choice,game)) "refutation_sc: could not split" in
+    let new_game = Option.unopt_with_error (Game.apply_split (Tezos.source, split,choice,game)) "refutation_sc: could not split" in
     update_game_in_store (id,new_game,store)
 
 let action_choice (id, choice, store : game_id * choice * storage) =
     let game = find_game (id, store) in
-    let new_game = Option.unopt_with_error (Game.apply_choice (choice,game)) "refutation_sc: could not apply choice" in
+    let new_game = Option.unopt_with_error (Game.apply_choice (Tezos.source, choice,game)) "refutation_sc: could not apply choice" in
     update_game_in_store (id,new_game,store)
   
 (* MAIN *)
 
 let main (_action, store : refutation_parameter * storage) : operation list * storage = 
     match _action with
-    |  Choose (id, choice)                  -> [], action_choice (id, choice, store)
-    |  Split (id, split, choice)                    -> [], action_split (id, split, choice, store)
-    |  Start_game (seg, player_a ,player_b) -> [], (start_game (seg, player_a ,player_b, store))
+    |  Endpoint_Choose (id, choice)                  -> [], action_choice (id, choice, store)
+    |  Endpoint_Split (id, split, choice)                    -> [], action_split (id, split, choice, store)
+    |  Endpoint_Start (seg, player_a ,player_b) -> [], (start_game (seg, player_a ,player_b, store))
