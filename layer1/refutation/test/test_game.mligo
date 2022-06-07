@@ -74,8 +74,8 @@ let _test_choose_B_L () =
 let _test_choose_B_R () =
     make_test_choose Right (Bsplit (ab 5n, bc 5n)) (End (player2 (),bc 5n))
 
-let _test_choose_Fail (state:state) () = 
-    let game = init_game_ state in
+let _test_choose_Fail (state:unit -> state) () = 
+    let game = init_game_ (state ()) in
     Atom.assert_equals (Game.apply_choice (Left,game)) (None:game option) "Should fail (be None)"
 
 (* Tests for apply_split*)
@@ -116,11 +116,11 @@ let suite = Atom.make_suite
     ; Atom.make_test
         "Choose on start: fail"
         "Can't apply choose on state 'Start'"
-        (_test_choose_Fail (Start (ab 5n)))
+        (_test_choose_Fail (fun () -> Start (ab 5n)))
     ; Atom.make_test
         "Choose on end: fail"
         "Can't apply choose on state 'End'"
-        (_test_choose_Fail (End (player3 () , ab 5n)))
+        (_test_choose_Fail (fun () -> End (player3 () , ab 5n)))
     // Test for apply_split
 
     ]
