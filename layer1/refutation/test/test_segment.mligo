@@ -32,7 +32,7 @@ let suite =
     let bc (size:size) = Seg.make_segment b c size in
     let bd (size:size) = Seg.make_segment b d size in
     Atom.make_suite
-    "Test suite for Segment module of refutation game"
+    "Refutation : test suite for Segment module of refutation game"
     [ Atom.make_test "Choose left" "choose Left (s1,s2)" _test_choose_left
     ; Atom.make_test "Choose right" "choose Right (s1,s2)" _test_choose_right
     ; Atom.make_test 
