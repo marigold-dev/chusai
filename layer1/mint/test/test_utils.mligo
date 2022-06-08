@@ -6,27 +6,6 @@
     the different usefull values (typed address, and corresponding contract and address)
 *)
 let debug = false
-let log_ (type a) (msg : a) = if debug then Test.log msg
-(* ORIGINATED *)
-(* a record with multiple informations on a contract *)
-type  ('a, 'b) originated = {  
-    taddr : ('a, 'b) typed_address ; 
-    contr : 'a contract ; 
-    addr : address
-}
-(* 'polymorphic' origination : 
-    let my_originated = originate_full (main,storage,balance,"My Contract") in
-    ... my_originated.taddr ... is typed_address
-    ... my_originated.addr ... is contract
-    ... my_originated.contr ... is address
-*)
-let originate_full (type a b) (main, storage, bal, log :  (a * b -> operation list * b ) * b * tez*string) : (a, b) originated = 
-  let my_taddr, _, _ = Test.originate main storage bal in
-  let my_contr = Test.to_contract my_taddr in
-  let my_addr = Tezos.address my_contr in
-  let _ = log_ (log, storage, bal, my_addr) in
-  {taddr = my_taddr ; contr = my_contr ; addr = my_addr}
-
 
 
 (* *********************************** *)
