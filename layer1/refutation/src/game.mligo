@@ -27,12 +27,9 @@ let apply_split (proposer, split, choice, game : player * split * choice *  game
             else None
         in
         match game.state with
-        | Start segment        -> 
-            aux segment
+        | Start segment        -> aux segment
 
-        | Split (_,old_split) -> 
-            let segment = Seg.choose (choice,old_split) in
-            aux segment
+        | Split (_,old_split) -> aux (Seg.choose (choice,old_split))
 
         | _ -> None
     
