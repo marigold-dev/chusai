@@ -2,17 +2,18 @@
 #import "../../mint/src/mint_sc.mligo" "Mint"
 #import "../../wallet/src/wallet_sc.mligo" "Wallet"
 #import "../src/inbox_sc.mligo" "Inbox"
-#import "../../commons/inbox_interface.mligo" "Inbox_interface"
 #import "../../commons/mint_interface.mligo" "Mint_interface"
 #import "../../commons/wallet_interface.mligo" "Wallet_interface"
 #import "../../stdlib_ext/src/atomic_test.mligo" "Atom"
 #import "../../wallet/test/unit/tools.mligo" "Tools"
 
+#include "../../stdlib_ext/src/stdlibext.mligo"
 #include "../../stdlib_ext/src/originate_utils.mligo"
+#include "../../commons/inbox_interface.mligo"
 
 type inbox_state = Inbox.state
-type inbox_entrypoint = Inbox_interface.entrypoint
-type message = Inbox_interface.message
+type inbox_entrypoint = entrypoint
+type message = message
 type wallet_entrypoint = Wallet_interface.wallet_parameter
 type wallet_state = Wallet_interface.wallet_storage
 type mint_configuration = Mint.storage
@@ -33,6 +34,8 @@ let empty_state2 : inbox_state = {
 ;   fixed_ticket_key = {ticketer= ("tz1fVd2fmqYy1TagTo4Pahgad2n3n8GzUX1N" : address); payload= Tools.dummy_payload}
 ;   messages = (Big_map.empty : (nat, message list) big_map)
 }
+
+let zero_ticket : Ticket.chusai_ticket = Ticket.create_ticket 0x00 0n
 
 let originate_inbox_with_state (state : inbox_state) : (inbox_entrypoint, inbox_state) originated =
   originate_full Inbox.main state 0tez "Originated Inbox_sc"
@@ -113,17 +116,33 @@ let _test_success_deposit () =
     let kirua_deposit_result = deposit_ticket gon_deposit_result kirua in
     let leolio_deposit_result = deposit_ticket kirua_deposit_result leolio in
 
+
+    let inbox_storage = Test.get_storage rollup.originated_typed_address in
+    let messages = inbox_storage.messages in
+    let opt_msgs = Big_map.find_opt 0n messages in
+    let default_msg = [Deposit {owner = Tools.dummy_address; quantity = 0n}] in
+    let msgs = OptionExt.default opt_msgs default_msg in
+
+    let inbox_ticket = OptionExt.default inbox_storage.ticket zero_ticket in
+    let ((_,(_,inbox_ticket_quantity)),_) = Ticket.read_ticket inbox_ticket in
+
+    let gon_msg = Deposit {owner = gon.originated_address; quantity = 10000000n} in
+    let kirua_msg = Deposit {owner = kirua.originated_address; quantity = 15000000n} in
+    let leolio_msg = Deposit {owner = leolio.originated_address; quantity = 100000000n} in
+
     Atom.and_list 
     [  leolio_deposit_result
+    ;  Atom.assert_ (OptionExt.is_some inbox_storage.ticket) "the rollup storage must contain a ticket after deposits"
+    ;  Atom.assert_ ((compute_total_balance rollup) = inbox_ticket_quantity) "The sum of all the quantities stored on messages must be equal to the inbox ticket amount"
+    ;  Atom.assert_ (msgs <> default_msg) "Messages list must be not empty"
+    ;  Atom.assert_ (msgs = [leolio_msg;kirua_msg;gon_msg] ) "Messages list must be equal to a list with the 3 messages"
     ;  Atom.assert_ ((compute_total_balance rollup) = 125000000n) "After the 3 deposits, the balance should be equal to 125tez"
-    ] 
+    ]
   end
 
-(**let _test_success_level_deposit () = **)
-
-let _test_fail_key_deposit1 () =
+let _test_fail_payload_deposit () =
   begin
-    log_ "_test_fail_key_deposit1";
+    log_ "_test_fail_payload_deposit";
     let mint = originate_mint_with () in
     let rollup = originate_inbox_with_state empty_state in
     let gon = originate_wallet mint.originated_address rollup.originated_address (empty_ticket ()) in
@@ -142,9 +161,9 @@ let _test_fail_key_deposit1 () =
     ]
   end
 
-let _test_fail_key_deposit2 () =
+let _test_fail_ticketer_deposit () =
   begin
-    log_ "_test_fail_key_deposit2";
+    log_ "_test_fail_ticketer_deposit";
     let mint = originate_mint_with () in
     let rollup = originate_inbox_with_state empty_state2 in
 
@@ -157,9 +176,9 @@ let _test_fail_key_deposit2 () =
     ]
   end
 
-let _test_fail_key_deposit3 () =
+let _test_fail_entire_key_deposit () =
   begin
-    log_ "_test_fail_key_deposit3";
+    log_ "_test_fail_entire_key_deposit";
     let mint = originate_mint_with () in
     let rollup = originate_inbox_with_state empty_state2 in
 
@@ -188,7 +207,7 @@ let _test_fail_0ticket_deposit () =
     (**Deposit the tickets**)
     let gon_deposit_result = deposit_ticket gon_mint_result gon in
 
-    Atom.and_list 
+    Atom.and_list
     [  Atom.assert_rejected_at gon_deposit_result gon.originated_address "should have refused to deposit because the quantity < minimum amount"
     ] 
   end
@@ -198,8 +217,8 @@ let suite = Atom.make_suite
 "Bridge_sc: test suite of Bridge sc"
 [
   Atom.make_test "successful deposit" "A entire scenario with 3 wallet which ask for tickets and deposit them" _test_success_deposit
-; Atom.make_test "failure deposit 1" "A fail test with a deposit with a different payload than the ones fixed at inbox originattion" _test_fail_key_deposit1
-; Atom.make_test "failure deposit 2" "A fail test with a deposit with a different ticketer than the ones fixed at inbox originattion" _test_fail_key_deposit2
-; Atom.make_test "failure deposit 3" "A fail test with a deposit with a different ticketer and payload than the ones fixed at inbox originattion" _test_fail_key_deposit3
-; Atom.make_test "failure deposit 4" "A fail test with a deposit with a 0-value ticket" _test_fail_0ticket_deposit
+; Atom.make_test "failure test deposit 1" "A fail test with a deposit with a different payload than the ones fixed at inbox originattion" _test_fail_payload_deposit
+; Atom.make_test "failure test deposit 2" "A fail test with a deposit with a different ticketer than the ones fixed at inbox originattion" _test_fail_ticketer_deposit
+; Atom.make_test "failure test deposit 3" "A fail test with a deposit with a different ticketer and payload than the ones fixed at inbox originattion" _test_fail_entire_key_deposit
+; Atom.make_test "should reject deposit" "A test which verify that the 0-value ticket deposit is rejected" _test_fail_0ticket_deposit
 ]

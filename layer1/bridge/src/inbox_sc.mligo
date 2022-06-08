@@ -1,6 +1,8 @@
 #import "../../commons/inbox_interface.mligo" "Inbox"
 #import "../../commons/ticket_api_workaround.mligo" "Ticket"
 
+#include "../../stdlib_ext/src/stdlibext.mligo"
+
 type message = Inbox.message
 (**The whole inbox, so the historic of all the inboxes since level 0 of the rollup**)
 type messages = (nat, message list) big_map
@@ -37,18 +39,20 @@ let is_same_ticket_key (k1 : ticket_key) (ticketer, payload : address * Ticket.c
 
 let deposit (state: state) (owner: address) (ticket: Ticket.chusai_ticket) : return =
   let (addr, (payload, quantity)), fresh_ticket = Ticket.read_ticket ticket in
-  if is_same_ticket_key state.fixed_ticket_key (addr,payload) then
-    let joined_ticket = 
-      match state.ticket with
-      | None -> Some fresh_ticket
-      | Some ticket -> 
-        Ticket.join_tickets ticket fresh_ticket in
-    let message = make_deposit_message owner quantity
-    let new_messages = push_message state message in
-    let new_state = { state with ticket = joined_ticket ; messages = new_messages} in
-    ([], new_state)
-  else
-    failwith "Inbox_sc: The rollup does not support this kind of payload"
+  let joined_ticket = 
+    match state.ticket with
+    | None -> 
+      if is_same_ticket_key state.fixed_ticket_key (addr,payload) 
+        then
+          Some fresh_ticket
+      else None
+    | Some ticket ->
+      Ticket.join_tickets ticket fresh_ticket in
+  let _ = if (OptionExt.is_none joined_ticket) then failwith "Ticket payload is invalid" in
+  let message = make_deposit_message owner quantity in
+  let new_messages = push_message state message in
+  let new_state = { state with ticket = joined_ticket ; messages = new_messages} in
+  ([], new_state)
 
 
 let main (action, state : entrypoint * state) : return =
