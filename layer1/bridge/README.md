@@ -11,4 +11,4 @@ The state of the inbox contains
 3. the data structure which stores the messages.
 4. the payload.
 
-At each deposit requested, we join the ticket the user sent (if the key of this ticket is the same than the one fixed by the inbox state), and we create a message that we push on the storage.
+At each deposit requested, we join the ticket the user sent (if the key of this ticket is the same as the one fixed by the inbox state), create a message and, update the inbox state .
