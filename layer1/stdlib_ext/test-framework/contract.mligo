@@ -34,10 +34,9 @@ type ('a, 'b) originated = {
     - [main] : the main function of the contract
     - [storage] : the default value of the storage
     - [quantity] : the given amount of tez
-    - [label] : pretty printing label *)
+ *)
 let originate
     (type a b)
-    (label: string)
     (main: (a * b -> (operation list * b)))
     (storage: b)
     (quantity: tez) : (a, b) originated =

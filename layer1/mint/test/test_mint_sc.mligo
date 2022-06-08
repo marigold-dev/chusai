@@ -60,7 +60,6 @@ type originated_wallet = (wallet_parameter, wallet_storage) originated
 (* originates a wallet, given a function to be applied on the ticket when receiving one *)
 let originate_wallet (injected_logic : chusai_ticket-> chusai_ticket) : originated_wallet = 
     Atom.originate 
-       "Wallet contract"
        (wallet_test_main injected_logic)
        (None : wallet_storage)
        0tez
@@ -69,7 +68,7 @@ let originate_wallet (injected_logic : chusai_ticket-> chusai_ticket) : originat
 type originated_mint = (mint_parameter, storage) originated
 let mint_default_storage = {payload = 0x00 ; minimum_amount = 1tez}
 (* originates a mint *)
-let originate_mint (store : storage) : originated_mint = Atom.originate "Mint contract" main store 0tez
+let originate_mint (store : storage) : originated_mint = Atom.originate main store 0tez
 
 
 
@@ -119,7 +118,7 @@ let _test_mint_first_ticket  () =
     let ticket_asserts : ticket_asserts = {addr = Some mint.originated_address ; payload = Some mint_default_storage.payload ; amount_ = Some 1000000n } in
     let wallet = originate_wallet (check_ticket ticket_asserts) in
     (* minting *)
-    let status = mint_  {wallet = wallet; amount_ = 1tz ; mint = mint.originated_address}  Atom.start in
+    let status = mint_  {wallet = wallet; amount_ = 1tz ; mint = mint.originated_address}  (Atom.start ()) in
     (* asserts *)
     Atom.and_list 
     [  Atom.assert_is_ok status "Mint transaction should be OK" 
@@ -137,7 +136,7 @@ let _test_mint_first_ticket_mutez () =
     let mint = originate_mint {payload = 0x00 ; minimum_amount = 100tez} in // fixes minimum amount at 100tea
     let wallet = originate_wallet (fun (t : chusai_ticket) -> t) in
     (* minting *)
-    let status = mint_  {wallet = wallet ; amount_ = 1tez ; mint = mint.originated_address}  Atom.start in // 1tez is less than minimum (100tez)
+    let status = mint_  {wallet = wallet ; amount_ = 1tez ; mint = mint.originated_address}  (Atom.start ()) in // 1tez is less than minimum (100tez)
     (* asserts *)
     Atom.and_list 
     [  Atom.assert_rejected_at status mint.originated_address "should be rejected 'cause less than minimum amount"  
@@ -155,7 +154,7 @@ let _test_mint_first_ticket_0tez () =
     let mint = originate_mint mint_default_storage in
     let wallet = originate_wallet (fun (t : chusai_ticket) -> t) in
     (* minting *)
-    let status = mint_  {wallet = wallet ; amount_ = 0mutez ; mint = mint.originated_address}  Atom.start in
+    let status = mint_  {wallet = wallet ; amount_ = 0mutez ; mint = mint.originated_address}  (Atom.start ()) in
     (* asserts *)
     Atom.and_list 
     [  Atom.assert_rejected_at status mint.originated_address "should be rejected 'cause less than minimum amount" 
@@ -176,7 +175,7 @@ let _test_mint_and_redeem () =
     let ticket_asserts : ticket_asserts= {addr = Some mint.originated_address ; payload = Some mint_default_storage.payload ; amount_ = Some 100000000n} in
     let wallet = originate_wallet (check_ticket ticket_asserts) in
     (* minting *)
-    let status = mint_ {wallet = wallet ; amount_ = 100tz ; mint = mint.originated_address}  Atom.start in
+    let status = mint_ {wallet = wallet ; amount_ = 100tz ; mint = mint.originated_address}  (Atom.start ()) in
     let status = 
       Atom.and 
         (Atom.assert_is_ok status "sanity check : Minting should have succeeded") 
@@ -209,7 +208,7 @@ let _test_redeem_0value_ticket () =
     let ticket_asserts : ticket_asserts= {addr = Some mint.originated_address ; payload = Some mint_default_storage.payload ; amount_ = Some 100000000n} in
     let wallet = originate_wallet (turn_into_0value ) in
     (* minting *)
-    let status = mint_  {wallet = wallet ; amount_ = 100tz ; mint = mint.originated_address}  Atom.start in
+    let status = mint_  {wallet = wallet ; amount_ = 100tz ; mint = mint.originated_address}  (Atom.start ()) in
     let status = Atom.and 
       (Atom.assert_is_ok status  "sanity check : Minting should have succeeded")
       (Atom.assert_ ((Test.get_balance wallet.originated_address) = 0tz) "sanity check : wallet balance should be 0") in
@@ -236,7 +235,7 @@ let _test_redeem_at_wrong_mint () =
     let ticket_asserts : ticket_asserts = {no_assert with addr = Some mint_1.originated_address} in
     let wallet = originate_wallet (check_ticket ticket_asserts) in  
     (* minting *)
-    let status = mint_  {wallet = wallet ; amount_ = 100tz ; mint = mint_1.originated_address}  Atom.start in
+    let status = mint_  {wallet = wallet ; amount_ = 10tz ; mint = mint_1.originated_address}  (Atom.start ()) in
     let status = Atom.and 
       (Atom.assert_is_ok status "sanity check : Minting should have succeeded")
       (Atom.assert_  ((Test.get_balance wallet.originated_address) = 0tz) "sanity check : balance should be 0") in

@@ -1,4 +1,3 @@
-
 (* MIT License
 
    Copyright (c) 2022 Marigold <contact@marigold.dev>
@@ -20,15 +19,38 @@
    LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
    OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
    SOFTWARE. *)
-   
-(* Wrapping of Test module *)
-let wrap_exec (result : test_exec_result) = 
-   match result with
-   | Success g -> Test_Passed g
-   | Fail error -> Test_Failed ( Execution error)
 
-let transfer_to_contract_ (type param) (contr : param contract) (action : param) (amount_ : tez) =
-    wrap_exec (Test.transfer_to_contract contr action amount_)
+(** Try to convert a digit to a string. *)
+let digit_to_str (x: int) : string =
+  (* Very sad that we can't match on value and only on constructor,
+     which seems weird since a sum can contain literate values... *)
+  // FIXME: when LIGO implements match on ints
+  if x = 0 then "0"
+  else if x = 1 then "1"
+  else if x = 2 then "2"
+  else if x = 3 then "3"
+  else if x = 4 then "4"
+  else if x = 5 then "5"
+  else if x = 6 then "6"
+  else if x = 7 then "7"
+  else if x = 8 then "8"
+  else if x = 9 then "0"
+  else
+    (* Should never happen ! *)
+    failwith "digit_to_str, unknown digit"
 
-let transfer_to_contract (type param) (current : result) (contr : param contract) (action : param) (amount_ : tez) =
-    and_lazy current (fun () -> transfer_to_contract_ contr action amount_)
+(** Convert an int to a string. *)
+let int_to_string (x: int) : string =
+  let prefix = if x < 0 then "-" else "" in
+  let subject = int (abs x) in
+  let rec aux (acc : string) (x: int) : string =
+    if x < 10 then
+      let digit = digit_to_str x in
+      digit ^ acc
+    else
+      let part = int (x mod 10) in
+      let rest = x / 10 in
+      let digit = digit_to_str part in
+      let str = digit ^ acc in
+      aux str rest
+  in prefix ^ (aux "" subject)
