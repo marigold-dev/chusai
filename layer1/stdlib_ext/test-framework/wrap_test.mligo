@@ -22,13 +22,42 @@
    SOFTWARE. *)
    
 (* Wrapping of Test module *)
-let wrap_exec (result : test_exec_result) = 
-   match result with
-   | Success g -> Test_Passed g
-   | Fail error -> Test_Failed ( Execution error)
 
-let transfer_to_contract_ (type param) (contr : param contract) (action : param) (amount_ : tez) =
-    wrap_exec (Test.transfer_to_contract contr action amount_)
+(** Try to perform a failable computation ([block]) and fold the two possible
+    results. *)
+let try_catch
+    (type a)
+    (block: unit -> test_exec_result)
+    (capture: nat -> a)
+    (catch: test_exec_error -> a) : a =
+  let result = block () in
+  match result with
+  | Success gas_value -> capture gas_value
+  | Fail err -> catch err
 
-let transfer_to_contract (type param) (current : result) (contr : param contract) (action : param) (amount_ : tez) =
-    and_lazy current (fun () -> transfer_to_contract_ contr action amount_)
+(** Wrap an execution result into a test result. *)
+let try_with (block: unit -> test_exec_result) : result =
+  let succeed (n : nat) = Test_Passed n in
+  let fail_with (err : test_exec_error) =
+      Test_Failed (Execution err)
+  in try_catch block succeed fail_with
+
+(** wrap a call to [transfer to contract] into a test result, taking into account potential previous test result *)
+let transfer_to_contract
+    (type param)
+    (previous: result)
+    (contract: param contract)
+    (action: param)
+    (fund: tez) : result =
+  let block () = Test.transfer_to_contract contract action fund in
+  let operation () = try_with block in
+  and_lazy previous operation
+
+  
+(** wrap a call to [transfer to contract] into a test result *)
+let transfer_to_contract_
+    (type param)
+    (contract: param contract)
+    (action: param)
+    (fund: tez) : result =
+    transfer_to_contract (start ()) contract action fund

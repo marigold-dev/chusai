@@ -23,8 +23,9 @@
 (* ORDER OF INCLUDES MATTERS *)
 #include "../test-framework/context.mligo"
 #include "../test-framework/result.mligo" 
-// this one is an import just to emphasize the api 
+// these ones are imports just to emphasize the api 
 #import "../test-framework/engine.mligo" "Engine" 
+#import "../test-framework/metrics.mligo" "Metrics" 
 #include "../test-framework/assertions.mligo"
 #include "../test-framework/wrap_test.mligo"
 #include "../test-framework/contract.mligo"
@@ -33,6 +34,5 @@
 let make_test = Engine.make_test 
 let make_suite = Engine.make_suite
 let run_suites = Engine.run_suites
-let run_suites_metrics = Engine.run_suites_metrics
-type status = result // FIXME: should be inlined in all code
+let run_suites_metrics = Metrics.run_suites_metrics
 type test_suite = Engine.test_suite

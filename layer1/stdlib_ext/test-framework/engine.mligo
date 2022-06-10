@@ -60,37 +60,43 @@ let make_test (name : string) (desc : string) (action : test_action) = {
 
 // FIXME: should hase description as parameter
 (** build a test suite *)
-let make_suite (name : string) (tests : test list) = {
+let make_suite (name : string) (desc : string) (tests : test list) = {
   suite_name = name
-; suite_desc = ""
+; suite_desc = desc
 ; tests = tests
 }
 (* ********************************* *)
 (* pretty printing *)
 
+(** pretty printing of [Failed] test result *)
 let pp_test_failed (name : string) (desc : string) (reason : failure_reason) : unit = 
     let () = Test.log ("    [X] " ^ name ^ " - " ^ desc) in
     Test.log reason
 
+(** pretty printing of [Passed] test result *)
 let pp_test_passed (name : string) (desc : string) (gas_value : gas) : unit = 
     let str_gas = Helper.int_to_string (int gas_value) in
     Test.log ("    [v] " ^ name ^ " - " ^ desc ^ " - with gas: " ^ str_gas ^ "g.")
 
+(** pretty printing of test result *)
 let pp_test_result ({ test_name; test_desc; test_result } : test_result) : unit = 
   match test_result with 
   | Test_Passed g -> pp_test_passed test_name  test_desc g
   | Test_Failed reason -> pp_test_failed test_name test_desc reason
 
+(** A pretty printer called before executing a test suite*)
 let pp_suite_preamble (suite : test_suite) : unit = 
   let () = Test.log "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~" in
   Test.log (" + Running: " ^ suite.suite_name ^ " - " ^ suite.suite_desc)
 
+(** pretty printing of the result of a test suite *)
 let pp_suite_result (has_failures : bool) (suite : test_suite) : unit =
     if has_failures then
       Test.log ("[X] <" ^ suite.suite_name ^ "> has some failures." )
     else
       Test.log ("[v] <" ^ suite.suite_name ^ "> has passed." )
 
+(** pretty printing of a test result obtained in the context of a [metric] *)
 let pp_metric ({ test_name; test_desc; test_result } : test_result) : unit = 
   let _ = Test.log "START METRIC" in
   let _ = match test_result with 
@@ -155,17 +161,3 @@ let run_suites_with_pp (pp: test_result -> unit) (suites: test_suite list) =
     there is a failure, the function raise an error. *)
 let run_suites (suites : test_suite list) = 
   run_suites_with_pp pp_test_result suites
-
-(* ********************************* *)
-(* METRICS *)
-(** Tools to run metrics, which are described same as tests, in terms of actions (unit -> result). *)
-
-(** Run a set of metrics and pretty print their results on stdout. if
-    there is a failure, the function raise an error. *)
-let run_test_suite_metric (suite : test_suite) = 
-  run_test_suite_with_pp pp_metric suite
-
-(** Run a set of metrics and pretty print their results on stdout. if
-    there is a failure, the function raise an error. *)
-let run_suites_metrics  (suites : test_suite list) = 
-  run_suites_with_pp pp_metric suites

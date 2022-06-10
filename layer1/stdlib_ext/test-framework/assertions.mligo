@@ -23,17 +23,17 @@
 
 (* ASSERTIONS *)
 let assert_  (b:bool) (msg:string)  : result = 
-    if b then succeed () else fail msg
+    if b then succeed () else fail_with msg
 
 let assert_is_ok (current:result) (msg:string) : result = 
     match current with
-    | Test_Failed _ -> fail msg
+    | Test_Failed _ -> fail_with msg
     | Test_Passed _ -> current
 
 let assert_exec_error (current:result) (predicate:test_exec_error -> bool) (msg:string) = 
     match current with
     | Test_Failed (Execution e) -> assert_ (predicate e) msg
-    | _ -> fail msg
+    | _ -> fail_with msg
 
 let assert_rejected (current:result) (msg:string) : result =
     let predicate (e:test_exec_error) = match e with Rejected _ -> true | _ -> false in

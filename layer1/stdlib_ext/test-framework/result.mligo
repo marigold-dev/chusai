@@ -39,11 +39,18 @@ type test_action = unit -> result
 
 (* Constructors *)
 
+(** returns a [Passed] test result *)
 let succeed () : result = Test_Passed 0n
-let fail (msg:string) : result = Test_Failed (Message msg)
+
+(** returns a [Failed] test result *)
+let fail_with (msg:string) : result = Test_Failed (Message msg)
+
+(** a [Passed] test result, used as a seed for a sequence of actions *)
 let start () : result = Test_Passed 0n
 
 (* accessor *)
+
+(** Test if a result is a [Test_Failed] *)
 let is_failure (s : result) : bool = 
   match s with 
   | Test_Passed _ -> false
