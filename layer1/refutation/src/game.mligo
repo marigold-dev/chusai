@@ -9,8 +9,9 @@ let check_player (proposer, game : player * game) =
     | Split (last_player,_) -> proposer <> last_player &&  (proposer = game.player_a ||proposer = player_b)
     | _        -> true
 
-let start_game (proposer, seg, player_a ,player_b : player * segment * player * player) =
+let start_game (proposer, seg, player_a ,player_b : player * segment * player * player) : game option=
     if not (proposer = player_a) then None        
+    else if (Seg.size seg) = 1n then None
     else
         Some 
             {  player_a = player_a
@@ -18,19 +19,17 @@ let start_game (proposer, seg, player_a ,player_b : player * segment * player * 
             ;  state    = Start seg
             }
 
-let apply_split (proposer, split, choice, game : player * split * choice *  game) : game option = 
-    if not (check_player (proposer, game)) then None        
+let apply_split (proposer, split, choice_opt, game : player * split * (choice option) * game) : game option = 
+    if not (check_player (proposer, game)) then None 
     else
-        let aux (segment : segment ) =
+        let apply_if_possible (segment : segment ) =
             if Seg.check_split_against_segment (split, segment) 
             then Some {game with state = Split(proposer,split)}
             else None
         in
-        match game.state with
-        | Start segment        -> aux segment
-
-        | Split (_,old_split) -> aux (Seg.choose (choice,old_split))
-
+        match game.state, choice_opt with
+        | Start segment, None              -> apply_if_possible segment
+        | Split (_,old_split), Some choice -> apply_if_possible (Seg.choose (choice,old_split))
         | _ -> None
     
 let apply_choice (proposer, choice, game : player * choice * game) : game option =

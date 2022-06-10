@@ -12,13 +12,16 @@ let start (s : segment ) =
 let end_ (s : segment ) =
     s.1
 
-let choose (choice, split : choice * split)  = 
+let choose (choice, split : choice * split) : segment = 
     match choice with
     | Left  -> split.0
     | Right -> split.1
 
+let split_is_consistent ((s1,s2) : split) : bool =
+    (end_ s1) = (start s2)
+
 let check_split_against_segment ((s1,s2),segment : split * segment) : bool = 
        (start segment) = (start s1)
-    && (end_ s1) = (start s2)
+    && split_is_consistent (s1,s2)
     && (size segment) = ((size s1) + (size s2))
     && (end_ segment) <> (end_ s2)    
