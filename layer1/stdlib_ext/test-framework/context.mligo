@@ -50,21 +50,23 @@ let init_with (actors: (string * tez) list) : actor list =
   ) init actors in x
 
 (** Create a pair :
-    - first member is a "rollup master". Usually the guy that initiate rollups.
-    - second member, a triplet with alice, bob and carol. *)
+    - first member is an operator. Usually the account that initiates the rollup.
+    - second member, a triplet with 3 accounts: alice, bob and carol. *)
 let init_default () : actor * (actor * actor * actor) =
   let alice = "Alice", 4000000tez in
   let bob = "Bob", 2000000tez in
   let carol = "Carol", 8000000tez in
-  let xavier = "Xavier", 10000000000tez in
-  let actors = init_with [alice; bob; carol; xavier] in
+  let operator = "Operator", 10000000000tez in
+  let actors = init_with [alice; bob; carol; operator] in
   match actors with
-  | [xavier; carol; bob; alice] ->
-    let () = Test.set_baker xavier.address in
-    xavier, (alice, bob, carol)
+  | [operator; carol; bob; alice] ->
+    let () = Test.set_baker operator.address in
+    operator, (alice, bob, carol)
   | _ -> failwith "An error occured."
 
-let act (type a) (actor: actor) (handler: (unit -> a)) : a =
+(** Execute an operation as a specific actor 
+    ! BEWARE ! changes the source for subsequent actions too *)
+let act_as (type a) (actor: actor) (handler: (unit -> a)) : a =
   let address = actor.address in
   let () = Test.set_source address in
   handler ()

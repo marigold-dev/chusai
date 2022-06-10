@@ -54,7 +54,7 @@ let wallet_test_main
 (*
   Based on originate_full function in test utils. 
 *)
-// FIXME: it is necessary to redefine originated separately (Unit.orignated does work in the definition of originated wallet (for nom, ligo 0.43.0))
+// FIXME: it is necessary to redefine originated separately (Unit.orignated does work in the definition of originated wallet (for now, ligo 0.43.0))
 type originated = Unit.originated
 type originated_wallet = (wallet_parameter, wallet_storage) originated
 (* originates a wallet, given a function to be applied on the ticket when receiving one *)
