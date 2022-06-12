@@ -6,9 +6,9 @@
 
 let test = 
   Unit.run_suites 
-  ( ListExt.join
-    [ Stdlib_test.suites
+  ( ListExt.join [Wallet.suites]
+    (**[ Stdlib_test.suites
     ; Wallet.suites
     ; [ Mint.suite ]
-    ]
+    ]*)
   )
