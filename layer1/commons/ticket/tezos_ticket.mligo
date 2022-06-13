@@ -23,7 +23,7 @@ let read (ticket: t) : been_read =
   Tezos.read_ticket ticket
 
 (** [Tezos_ticket.join_tickets left_ticket right_ticket]
-    Join two [Tezos_ticket] of the same kind. *)
+    Join two [Tezos_ticket] of the same key. *)
 let join (left: t) (right: t) : t option =
   Tezos.join_tickets (left, right)
 
