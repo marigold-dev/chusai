@@ -18,9 +18,10 @@ type game = {
     player_b : player;
     state    : state
 }
+type game_map = (game_id,game) big_map 
 type storage = {
     max_id : game_id ;
-    games  : (game_id,game) big_map 
+    games  : game_map
 }
 
 (* parameter *)
@@ -28,3 +29,4 @@ type refutation_parameter =
     | Endpoint_Choose     of game_id * choice
     | Endpoint_Split      of game_id * split * (choice option)
     | Endpoint_Start of segment * player * player
+    | Endpoint_Start_Split of segment * player * split *  player

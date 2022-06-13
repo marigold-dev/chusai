@@ -62,4 +62,8 @@ let assert_equals (type a) (actual : a) (expected : a)  (msg:string) : result =
 
 
 let assert_cond (type a) (actual : a) (predicate : a -> bool)  (msg:string) : result =
-    assert_ (predicate actual) msg
+  assert_ (predicate actual) msg
+
+let assert_not_none (type a) (actual : a option) (msg : string) : result =
+  let predicate (v : a option) = match v with None -> false | _ -> true in
+  assert_cond actual predicate msg

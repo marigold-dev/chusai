@@ -1,6 +1,7 @@
 
 #import "../src/game.mligo" "Game"
 #import "../src/segment.mligo" "Seg"
+#include "../../commons/refutation_interface.mligo"
 let a = 0n
 let b = 1n
 let c = 3n
