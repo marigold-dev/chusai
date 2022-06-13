@@ -1,5 +1,5 @@
 #import "../../stdlib_ext/src/unit_test.mligo" "Unit"
-#import "../src/refutation_sc.mligo" "Bissection"
+#import "../src/bissection_sc.mligo" "Bissection"
 #include "utils.mligo"
 
 (* UTILS *)
@@ -118,7 +118,7 @@ let _test_start_wrong_split () =
 
 let suite = 
     Unit.make_suite
-    "Refutation"
+    "Refutation sc"
     "test of the smart contract"
     [   Unit.make_test
         "Origination"
