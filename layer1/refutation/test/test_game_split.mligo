@@ -7,11 +7,11 @@
 
 let _test_split_ok (state : state) (split : split) (choice : choice option) (proposer : player)  =
     let game = init_game_ state in
-    let opt : game option = Game.apply_split  (proposer, split, choice, game ) in
+    let opt = Game.apply_split  (proposer, split, choice, game ) in
     Unit.and_lazy 
-        (Unit.assert_ (opt <> (None : game option)) "should not be none" ) 
+        (Unit.assert_ (Game.Result.is_ok opt) "should not be none" ) 
         (fun () -> 
-            let new_game = Option.unopt opt in 
+            let new_game = Game.Result.get_ok opt in 
             Unit.assert_equals  new_game.state (Split (proposer, split)) "Should be a split"
         ) 
     
@@ -31,8 +31,8 @@ let _split_game () =
 
 let _test_split_ko (state : state) (split : split) (choice : choice option) (proposer : player)  =
     let game = init_game_ state in
-    let opt : game option = Game.apply_split  (proposer, split, choice, game ) in
-    Unit.assert_equals opt (None : game option) "Should have refused"
+    let opt = Game.apply_split  (proposer, split, choice, game ) in
+    Unit.assert_ (Game.Result.has_failed opt)  "Should have refused"
 
 let _new_game_wrong_proposer () =
     _test_split_ko 
