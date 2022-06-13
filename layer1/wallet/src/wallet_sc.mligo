@@ -86,4 +86,4 @@ let main (parameter, storage : wallet_parameter * wallet_storage) : wallet_retur
         | Redeem_xtz_cb -> redeem_xtz_cb storage
     in result
   else
-    failwith "Wallet_sc: invalid owner for this wallet"
+    throw_error "invalid owner for this wallet"
