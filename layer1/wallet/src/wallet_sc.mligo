@@ -77,13 +77,11 @@ Rsponsibility: dispatch based on action to the action handler functions
  *)
 let main (parameter, storage : wallet_parameter * wallet_storage) : wallet_return =
   if Tezos.source = storage.owner_address then
-    let result = 
       match parameter with
         | Mint_xtz -> mint_xtz storage 
         | Mint_xtz_cb ticket -> mint_xtz_cb (ticket,storage)
         | Send -> send storage
         | Redeem_xtz -> redeem_xtz storage
         | Redeem_xtz_cb -> redeem_xtz_cb storage
-    in result
   else
     throw_error "invalid owner for this wallet"
