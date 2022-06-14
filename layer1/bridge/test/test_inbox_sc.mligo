@@ -23,7 +23,7 @@ type mint_entrypoint = Mint_interface.mint_parameter
 let empty_state : inbox_state = {
     rollup_level = 0n
 ;   ticket = None
-;   fixed_ticket_key = {ticketer= Tools.dummy_address; payload= Tools.dummy_payload}
+;   fixed_ticket_key = {mint_address= Tools.dummy_address; payload= Tools.dummy_payload}
 ;   messages = (Big_map.empty : (nat, message list) big_map)
 }
 
@@ -31,7 +31,7 @@ let empty_state : inbox_state = {
 let empty_state2 : inbox_state = {
     rollup_level = 0n
 ;   ticket = None
-;   fixed_ticket_key = {ticketer= ("tz1fVd2fmqYy1TagTo4Pahgad2n3n8GzUX1N" : address); payload= Tools.dummy_payload}
+;   fixed_ticket_key = {mint_address= ("tz1fVd2fmqYy1TagTo4Pahgad2n3n8GzUX1N" : address); payload= Tools.dummy_payload}
 ;   messages = (Big_map.empty : (nat, message list) big_map)
 }
 
