@@ -5,21 +5,21 @@ type payload = bytes
 type t = payload ticket
 
 (** When a ticket has been read. *)
-type been_read = (address * (payload * nat)) * t
+type ticket_content = (address * (payload * nat)) * t
 
-(** When a ticket has beed splitted. *)
-type splitted = (t * t) option
+(** When a ticket has beed split. *)
+type ticket_split = (t * t) option
 
 (** [Tezos_ticket.create_ticket payload qty]
     Create a [Ticket].
     FIXME: the parameter [address] is just mandatory for fixing the address
-           of Chusai_ticket but is not used here. *)
+           of dummy_ticket but is not used here. *)
 let create_ticket (address: address) (payload: bytes) (quantity: nat) =
   Tezos.create_ticket payload quantity
 
 (** [Tezos_ticket.read_ticket a_dummy_ticket]
     Read a [Tezos_ticket]. *)
-let read (ticket: t) : been_read =
+let read (ticket: t) : ticket_content =
   Tezos.read_ticket ticket
 
 (** [Tezos_ticket.join_tickets left_ticket right_ticket]
@@ -30,5 +30,5 @@ let join (left: t) (right: t) : t option =
 (** [Tezos_ticket.split ticket left_part right_part]
     If [left_part + right_part] = ticket.quantity, it produces two
     new tickets. *)
-let split_ticket (ticket: t) (left_amount: nat) (right_amount: nat) : splitted =
+let split_ticket (ticket: t) (left_amount: nat) (right_amount: nat) : ticket_split =
   Tezos.split_ticket ticket (left_amount, right_amount)

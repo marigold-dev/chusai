@@ -10,10 +10,10 @@ type t =
   }
 
 (** When a ticket has been read. *)
-type been_read = (address * (payload * nat)) * t
+type ticket_content = (address * (payload * nat)) * t
 
-(** When a ticket has beed splitted. *)
-type splitted = (t * t) option
+(** When a ticket has beed split. *)
+type ticket_split = (t * t) option
 
 (** [Dummy_ticket.create_ticket payload qty]
     Create a [Dummy_ticket]. *)
@@ -26,7 +26,7 @@ let create_ticket (address: address) (payload: bytes) (quantity: nat) =
 
 (** [Dummy_ticket.read_ticket a_dummy_ticket]
     Read a [Dummy_ticket]. *)
-let read_ticket (ticket: t) : been_read =
+let read_ticket (ticket: t) : ticket_content =
   match ticket with
   | Dummy_ticket { address = address; payload = payload; quantity = value } ->
     ((address, (payload, value)), ticket)
@@ -51,7 +51,7 @@ let join_tickets (left: t) (right: t) : t option =
 (** [Dummy_ticket.split ticket left_part right_part]
     If [left_part + right_part] = ticket.quantity, it produces two
     new tickets. *)
-let split_ticket (ticket: t) (left_amount: nat) (right_amount: nat) : splitted =
+let split_ticket (ticket: t) (left_amount: nat) (right_amount: nat) : ticket_split =
   match ticket with
   | Dummy_ticket { address = address; payload = payload; quantity = value } ->
     if value = left_amount + right_amount

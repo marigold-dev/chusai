@@ -67,7 +67,6 @@ let check_ticket_value
    let (_, (payload, quantity)), _ = Ticket.read_ticket ticket in
    (quantity = expected_quantity) && (expected_payload = payload)
 
-(**I keep a origination test for convince myself that the new ticket and test framework works well*)
 let _test_wallet_origination =
   Unit_test.make_test
     "just a origination of a Wallet_sc"
