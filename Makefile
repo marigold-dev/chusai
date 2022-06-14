@@ -13,7 +13,7 @@ layer2:
 
 
 test-layer2:
-    dune runtest --no-buffer -j 1
+	dune runtest --no-buffer -j 1
 
 test-layer1:
 	make -C layer1 test
