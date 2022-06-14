@@ -1,5 +1,5 @@
 (* Node of AST of Michelson. see
-   {{: https://gitlab.com/tezos/tezos/-/blob/master/src/proto_alpha/lib_protocol/michelson_v1_primitives.mli } here} for more details.*)
+   {{: https://gitlab.com/tezos/tezos/-/blob/82b07a9645ffb4882764febef8322600c24c207b/src/proto_alpha/lib_protocol/michelson_v1_primitives.mli } here} for more details.*)
 
 type prim =
   | K_parameter
