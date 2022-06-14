@@ -54,7 +54,9 @@ type storage = {
 (* There are two different endpoints for starting a game, corresponding to two possibles cases:
     - Endpoint_Start: any one can start a game between two competing blocks
     - Endpoint_Start_Split: someone can challenge a block by providing a bissection
-   
+   During a game, the players can send move using the [game_id]:
+    - Endpoint_Split: a split of one of the segment in the current split (the [choice] is an [option] because at the beginning of the game there is only one segment that can be split)
+    - Endpoint_Choose: designate one of the segment as final, in effect asking the other to provide a proof
  *)
 type refutation_parameter =
     | Endpoint_Choose      of game_id * choice

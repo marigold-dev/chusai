@@ -78,3 +78,8 @@ let main (_action, store : refutation_parameter * storage) : operation list * st
     |  Endpoint_Split (id, split, choice_opt)                 -> [], action_split (id, split, choice_opt, store)
     |  Endpoint_Start (seg, player_a ,player_b)               -> [], (start_game (seg, player_a ,player_b, store))
     |  Endpoint_Start_Split (seg, player_a , split, player_b) -> [], (start_split_game (seg, player_a , split, player_b, store))
+
+
+// TODO: implement view to find [game_id]
+(** Return the list of the current game I'm part of *)
+[@view] let my_games ((), store : unit * storage) : game list = ([]: game list)
