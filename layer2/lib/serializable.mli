@@ -21,18 +21,18 @@ module Node : sig
 end
 
 (** MichelineT provide a way to perform serialization
-    of Michelson_v1_primitives. [prime_node] is to use to
+    of Michelson_v1_primitives. [prim_node] is to use to
     construct a micheline AST, [from_node] tranforms to
     [t], which can be serialized by [encoding]. *)
 module type MichelineT = sig
 
   include NodeT
 
-  type prime_node = Michelson_v1_primitives.prim Node.node
+  type prim_node = Michelson_v1_primitives.prim Node.node
 
   type t
 
-  val from_node : prime_node -> t
+  val from_node : prim_node -> t
 
   val encoding : t Data_encoding.encoding
 end

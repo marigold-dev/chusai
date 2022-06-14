@@ -21,11 +21,11 @@ module type MichelineT = sig
 
   include NodeT
 
-  type prime_node = Michelson_v1_primitives.prim Node.node
+  type prim_node = Michelson_v1_primitives.prim Node.node
 
   type t
 
-  val from_node : prime_node -> t
+  val from_node : prim_node -> t
 
   val encoding : t Data_encoding.encoding
 end
@@ -33,9 +33,9 @@ end
 module MichelineLite : MichelineT = struct
   include Node
 
-  type prime_node = Michelson_v1_primitives.prim node
+  type prim_node = Michelson_v1_primitives.prim node
 
-  type t = prime_node
+  type t = prim_node
 
   let from_node x = x
 
@@ -171,7 +171,7 @@ module Make_Pack (M : MichelineT) : PackT
 = struct
   include Ty
 
-  type micheline_liked = M.prime_node
+  type micheline_liked = M.prim_node
 
   (** check {{https://tezos.gitlab.io/shell/micheline.html} here} for
       the spec of micheline. *)

@@ -7,7 +7,7 @@ module MichelineTezos : MichelineT = struct
 
   include Node
 
-  type prime_node = Michelson_v1_primitives.prim node
+  type prim_node = Michelson_v1_primitives.prim node
 
   type t = Michelson_v1_primitives.prim Micheline.canonical
 
