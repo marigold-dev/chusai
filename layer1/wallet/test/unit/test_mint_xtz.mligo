@@ -18,6 +18,7 @@ let run_main_mint_xtz_test
 
 
   let wallet_initial_storage = {
+    owner_address = Tezos.self_address;
     mint_address = mint_address;
     bridge_address = dummy_address;
     ticket_storage = (None : chusai_ticket_storage)
@@ -43,7 +44,7 @@ let _test_Wallet_sc_mint_xtz_with_0tez () =
   run_main_mint_xtz_test 
     (fun (contr : wallet_parameter contract) -> Unit.transfer_to_contract_ contr Mint_xtz 0tez)
     (fun (result:Unit.result) ({wallet_storage; wallet_balance; mint_balance} : main_mint_test_props) -> 
-      let {mint_address; bridge_address; ticket_storage} = wallet_storage in
+      let {owner_address; mint_address; bridge_address; ticket_storage} = wallet_storage in
       Unit.and_list 
       [ Unit.assert_rejected_with_error result (Test.compile_value "wallet_sc:Amount should be non-zero") "Assertion failed: should have been rejected"
       ; Unit.assert_equals ticket_storage (None : chusai_ticket_storage) "Should be empty"
@@ -79,11 +80,11 @@ let _test_Wallet_sc_minted_ticket_and_join_with_existed_ticket_in_storage () =
 let _test_Wallet_sc_join_arbitary_ticket_and_ticket_in_storage () =
   run_main_mint_xtz_test 
     (fun (contr : wallet_parameter contract) ->
-      let ticket = create_ticket (Bytes.pack "test") 10n in
+      let ticket = Ticket.create_ticket dummy_address (Bytes.pack "test") 10n in
       let status = Unit.transfer_to_contract_ contr Mint_xtz 10tez in
       Unit.transfer_to_contract status contr (Mint_xtz_cb ticket) 0tez)
     (fun (result : Unit.result) ({wallet_storage; wallet_balance; mint_balance} : main_mint_test_props) -> 
-      let {mint_address; bridge_address; ticket_storage} = wallet_storage in
+      let {owner_address; mint_address; bridge_address; ticket_storage} = wallet_storage in
       Unit.and_list 
       [ Unit.assert_rejected_with_error result (Test.compile_value "wallet_sc:Ticket payload is invalid") "Assertion failed: should have been rejected"
       ; Unit.assert_equals (Wallet.extract_ticket_from_storage wallet_storage) 10n "there should be some tickets"

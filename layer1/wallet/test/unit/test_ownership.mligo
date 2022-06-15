@@ -3,7 +3,6 @@
 #import "../../../wallet/src/wallet_sc.mligo" "Wallet"
 #import "../../../commons/mint_interface.mligo" "Mint_interface"
 #import "../../../commons/wallet_interface.mligo" "Wallet_interface"
-#import "../../../wallet/test/unit/tools.mligo" "Tools"
 
 #import "/../../../stdlib_ext/src/unit_test.mligo" "Unit_test"
 
@@ -124,7 +123,7 @@ let _test_wallet_mint_10tez_with_invalid_owner =
       Unit_test.and_list
         [ Unit_test.assert_rejected_with_error
             result
-            (Test.compile_value "Wallet_sc: invalid owner for this wallet")
+            (Test.compile_value "wallet_sc:invalid owner for this wallet")
             "Should be rejected because invalid source"
         ; Unit_test.assert_
             (wallet_balance = 0tez)
