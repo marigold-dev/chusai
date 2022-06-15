@@ -1,11 +1,11 @@
 #include "../src/wallet_sc.mligo"
 #include "../test/unit/fakes.mligo"
-#import "../../stdlib_ext/src/atomic_test.mligo" "Atom"
+#import "../../stdlib_ext/src/unit_test.mligo" "Unit"
  
 let metric_wallet_gas
     (initial_mint_tez : tez)
     (initial_ticket_storage : chusai_ticket_storage) 
-    (body : wallet_parameter contract -> Atom.status) : unit -> Atom.status =
+    (body : wallet_parameter contract -> Unit.result) : unit -> Unit.result =
     fun () ->
       let taddress, _, _ = Test.originate fake_mint_main unit initial_mint_tez in
       let  mint_address = Tezos.address (Test.to_contract taddress) in
@@ -27,41 +27,42 @@ let metric_wallet_gas
       let wallet_contract = Test.to_contract taddress in
       body wallet_contract
 
-let wallet_metrics : Atom.test_suite =
-  Atom.make_suite
-  "Wallet_sc metrics"
-  [ Atom.make_test 
+let wallet_metrics : Unit.test_suite =
+  Unit.make_suite
+  "Wallet_sc"
+  "Some simple metrics for wallet sc"
+  [ Unit.make_test 
       "mint_xtz_without_ticket_in_storage"
       ""
       ( metric_wallet_gas 
           0tez
           (None : chusai_ticket option)
-          (fun (contr : wallet_parameter contract) -> Atom.transfer_to_contract_ contr Mint_xtz 10tez))
-  ; Atom.make_test   
+          (fun (contr : wallet_parameter contract) -> Unit.transfer_to_contract_ contr Mint_xtz 10tez))
+  ; Unit.make_test   
       "mint_ticket_and_join_with_existing_ticket_in_storage"
       ""
       ( let initial_ticket = create_ticket 0x00 10n in
         metric_wallet_gas 
           0tez
           (Some initial_ticket)
-          (fun (contr : wallet_parameter contract) -> Atom.transfer_to_contract_  contr Mint_xtz 10tez))
-  ; Atom.make_test 
+          (fun (contr : wallet_parameter contract) -> Unit.transfer_to_contract_  contr Mint_xtz 10tez))
+  ; Unit.make_test 
       "redeem_xtz"
       ""
       ( let initial_ticket = create_ticket 0x00 10n in
         metric_wallet_gas 
           10tez
           (Some initial_ticket) 
-          (fun (contr : wallet_parameter contract) -> Atom.transfer_to_contract_  contr Redeem_xtz 0tez))
-  ; Atom.make_test  
+          (fun (contr : wallet_parameter contract) -> Unit.transfer_to_contract_  contr Redeem_xtz 0tez))
+  ; Unit.make_test  
       "send"
       ""
       ( let initial_ticket = create_ticket 0x00 10n in
         metric_wallet_gas 
           0tez
           (Some initial_ticket) 
-          (fun (contr : wallet_parameter contract) -> Atom.transfer_to_contract_  contr Send 0tez))
+          (fun (contr : wallet_parameter contract) -> Unit.transfer_to_contract_  contr Send 0tez))
   ]
 
 let test_metrics_main =
-  Atom.run_suites_metrics [ wallet_metrics ]
+  Unit.run_suites_metrics [ wallet_metrics ]

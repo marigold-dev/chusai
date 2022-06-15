@@ -1,3 +1,13 @@
+
+(* *********************************** *)
+(* Origination functions *)
+(*
+    Defines a polymorphic origination function that wrap the result in a record containing 
+    the different usefull values (typed address, and corresponding contract and address)
+*)
+let debug = false
+
+
 (* *********************************** *)
 (* TICKET COMPARAISON *)
 
