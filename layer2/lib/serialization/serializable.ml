@@ -1,13 +1,4 @@
 
-module type NodeT = sig
-  type 'a node = 
-    | Int of Z.t
-    | String of string
-    | Bytes of Bytes.t
-    | Prim of 'a * 'a node list
-    | Seq of 'a node list
-end
-
 module Node = struct
   type 'a node = 
     | Int of Z.t
@@ -17,9 +8,13 @@ module Node = struct
     | Seq of 'a node list
 end
 
+module type NODE = sig
+  include (module type of Node)
+end
+
 module type MichelineT = sig
 
-  include NodeT
+  include NODE
 
   type prim_node = Michelson_v1_primitives.prim Node.node
 
@@ -141,16 +136,6 @@ module MichelineLite : MichelineT = struct
            ])
 end
 
-module type TyT = sig
-  type 'a ty =
-    | Int_t : Z.t ty
-    | Bytes_t : Bytes.t ty
-    | String_t : string ty
-    | Pair_t : 'a ty * 'b ty -> ('a * 'b) ty
-    | Tuple_t : 'a ty * 'b ty * 'c ty -> ('a * 'b* 'c) ty
-    | List_t : 'a ty -> 'a list ty
-end
-
 module Ty = struct
   type 'a ty =
     | Int_t : Z.t ty
@@ -161,8 +146,12 @@ module Ty = struct
     | List_t : 'a ty -> 'a list ty
 end
 
+module type TY = sig
+  include (module type of Ty)
+end
+
 module type PackT = sig
-  include TyT
+  include TY
 
   val pack : 'a ty * 'a -> bytes
 end

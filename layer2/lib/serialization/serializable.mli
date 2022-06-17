@@ -2,7 +2,7 @@
     to the one in {{: https://ocaml.org/p/tezos-micheline/12.3/doc/Tezos_micheline/Micheline/index.html#type-node} tezos_micheline} but without locations and annotations.
     The only parameter is the type of primitive names.
 *)
-module type NodeT = sig
+module type NODE = sig
   type 'a node =
     | Int of Z.t
     | String of string
@@ -11,14 +11,7 @@ module type NodeT = sig
     | Seq of 'a node list
 end
 
-module Node : sig
-  type 'a node =
-    | Int of Z.t
-    | String of string
-    | Bytes of bytes
-    | Prim of 'a * 'a node list
-    | Seq of 'a node list
-end
+module Node : NODE
 
 (** MichelineT provide a way to perform serialization
     of Michelson_v1_primitives. [prim_node] is to use to
@@ -26,7 +19,7 @@ end
     [t], which can be serialized by [encoding]. *)
 module type MichelineT = sig
 
-  include NodeT
+  include NODE
 
   type prim_node = Michelson_v1_primitives.prim Node.node
 
@@ -39,7 +32,7 @@ end
 
 (** The type, corresponding to ocaml, is used to transplie
     ocaml data to Micheline AST, {!module:NodeT}. *)
-module type TyT = sig
+module type TY = sig
   type 'a ty =
     | Int_t : Z.t ty
     | Bytes_t : Bytes.t ty
@@ -49,21 +42,13 @@ module type TyT = sig
     | List_t : 'a ty -> 'a list ty
 end
 
-module Ty : sig
-  type 'a ty =
-    | Int_t : Z.t ty
-    | Bytes_t : Bytes.t ty
-    | String_t : string ty
-    | Pair_t : 'a ty * 'b ty -> ('a * 'b) ty
-    | Tuple_t : 'a ty * 'b ty * 'c ty -> ('a * 'b* 'c) ty
-    | List_t : 'a ty -> 'a list ty
-end
+module Ty : TY
 
 (** Performing the same serialization as the
     {{: https://tezos.gitlab.io/michelson-reference/#instr-PACK } pack}
      of Michelson instruction. *)
 module type PackT = sig
-  include TyT
+  include TY
 
   val pack : 'a ty * 'a -> bytes
 end
