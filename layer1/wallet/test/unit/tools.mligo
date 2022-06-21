@@ -9,8 +9,8 @@ module Bridge =
     let extract_ticket_from_storage (storage : bridge_storage) : nat = 
         OptionExt.default
           (Option.map
-            (fun (ticket : chusai_ticket) ->
-              let content, _new_ticket = read_ticket ticket in
+            (fun (ticket : Ticket.t) ->
+              let content, _new_ticket = Ticket.read_ticket ticket in
               let _, (_, ticket_value) = content in
               ticket_value)
             storage.tickets)
@@ -23,8 +23,8 @@ module Wallet =
     let extract_ticket_from_storage ({mint_address; bridge_address; ticket_storage} : wallet_storage) : nat =
         OptionExt.default
           (Option.map
-            (fun (ticket : chusai_ticket) ->
-              let content, _new_ticket = read_ticket ticket in
+            (fun (ticket : Ticket.t) ->
+              let content, _new_ticket = Ticket.read_ticket ticket in
               let _, (_, ticket_value) = content in
               ticket_value)
             ticket_storage)

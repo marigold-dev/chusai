@@ -1,5 +1,5 @@
-#include "ticket_api_workaround.mligo"
+#import "ticket/chusai_ticket.mligo" "Ticket"
 
 type mint_parameter =
-      Mint of chusai_ticket contract
-    | Redeem of chusai_ticket * unit contract
+      Mint of Ticket.t contract
+    | Redeem of Ticket.t * unit contract

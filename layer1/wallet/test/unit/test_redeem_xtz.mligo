@@ -11,7 +11,7 @@ type main_redeem_test_props = {
 
 let run_main_redeem_xtz_test 
     (initial_mint_amount : tez)
-    (ticket_opt : chusai_ticket option)
+    (ticket_opt : Ticket.t option)
     (body : wallet_parameter contract -> Unit.result) 
     (run_assertions : Unit.result -> main_redeem_test_props -> Unit.result) : Unit.result = 
   let mint_type_address, _, _ = Test.originate fake_mint_main unit initial_mint_amount in
@@ -44,7 +44,7 @@ let run_main_redeem_xtz_test
 
 let _test_Wallet_sc_redeem_xtz_with_ticket () =
   let ticket_amount = 10n in
-  let ticket = create_ticket dummy_payload ticket_amount in
+  let ticket = Ticket.create_ticket dummy_address dummy_payload ticket_amount in
   run_main_redeem_xtz_test 
     (ticket_amount * 1tez)
     (Some ticket)
@@ -62,7 +62,7 @@ let _test_Wallet_sc_redeem_xtz_with_storage_None () =
   let ticket_amount = 10n in
   run_main_redeem_xtz_test 
     (ticket_amount * 1tez)
-    (None : chusai_ticket option)
+    (None : Ticket.t option)
     (fun (contr: wallet_parameter contract) ->
       Unit.transfer_to_contract_ contr Redeem_xtz 0tez)
     (fun (result:Unit.result) ({wallet_storage; wallet_balance; mint_balance} : main_redeem_test_props) -> 

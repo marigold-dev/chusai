@@ -11,12 +11,12 @@ type main_send_test_props = {
 }
 
 let run_main_send_test
-    (wallet_ticket : chusai_ticket option)
+    (wallet_ticket : Ticket.t option)
     (body : wallet_parameter contract -> chusai_ticket_storage -> Unit.result)  
     (run_assertions : Unit.result -> main_send_test_props -> Unit.result) = 
 
   let bridge_initial_storage = {
-    tickets = (None : chusai_ticket option);
+    tickets = (None : Ticket.t option);
   } in
 
   let bridge_type_address, _, _ = Test.originate fake_bridge_main bridge_initial_storage 0tez in
@@ -45,7 +45,7 @@ let run_main_send_test
  
 let _test_Wallet_sc_sending () =
    let amount_to_deposit = 10n in
-   let wallet_ticket = Some (create_ticket dummy_payload amount_to_deposit) in
+   let wallet_ticket = Some (Ticket.create_ticket dummy_address dummy_payload amount_to_deposit) in
    run_main_send_test 
       wallet_ticket
       (fun (contr: wallet_parameter contract) (ticket : chusai_ticket_storage) ->
@@ -59,7 +59,7 @@ let _test_Wallet_sc_sending () =
  
 let _test_Wallet_sc_sending_when_storage_is_none () =
    run_main_send_test 
-     (None : chusai_ticket option)
+     (None : Ticket.t option)
      (fun (contr: wallet_parameter contract) (ticket : chusai_ticket_storage) ->
         Unit.transfer_to_contract_ contr Send 0tez)
      (fun (result : Unit.result) ({wallet_storage;bridge_storage} : main_send_test_props) -> 

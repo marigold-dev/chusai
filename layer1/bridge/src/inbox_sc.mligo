@@ -1,5 +1,5 @@
 #import "../../commons/inbox_interface.mligo" "Inbox"
-#import "../../commons/ticket_api_workaround.mligo" "Ticket"
+#import "../../commons/ticket/chusai_ticket.mligo" "Ticket"
 
 #include "../../stdlib_ext/src/stdlibext.mligo"
 
@@ -11,12 +11,12 @@ type messages = (nat, message list) big_map
 type entrypoint = Inbox.entrypoint
 type ticket_key = {
   mint_address: address
-; payload: Ticket.chusai_payload
+; payload: Ticket.payload
 }
 
 type state = {
   rollup_level: nat
-; ticket: Ticket.chusai_ticket option
+; ticket: Ticket.t option
 ; fixed_ticket_key: ticket_key
 ; messages: (nat, message list) big_map
 }
@@ -34,10 +34,10 @@ let push_message (state: state) (message: message) : messages =
   | None -> Big_map.add current_level [ message ] current_messages
   | Some xs -> Big_map.add current_level ( message :: xs ) current_messages
 
-let is_same_ticket_key (k1 : ticket_key) (mint_address, payload : address * Ticket.chusai_payload) : bool =
+let is_same_ticket_key (k1 : ticket_key) (mint_address, payload : address * Ticket.payload) : bool =
   k1.mint_address = mint_address && k1.payload = payload
 
-let deposit (state: state) (owner: address) (ticket: Ticket.chusai_ticket) : operation list * state =
+let deposit (state: state) (owner: address) (ticket: Ticket.t) : operation list * state =
   let (addr, (payload, quantity)), fresh_ticket = Ticket.read_ticket ticket in
   let joined_ticket = 
     match state.ticket with
@@ -48,7 +48,7 @@ let deposit (state: state) (owner: address) (ticket: Ticket.chusai_ticket) : ope
       else None
     | Some ticket ->
       Ticket.join_tickets ticket fresh_ticket in
-  let _ = Option.unopt_with_error joined_ticket "Ticket payload is invalid" in
+  let _ = Option.unopt_with_error joined_ticket "Ticket key is invalid" in
   let message = make_deposit_message owner quantity in
   let new_messages = push_message state message in
   let new_state = { state with ticket = joined_ticket ; messages = new_messages} in
