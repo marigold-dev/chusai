@@ -1,6 +1,6 @@
 open Chusai_lib
 
-module Pack_Tezos = struct
+module Tezos_micheline_repr = struct
   let test_bytes () =
     let open Serializable_tezos.Pack in
     let test_tezos_bytes = (Bytes_t, Bytes.of_string "test_pack") in

@@ -1,6 +1,6 @@
 let () =
   let open Alcotest in
   run "Utils" [
-    Test_pack.Pack.test ();
-    Test_tezos_pack.Pack_Tezos.test ()
+    Test_pack.Ligo_bytes_repr.test ();
+    Test_tezos_pack.Tezos_micheline_repr.test ()
   ]
