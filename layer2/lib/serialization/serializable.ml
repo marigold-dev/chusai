@@ -12,7 +12,7 @@ module type NODE = sig
   include (module type of Node)
 end
 
-module type MichelineT = sig
+module type MICHELINE = sig
 
   include NODE
 
@@ -25,7 +25,7 @@ module type MichelineT = sig
   val encoding : t Data_encoding.encoding
 end
 
-module MichelineLite : MichelineT = struct
+module MichelineLite : MICHELINE = struct
   include Node
 
   type prim_node = Michelson_v1_primitives.prim node
@@ -150,13 +150,13 @@ module type TY = sig
   include (module type of Ty)
 end
 
-module type PackT = sig
+module type PACK = sig
   include TY
 
   val pack : 'a ty * 'a -> bytes
 end
 
-module Make_Pack (M : MichelineT) : PackT
+module Make_pack (M : MICHELINE) : PACK
 = struct
   include Ty
 
@@ -196,4 +196,4 @@ module Make_Pack (M : MichelineT) : PackT
     |> pack_micheline
 end
 
-module Pack = Make_Pack (MichelineLite)
+module Pack = Make_pack (MichelineLite)

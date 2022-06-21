@@ -13,11 +13,11 @@ end
 
 module Node : NODE
 
-(** MichelineT provide a way to perform serialization
+(** [MICHELINE] provide a way to perform serialization
     of Michelson_v1_primitives. [prim_node] is to use to
     construct a micheline AST, [from_node] tranforms to
     [t], which can be serialized by [encoding]. *)
-module type MichelineT = sig
+module type MICHELINE = sig
 
   include NODE
 
@@ -47,15 +47,15 @@ module Ty : TY
 (** Performing the same serialization as the
     {{: https://tezos.gitlab.io/michelson-reference/#instr-PACK } pack}
      of Michelson instruction. *)
-module type PackT = sig
+module type PACK = sig
   include TY
 
   val pack : 'a ty * 'a -> bytes
 end
 
 (** Functor building an implementation of the pack
-    with {!module:MichelineT}. *)
-module Make_Pack : functor (M : MichelineT) -> PackT
+    with {!module:MICHELINE}. *)
+module Make_pack (M : MICHELINE) : PACK
 
 (** Pack serializes certain ocaml data as bytes as same as the
     {{: https://tezos.gitlab.io/michelson-reference/#instr-PACK } pack}

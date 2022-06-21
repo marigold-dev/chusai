@@ -1,7 +1,7 @@
 open Chusai_lib
 open Chusai_lib.Serializable
 
-module MichelineTezos : MichelineT = struct
+module Micheline_tezos : MICHELINE = struct
 
   open Tezos_micheline
 
@@ -29,4 +29,4 @@ module MichelineTezos : MichelineT = struct
       Michelson_v1_primitives.prim_encoding
 end
 
-module Pack = Make_Pack (MichelineTezos)
+module Pack = Make_pack (Micheline_tezos)
