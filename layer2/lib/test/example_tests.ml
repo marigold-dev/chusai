@@ -95,19 +95,29 @@ let test_verify_proof_insert_in_empty_list () =
   let input_list = [] in
   let open Mtm in
   let initial_map = mtm_from_list input_list in
-  let _ = Mtm__Debug.print "initial map" initial_map in
+  let _ = Format.printf "initial map=%s\n" @@ Mtm.show initial_map in
   let proof, final_map = upsert k v initial_map in
-  let _ = Mtm__Debug.print "final ap" final_map in
+  let _ = Format.printf "final map=%s\n" @@ Mtm.show final_map in
   check_true @@ verify_proof proof (root_hash initial_map) (root_hash final_map)
   
-let test_verify_proof_insert_in_one_elem_list () =
+let test_verify_proof_insert_right_in_one_elem_list () =
   let k,v = "b", 2 in
   let input_list = [("a", 1)] in
   let open Mtm in
   let initial_map = mtm_from_list input_list in
-  let _ = Mtm__Debug.print "initial map" initial_map in
+  let _ = Format.printf "initial map=%s\n" @@ Mtm.show initial_map in
   let proof, final_map = upsert k v initial_map in
-  let _ = Mtm__Debug.print "final map" final_map in
+  let _ = Format.printf "final map=%s\n" @@ Mtm.show final_map in
+  check_true @@ verify_proof proof (root_hash initial_map) (root_hash final_map)
+    
+let test_verify_proof_insert_left_in_one_elem_list () =
+  let k,v = "a", 1 in
+  let input_list = [("b", 2)] in
+  let open Mtm in
+  let initial_map = mtm_from_list input_list in
+  let _ = Format.printf "initial map=%s\n" @@ Mtm.show initial_map in
+  let proof, final_map = upsert k v initial_map in
+  let _ = Format.printf "final map=%s\n" @@ Mtm.show final_map in
   check_true @@ verify_proof proof (root_hash initial_map) (root_hash final_map)
   
   

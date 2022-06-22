@@ -9,4 +9,7 @@ module type Hash = sig
   val empty : t
   val hash : 'a -> t
   val (++) : t -> t -> t
+
+  (* For debugging purposes. Please remove before merge!!!!*)
+  val unsafe_from_string : string -> t
 end

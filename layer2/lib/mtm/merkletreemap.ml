@@ -6,76 +6,77 @@ module MerkleTreeMap(Hash : Hash_algo.Hash)  : MerkleMap =
     type hash = Hash.t
     [@@deriving show]
 
+    type khash = KHash of hash 
+      [@@deriving show]
+
+    type vhash = VHash of hash 
+      [@@deriving show]
+
+    type thash = THash of hash
+      [@@deriving show]
+
     module Proof = struct
       type t 
       = GoLeft of {
         left_proof : t;
-        khash : hash;
-        vhash : hash;
-        rhash : hash;
+        khash : khash;
+        vhash : vhash;
+        rhash : thash;
       } 
       | GoRight of {
         right_proof : t;
-        khash : hash;
-        vhash : hash;
-        lhash : hash;
+        khash : khash;
+        vhash : vhash;
+        lhash : thash;
       } 
       | ValueChanged of {
-        initial_vhash : hash;
-        final_vhash : hash;
-        khash : hash;
-        lhash:hash;
-        rhash:hash;
+        initial_vhash : vhash;
+        final_vhash : vhash;
+        khash : khash;
+        lhash:thash;
+        rhash:thash;
       }
       | NewLeaf of {
-        vhash : hash;
-        khash : hash;
+        vhash : vhash;
+        khash : khash;
       }
       | ReplaceWithLeftChild of {
-        initial_khash : hash;
-        initial_vhash : hash;
-        initial_lhash : hash;
-        final_khash : hash;
-        final_vhash : hash;
-        final_lhash : hash;
-        final_rhash : hash;
+        initial_khash : khash;
+        initial_vhash : vhash;
+        initial_lhash : thash;
+        final_khash : khash;
+        final_vhash : vhash;
+        final_lhash : thash;
+        final_rhash : thash;
       }
       | ReplaceWithRightChild of {
-        initial_khash : hash;
-        initial_vhash : hash;
-        initial_rhash : hash;
-        final_khash : hash;
-        final_vhash : hash;
-        final_lhash : hash;
-        final_rhash : hash;
-      }
-      | ReplaceWithSmallestRight of {
-        initial_khash : hash;
-        initial_vhash : hash;
-        final_khash : hash;
-        final_vhash : hash;
-        lhash : hash;
-        replacement_proof_right : t;
+        initial_khash : khash;
+        initial_vhash : vhash;
+        initial_rhash : thash;
+        final_khash : khash;
+        final_vhash : vhash;
+        final_lhash : thash;
+        final_rhash : thash;
       }
       | ReplaceWithBiggestLeft of {
-        initial_khash : hash;
-        initial_vhash : hash;
-        final_khash : hash;
-        final_vhash : hash;
-        rhash : hash;
+        initial_khash : khash;
+        initial_vhash : vhash;
+        final_khash : khash;
+        final_vhash : vhash;
+        rhash : thash;
         replacement_proof_left : t;
       }
-      | RemoveLeaf of hash
-      | Noop of hash
+      | RemoveLeaf of thash
+      | Noop of thash
       [@@deriving show]
     end
 
     type ('k, 'v) non_empty_node = {
       key : 'k;
       value : 'v;
-      hash : hash;
-      khash : hash;
-      vhash : hash;
+      thash : thash;
+      khash : khash;
+      vhash : vhash;
       left : ('k, 'v) node;
       right : ('k, 'v) node;
     } [@@deriving show]
@@ -91,21 +92,34 @@ module MerkleTreeMap(Hash : Hash_algo.Hash)  : MerkleMap =
 
     type proof = Proof.t
 
-    let combine_hashes (lhash : hash) (khash : hash) (vhash : hash) (rhash : hash) = Hash.(lhash ++ khash ++ vhash ++ rhash)
-
     let empty (kfmt : Format.formatter -> 'k -> unit) (vfmt : Format.formatter -> 'v -> unit) : ('k, 'v) t = 
       {
         kfmt = kfmt;
         vfmt = vfmt;
         root = Empty
       }
-
-    let node_hash (map_root : ('k, 'v) node) : hash = 
-      match map_root with
-      | Empty -> Hash.empty
-      | Node node -> node.hash
       
-    let root_hash (map : ('k, 'v) t) : hash =  node_hash map.root
+    module H = struct 
+      let key k = KHash (Hash.hash k)
+      let value v = VHash (Hash.hash v)
+
+      
+      let combine (THash lhash : thash) (KHash khash : khash) (VHash vhash : vhash) (THash rhash : thash) = 
+        let h = Hash.(lhash ++ khash ++ vhash ++ rhash) in
+        let _ = Format.printf "combine:%s\n        %s\n        %s\n        %s\n     -> %s\n" (show_hash lhash) (show_hash khash) (show_hash vhash) (show_hash rhash) (show_hash h) in
+        THash h
+
+      let node (map_root : ('k, 'v) node) : thash = 
+        match map_root with
+        | Empty -> THash Hash.empty
+        | Node node -> node.thash
+
+      let tempty : thash = THash Hash.empty
+    end
+
+    let root_hash (map : ('k, 'v) t) : hash =  
+      let THash h = H.node map.root in
+      h
 
     (* 
       The updater function is called with None when the element is missing or Some v when the v value exists in the map.
@@ -114,9 +128,9 @@ module MerkleTreeMap(Hash : Hash_algo.Hash)  : MerkleMap =
     *)
     let update_map (key : 'k) (updater : 'v option -> 'v option) (mtm : ('k, 'v) t) : proof * ('k, 'v) t =
       
-      let update_not_found (value : 'v) : proof * ('k, 'v) node =
-        let khash =  Hash.hash key in
-        let vhash = Hash.hash value in
+      let insert (value : 'v) : proof * ('k, 'v) node =
+        let khash =  H.key key in
+        let vhash = H.value value in
         let p = Proof.NewLeaf {khash = khash; vhash = vhash} in 
         let n = Node {
             key = key; 
@@ -125,26 +139,47 @@ module MerkleTreeMap(Hash : Hash_algo.Hash)  : MerkleMap =
             vhash = vhash; 
             left = Empty; 
             right = Empty;
-            hash = combine_hashes Hash.empty khash vhash Hash.empty;
+            thash = H.combine H.tempty khash vhash H.tempty;
           } in
+        let _ = Format.printf "insert: n=%s\np=%s\n" (show_node mtm.kfmt mtm.vfmt n) (Proof.show p) in
         p, n
       in
+
+      (* Returns the k,v of the biggest child in the subtree starting at current_node, the proof and the subtree without the biggest child *)
+      let rec extract_biggest_child (current_node : ('k, 'v) non_empty_node) : proof * 'k * 'v * ('k, 'v) node =
+        match current_node.right with 
+        | Empty -> 
+          Proof.RemoveLeaf current_node.thash, current_node.key, current_node.value, current_node.left 
+        | Node right ->
+          let child_proof, biggest_key, biggest_value, right_wihout_biggest_child = extract_biggest_child right in
+          let proof = Proof.GoRight {
+            right_proof = child_proof;
+            khash = current_node.khash;
+            vhash = current_node.vhash;
+            lhash = H.node current_node.left;
+          } in
+          let current_without_biggest_child = Node { current_node with 
+            right = right_wihout_biggest_child;
+            thash = H.combine (H.node current_node.left) current_node.khash current_node.vhash (H.node right_wihout_biggest_child)
+          } in
+          proof, biggest_key, biggest_value, current_without_biggest_child
+        in
 
       let rec remove_node (current_node : ('k, 'v) non_empty_node) : proof * ('k, 'v) node =
         let _ = Format.printf "remove_node: current_node=%s\n" @@ show_non_empty_node mtm.kfmt mtm.vfmt current_node in
         match current_node.left, current_node.right with
         | Empty, Empty -> 
           let _ = Format.printf "remove_node: Removing leaf!!!\n" in
-          Proof.RemoveLeaf current_node.hash, Empty
+          Proof.RemoveLeaf current_node.thash, Empty
         | Empty, Node right_child -> 
           let p = Proof.ReplaceWithRightChild {
             initial_khash = current_node.khash;
             initial_vhash = current_node.vhash;
-            initial_rhash = right_child.hash;
+            initial_rhash = right_child.thash;
             final_khash = right_child.khash;
             final_vhash = right_child.vhash;
-            final_lhash = node_hash right_child.left;
-            final_rhash = node_hash right_child.right
+            final_lhash = H.node right_child.left;
+            final_rhash = H.node right_child.right
           } in
           let n = Node right_child in 
           let _ = Format.printf "remove_node: returned node=%s\n" @@ show_node mtm.kfmt mtm.vfmt n in
@@ -153,11 +188,11 @@ module MerkleTreeMap(Hash : Hash_algo.Hash)  : MerkleMap =
           let p = Proof.ReplaceWithLeftChild {
             initial_khash = current_node.khash;
             initial_vhash = current_node.vhash;
-            initial_lhash = left_child.hash;
+            initial_lhash = left_child.thash;
             final_khash = left_child.khash;
             final_vhash = left_child.vhash;
-            final_lhash = node_hash left_child.left;
-            final_rhash = node_hash left_child.right
+            final_lhash = H.node left_child.left;
+            final_rhash = H.node left_child.right
           } in
           let n = Node left_child in 
           let _ = Format.printf "remove_node: returned node=%s\n" @@ show_node mtm.kfmt mtm.vfmt n in
@@ -168,34 +203,33 @@ module MerkleTreeMap(Hash : Hash_algo.Hash)  : MerkleMap =
           let p = Proof.ReplaceWithBiggestLeft {
             initial_khash = current_node.khash;
             initial_vhash = current_node.vhash;
-            final_khash =hash ;
-            final_vhash = replacement_vhash;
-            rhash = right.hash;
+            final_khash = H.key replacement_key ;
+            final_vhash = H.value replacement_value;
+            rhash = right.thash;
             replacement_proof_left = replacement_proof;
           } in
           let n = Node { original_left with
             left = new_left;
             right = current_node.right;
-            hash = combine_hashes (node_hash new_left) original_left.khash original_left.vhash right.hash
+            thash = H.combine (H.node new_left) original_left.khash original_left.vhash right.thash
           } in 
           let _ = Format.printf "remove_node: returned node=%s\n" @@ show_node mtm.kfmt mtm.vfmt n in
           p, n   
-      and extract_biggest_child (current_node : ('k, 'v) non_empty_node) : proof * 'k * 'v * ('k, 'v) node =
-          failwith "todo"
+
       in
 
       let replace_value (current_node : ('k, 'v) non_empty_node) (new_value : 'v) : proof * ('k, 'v) node =
-          let new_vhash = Hash.hash new_value in 
+          let new_vhash = H.value new_value in 
           let p = Proof.ValueChanged {
               initial_vhash = current_node.vhash;
               final_vhash = new_vhash;
               khash = current_node.khash;
-              lhash = node_hash current_node.left;
-              rhash = node_hash current_node.right;
+              lhash = H.node current_node.left;
+              rhash = H.node current_node.right;
             } in
           let n = Node { current_node with
             vhash = new_vhash;
-            hash = combine_hashes (node_hash current_node.left) current_node.khash new_vhash (node_hash current_node.right)
+            thash = H.combine (H.node current_node.left) current_node.khash new_vhash (H.node current_node.right)
           } in
           p, n
       in
@@ -205,8 +239,8 @@ module MerkleTreeMap(Hash : Hash_algo.Hash)  : MerkleMap =
           | Empty -> 
             updater None
             |> Optionext.fold_lazy 
-              (fun () -> Proof.Noop Hash.empty, Empty)
-              update_not_found
+              (fun () -> Proof.Noop H.tempty, Empty)
+              insert
           | Node non_empty_node -> update_non_empty_node non_empty_node
 
       and update_non_empty_node (current_node : ('k, 'v) non_empty_node) : proof * ('k, 'v) node =
@@ -220,14 +254,14 @@ module MerkleTreeMap(Hash : Hash_algo.Hash)  : MerkleMap =
           let update_right_proof, new_right_node = update_node current_node.right in
 
           let p = Proof.GoRight {
-            lhash = node_hash current_node.left;
+            lhash = H.node current_node.left;
             right_proof = update_right_proof;
             khash = current_node.khash;
             vhash = current_node.vhash;
           }  in
 
           let n = Node { current_node with
-            hash = combine_hashes (node_hash current_node.left) current_node.khash current_node.vhash (node_hash new_right_node);
+            thash = H.combine (H.node current_node.left) current_node.khash current_node.vhash (H.node new_right_node);
             right = new_right_node          
           } in
           p, n
@@ -235,14 +269,14 @@ module MerkleTreeMap(Hash : Hash_algo.Hash)  : MerkleMap =
           let update_left_proof, new_left_node = update_node current_node.left in
 
           let p = Proof.GoLeft {
-            rhash = node_hash current_node.left;
+            rhash = H.node current_node.right;
             left_proof = update_left_proof;
             khash = current_node.khash;
             vhash = current_node.vhash;
           }  in
 
           let n = Node { current_node with 
-            hash = combine_hashes (node_hash current_node.left) current_node.khash current_node.vhash (node_hash new_left_node);
+            thash = H.combine (H.node new_left_node) current_node.khash current_node.vhash (H.node current_node.right);
             left = new_left_node        
           } in
           p, n
@@ -257,46 +291,50 @@ module MerkleTreeMap(Hash : Hash_algo.Hash)  : MerkleMap =
     let upsert (key : 'k) (value: 'v) (mtm : ('k, 'v) t) : proof * ('k, 'v) t =
       update_map key (fun _ -> Some value) mtm
 
-    let verify_proof (root_proof : proof) (initial_root_hash : hash) (final_root_hash : hash): bool = 
-      let rec compute_hashes (current_proof : proof) : hash * hash =
-        match current_proof with
-        | Proof.NewLeaf p -> Hash.empty, combine_hashes Hash.empty p.khash p.vhash Hash.empty
+    let verify_proof (root_proof : proof) (initial_root_hash : hash) (final_root_hash : hash): bool =
+      let _ = Format.printf "root_proof=%s\n" @@ Proof.show root_proof in
+      let _ = Format.printf "empty_hash=%s\n" @@ show_thash H.tempty in
+      let rec compute_hashes (current_proof : proof) : thash * thash =
+        let initial, final = match current_proof with
+        | Proof.NewLeaf p -> H.tempty, H.combine H.tempty p.khash p.vhash H.tempty
         | Proof.GoLeft p -> 
             let initial_lhash, final_lhash = compute_hashes p.left_proof in
-            let initial = combine_hashes initial_lhash p.khash p.vhash p.rhash in
-            let final = combine_hashes final_lhash p.khash p.vhash p.rhash in
+            let initial = H.combine initial_lhash p.khash p.vhash p.rhash in
+            let final = H.combine final_lhash p.khash p.vhash p.rhash in
             initial, final
         | Proof.GoRight p -> 
           let initial_rhash, final_rhash = compute_hashes p.right_proof in
-          let initial = combine_hashes p.lhash p.khash p.vhash initial_rhash in
-          let final = combine_hashes p.lhash p.khash p.vhash final_rhash in
+          let initial = H.combine p.lhash p.khash p.vhash initial_rhash in
+          let final = H.combine p.lhash p.khash p.vhash final_rhash in
           initial, final
         | Proof.ValueChanged p -> 
-          let initial = combine_hashes p.lhash p.khash p.initial_vhash p.rhash in
-          let final = combine_hashes p.lhash p.khash p.final_vhash p.rhash in
+          let initial = H.combine p.lhash p.khash p.initial_vhash p.rhash in
+          let final = H.combine p.lhash p.khash p.final_vhash p.rhash in
           initial, final
-        | Proof.RemoveLeaf initial_hash -> initial_hash, Hash.empty
-        | Proof.ReplaceWithSmallestRight p -> 
-          let replacement_initial, replacement_final = compute_hashes p.replacement_proof_right in
-          let initial = combine_hashes p.lhash p.initial_khash p.initial_vhash replacement_initial in
-          let final = combine_hashes p.lhash p.final_khash p.final_vhash replacement_final in
+        | Proof.RemoveLeaf initial_hash -> initial_hash, H.tempty
+        | Proof.ReplaceWithLeftChild p ->
+          let initial = H.combine p.initial_lhash p.initial_khash p.initial_vhash H.tempty in
+          let final = H.combine p.final_lhash p.final_khash p.final_vhash p.final_rhash in
+          initial, final
+        | Proof.ReplaceWithRightChild p ->
+          let initial = H.combine H.tempty p.initial_khash p.initial_vhash p.initial_rhash in
+          let final = H.combine p.final_lhash p.final_khash p.final_vhash p.final_rhash in
           initial, final
         | Proof.ReplaceWithBiggestLeft p -> 
           let replacement_initial, replacement_final = compute_hashes p.replacement_proof_left in
-          let initial = combine_hashes replacement_initial p.initial_khash p.initial_vhash p.rhash in
-          let final = combine_hashes replacement_final p.final_khash p.final_vhash p.rhash in
-          initial, final
-        | Proof.ReplaceWithLeftChild p ->
-          let initial = combine_hashes p.initial_lhash p.initial_khash p.initial_vhash Hash.empty in
-          let final = combine_hashes p.final_lhash p.final_khash p.final_vhash p.final_rhash in
-          initial, final
-        | Proof.ReplaceWithRightChild p ->
-          let initial = combine_hashes Hash.empty p.initial_khash p.initial_vhash p.initial_rhash in
-          let final = combine_hashes p.final_lhash p.final_khash p.final_vhash p.final_rhash in
+          let initial = H.combine replacement_initial p.initial_khash p.initial_vhash p.rhash in
+          let final = H.combine replacement_final p.final_khash p.final_vhash p.rhash in
           initial, final
         | Proof.Noop h -> h, h (* no changes so intial and final hashes are the same *)
           in
-      let computed_initial_hash, computed_final_hash = compute_hashes root_proof in
+        
+        let _ = Format.printf "compute_hashes: current_proof=%s\ninitial=%s\n  final=%s\n" (Proof.show current_proof ) (show_thash initial) (show_thash final) in
+        initial, final
+        in
+
+      let THash computed_initial_hash, THash computed_final_hash = compute_hashes root_proof in
+      let _ = Format.printf "initial_hash=%s\ncomputed_initial_hash=%s\nfinal_hash=%s\ncomputed_final_hash=%s\n" 
+        (show_hash initial_root_hash) (show_hash computed_initial_hash) (show_hash final_root_hash) (show_hash computed_final_hash) in 
       computed_initial_hash = initial_root_hash && computed_final_hash = final_root_hash
         
     let from_list (kfmt : Format.formatter -> 'k -> unit) (vfmt : Format.formatter -> 'v -> unit) (kvs : ('k * 'v) list) : ('k, 'v) t =

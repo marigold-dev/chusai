@@ -22,4 +22,6 @@ module Sha256 : Hash_algo.Hash =
     
     let (++) (Sha256 left) (Sha256 right) = hash @@ String.cat left right
     let empty : t = hash "sha256_empty"
+
+    let unsafe_from_string (s : string) = Sha256 s
   end

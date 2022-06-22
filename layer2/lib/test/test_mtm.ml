@@ -31,7 +31,8 @@ let () =
 
       "proof examples", [
         test_case "insert in empty list" `Quick test_verify_proof_insert_in_empty_list;
-        test_case "insert in one_element list" `Quick test_verify_proof_insert_in_one_elem_list;
+        test_case "insert left in one_element list" `Quick test_verify_proof_insert_left_in_one_elem_list;
+        test_case "insert right in one_element list" `Quick test_verify_proof_insert_right_in_one_elem_list;
         test_case "update one element list" `Quick test_verify_proof_update_one_elem_list;
         test_case "remove from empty map" `Quick test_verify_remove_from_empty_map;
         test_case "remove from nonempty map - interchanging proofs" `Quick test_verify_interchange_remove_proofs;
