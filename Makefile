@@ -19,6 +19,8 @@ test-layer1:
 	make -C layer1 test
 	make -C integration_tests test
 
+test: test-layer1 test-layer2
+
 clean:
 	rm -rf _build
 
