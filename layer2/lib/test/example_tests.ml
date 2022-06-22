@@ -191,3 +191,52 @@ let test_verify_proof_remove_non_leaf_2 () =
   let _ = Format.printf "final_map:%s\n" @@ show final_map in
   check_true @@ verify_proof proof (root_hash initial_map) (root_hash final_map)
     
+
+let test_quickcheck_failure_1 () =
+  let key_to_remove = "c" in
+  let v=3 in
+  let input_list=[
+      ("a",1);
+      ("b",2);
+      ("d",4);
+      ] in
+  let open Mtm in
+  (* If the key to remove is the first in map then we are guaranteed to have a non-leaf node *)
+  let input_unique = (key_to_remove, v) :: input_list in
+  let initial_map = Tools.mtm_from_list input_unique in
+  let _ = Format.printf "initial_map:%s\n" @@ show initial_map in
+  let proof, final_map = Mtm.remove key_to_remove initial_map in
+  let _ = Format.printf "final_map:%s\n" @@ show final_map in
+  check_true @@ verify_proof proof (root_hash initial_map) (root_hash final_map)
+
+
+let test_quickcheck_failure_2 () =
+  let key_to_remove = "c" in
+  let v=3 in
+  let input_list=[
+      ("d",4);
+      ("b",2);
+      ("a",1);
+    ] in
+  let open Mtm in
+  (* If the key to remove is the first in map then we are guaranteed to have a non-leaf node *)
+  let input_unique = (key_to_remove, v) :: input_list in
+  let initial_map = Tools.mtm_from_list input_unique in
+  let _ = Format.printf "initial_map:%s\n" @@ show initial_map in
+  let proof, final_map = Mtm.remove key_to_remove initial_map in
+  let _ = Format.printf "final_map:%s\n" @@ show final_map in
+  check_true @@ verify_proof proof (root_hash initial_map) (root_hash final_map)
+
+  (* key_to_remove="EKNBmx1Y[aAT$)yWX^+n#_XY&92"^xTPsfH&k?f6G:-C%GwCLG dmKTJd@]{{?o[(USta6_\ni_22d\:*Se\n,G*iZ_a(Ca3{<w"
+v=181821301403374769
+input_list=[
+  ("QTJ=J\}",2240302241171960230);
+  ("M`nf9=\582r3p5q#D/7[00>[&:QzG$",745586959726708204);
+  ("% |Q|c4Vv\"fMzw2D2(]j9S]t.k\"<!;dExn\n\n#Dz^2S2}rv6m3g;ZK%Z[GGH#KZd28,j}a-8\Lwi1MP_V-n9Hx+y*K![@",3329232739292941639);
+  ("#xYqu",4025888720695987533);
+  ("u",541440246694805588);
+  ("eA/",1138854575635018053);
+  ("",-1313409954694924932);
+  ("Kn#tG0*5A",1004129363480340817);
+  ("u{2",-76655085410982403)
+  ] *)

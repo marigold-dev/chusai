@@ -147,10 +147,21 @@ module MerkleTreeMap(Hash : Hash_algo.Hash)  : MerkleMap =
 
       (* Returns the k,v of the biggest child in the subtree starting at current_node, the proof and the subtree without the biggest child *)
       let rec extract_biggest_child (current_node : ('k, 'v) non_empty_node) : proof * 'k * 'v * ('k, 'v) node =
-        match current_node.right with 
-        | Empty -> 
-          Proof.RemoveLeaf current_node.thash, current_node.key, current_node.value, current_node.left 
-        | Node right ->
+        match current_node.left, current_node.right with 
+        | Empty, Empty -> 
+          Proof.RemoveLeaf current_node.thash, current_node.key, current_node.value, Empty 
+        | Node left, Empty ->
+          let proof = Proof.ReplaceWithLeftChild {
+            initial_khash = current_node.khash;
+            initial_vhash = current_node.vhash;
+            initial_lhash = H.node current_node.left;
+            final_khash = left.khash;
+            final_vhash = left.vhash;
+            final_lhash = H.node left.left;
+            final_rhash = H.node left.right;       
+          } in
+          proof, current_node.key, current_node.value, current_node.left
+        | _, Node right ->
           let child_proof, biggest_key, biggest_value, right_wihout_biggest_child = extract_biggest_child right in
           let proof = Proof.GoRight {
             right_proof = child_proof;
@@ -199,6 +210,10 @@ module MerkleTreeMap(Hash : Hash_algo.Hash)  : MerkleMap =
           p, n
         | Node original_left, Node right -> 
           let replacement_proof, replacement_key, replacement_value, new_left = extract_biggest_child original_left in
+          let _ = Format.printf "after extract biggest child\nproof=%s\nnew_left=%s\n" 
+            (Proof.show replacement_proof) (show_node mtm.kfmt mtm.vfmt new_left) in
+          let _ = Debug.print "key=" replacement_key in
+          let _ = Debug.print "value=" replacement_value in
           let _ = Format.printf "remove_node: new_left=%s\n" @@ show_node mtm.kfmt mtm.vfmt new_left in
           let p = Proof.ReplaceWithBiggestLeft {
             initial_khash = current_node.khash;
@@ -208,10 +223,16 @@ module MerkleTreeMap(Hash : Hash_algo.Hash)  : MerkleMap =
             rhash = right.thash;
             replacement_proof_left = replacement_proof;
           } in
-          let n = Node { original_left with
+          let replacement_khash = H.key replacement_key in
+          let replacement_vhash = H.value replacement_value in
+          let n = Node {
+            key = replacement_key;
+            value = replacement_value;
+            khash = replacement_khash;
+            vhash = replacement_vhash;
             left = new_left;
             right = current_node.right;
-            thash = H.combine (H.node new_left) original_left.khash original_left.vhash right.thash
+            thash = H.combine (H.node new_left) replacement_khash replacement_vhash right.thash
           } in 
           let _ = Format.printf "remove_node: returned node=%s\n" @@ show_node mtm.kfmt mtm.vfmt n in
           p, n   

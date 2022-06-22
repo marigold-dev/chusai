@@ -112,10 +112,15 @@ let quickcheck_test_verify_proof_remove_non_leaf =
         (* If the key to remove is the first in map then we are guaranteed to have a non-leaf node *)
         let input_unique = Tools.unique @@ (key_to_remove, v) :: input_list in
         let initial_map = Tools.mtm_from_list input_unique in
-        let _ = Mtm__Debug.print "initial_map" initial_map in
         let proof, final_map = Mtm.remove key_to_remove initial_map in
-        let _ = Mtm__Debug.print "final_map" final_map in
-        verify_proof proof (root_hash initial_map) (root_hash final_map)) 
+        let result = verify_proof proof (root_hash initial_map) (root_hash final_map) in
+        if result then true
+        else 
+          let input_list_as_str = String.concat ";" @@ List.map (fun (k,v) -> Format.sprintf "(\"%s\",%d)" k v) input_list in
+          let _ = Format.printf "FAILURE!!!\nkey_to_remove=\"%s\"\nv=%d\ninput_list=[%s]\n" key_to_remove v input_list_as_str in
+          let _ = Format.printf "initial_map=%s" @@ Mtm.show initial_map in
+          let _ = Format.printf "final_map=%s" @@ Mtm.show final_map in
+          false)
 
 
 let quickcheck_test_verify_proof_remove_non_leaf_2 =
