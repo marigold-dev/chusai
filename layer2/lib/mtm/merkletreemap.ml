@@ -109,14 +109,14 @@ module MerkleTreeMap(Hash : Hash_algo.Hash)  : MerkleMap =
         let _ = Format.printf "combine:%s\n        %s\n        %s\n        %s\n     -> %s\n" (show_hash lhash) (show_hash khash) (show_hash vhash) (show_hash rhash) (show_hash h) in
         THash h
 
-      let get (node_opt : ('k, 'v) hnode option) : thash = 
+      let node_hash (node_opt : ('k, 'v) hnode option) : thash = 
         node_opt
         |> Option.fold
           ~none: (THash Hash.empty)
           ~some: (fun hnode -> hnode.thash)
 
       let node (tnode : ('k, 'v) tnode) = 
-        { thash = combine (get tnode.left) tnode.khash tnode.vhash (get tnode.right);
+        { thash = combine (node_hash tnode.left) tnode.khash tnode.vhash (node_hash tnode.right);
           content = tnode;
         }
 
@@ -124,7 +124,7 @@ module MerkleTreeMap(Hash : Hash_algo.Hash)  : MerkleMap =
     end
 
     let root_hash (map : ('k, 'v) t) : hash =  
-      let THash h = H.get map.root in
+      let THash h = H.node_hash map.root in
       h
 
     (* 
@@ -159,11 +159,11 @@ module MerkleTreeMap(Hash : Hash_algo.Hash)  : MerkleMap =
           let proof = Proof.ReplaceWithLeftChild {
             initial_khash = current_node.content.khash;
             initial_vhash = current_node.content.vhash;
-            initial_lhash = H.get current_node.content.left;
+            initial_lhash = H.node_hash current_node.content.left;
             final_khash = left.content.khash;
             final_vhash = left.content.vhash;
-            final_lhash = H.get left.content.left;
-            final_rhash = H.get left.content.right;       
+            final_lhash = H.node_hash left.content.left;
+            final_rhash = H.node_hash left.content.right;       
           } in
           proof, current_node.content.key, current_node.content.value, current_node.content.left
         | _, Some right ->
@@ -172,7 +172,7 @@ module MerkleTreeMap(Hash : Hash_algo.Hash)  : MerkleMap =
             right_proof = child_proof;
             khash = current_node.content.khash;
             vhash = current_node.content.vhash;
-            lhash = H.get current_node.content.left;
+            lhash = H.node_hash current_node.content.left;
           } in
           let current_without_biggest_child = H.node { current_node.content with 
             right = right_wihout_biggest_child;
@@ -193,8 +193,8 @@ module MerkleTreeMap(Hash : Hash_algo.Hash)  : MerkleMap =
             initial_rhash = right_child.thash;
             final_khash = right_child.content.khash;
             final_vhash = right_child.content.vhash;
-            final_lhash = H.get right_child.content.left;
-            final_rhash = H.get right_child.content.right
+            final_lhash = H.node_hash right_child.content.left;
+            final_rhash = H.node_hash right_child.content.right
           } in
           let n = H.node right_child.content in 
           let _ = Format.printf "remove_node: returned node=%s\n" @@ show_hnode mtm.kfmt mtm.vfmt n in
@@ -206,8 +206,8 @@ module MerkleTreeMap(Hash : Hash_algo.Hash)  : MerkleMap =
             initial_lhash = left_child.thash;
             final_khash = left_child.content.khash;
             final_vhash = left_child.content.vhash;
-            final_lhash = H.get left_child.content.left;
-            final_rhash = H.get left_child.content.right
+            final_lhash = H.node_hash left_child.content.left;
+            final_rhash = H.node_hash left_child.content.right
           } in
           let _ = Format.printf "remove_node: returned node=%s\n" @@ show_hnode mtm.kfmt mtm.vfmt left_child in
           p, Some left_child
@@ -246,8 +246,8 @@ module MerkleTreeMap(Hash : Hash_algo.Hash)  : MerkleMap =
               initial_vhash = current_node.content.vhash;
               final_vhash = new_vhash;
               khash = current_node.content.khash;
-              lhash = H.get current_node.content.left;
-              rhash = H.get current_node.content.right;
+              lhash = H.node_hash current_node.content.left;
+              rhash = H.node_hash current_node.content.right;
             } in
           let n = H.node { current_node.content with
             vhash = new_vhash;
@@ -276,7 +276,7 @@ module MerkleTreeMap(Hash : Hash_algo.Hash)  : MerkleMap =
           let update_right_proof, new_right_node = update_node current_node.content.right in
 
           let p = Proof.GoRight {
-            lhash = H.get current_node.content.left;
+            lhash = H.node_hash current_node.content.left;
             right_proof = update_right_proof;
             khash = current_node.content.khash;
             vhash = current_node.content.vhash;
@@ -291,7 +291,7 @@ module MerkleTreeMap(Hash : Hash_algo.Hash)  : MerkleMap =
           let update_left_proof, new_left_node = update_node current_node.content.left in
 
           let p = Proof.GoLeft {
-            rhash = H.get current_node.content.right;
+            rhash = H.node_hash current_node.content.right;
             left_proof = update_left_proof;
             khash = current_node.content.khash;
             vhash = current_node.content.vhash;
