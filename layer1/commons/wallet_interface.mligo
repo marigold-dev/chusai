@@ -1,4 +1,6 @@
-type chusai_ticket_storage = chusai_ticket option
+#import "ticket/chusai_ticket.mligo" "Ticket"
+
+type chusai_ticket_storage = Ticket.t option
 
 type wallet_storage = {
   mint_address : address;
@@ -8,7 +10,7 @@ type wallet_storage = {
 
 type wallet_parameter 
   = Mint_xtz
-  | Mint_xtz_cb of chusai_ticket
+  | Mint_xtz_cb of Ticket.t
   | Send 
   | Redeem_xtz 
   | Redeem_xtz_cb 
@@ -19,6 +21,6 @@ type bridge_storage = {
   tickets : chusai_ticket_storage
 }
 
-type bridge_parameter = Deposit of chusai_ticket
+type bridge_parameter = Deposit of Ticket.t
 
 type bridge_return = operation list * bridge_storage

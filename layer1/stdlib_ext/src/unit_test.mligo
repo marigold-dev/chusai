@@ -19,7 +19,7 @@
    LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
    OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
    SOFTWARE. *)
-   
+
 (* ORDER OF INCLUDES MATTERS *)
 #include "../test-framework/context.mligo"
 #include "../test-framework/result.mligo" 

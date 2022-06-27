@@ -12,26 +12,24 @@ let _u = Test.reset_state 5n ([] : tez list)
   a minimum test implementation of wallet contract
   used as a proxy to test the mint
   doesn't join tickets or anything fancy
-
   takes a function "check_ticket" that allows injection of operation on the ticket received.
   Note : at the moment the Test module doesn't allow get_storage in the presence of tickets, 
     the check_ticket function can be used to go around the pb
-
   To obtain a main function that can be originated, use currying
 *)
-type wallet_storage = chusai_ticket option
+type wallet_storage = Ticket.t option
 type wallet_parameter =
-      Store of chusai_ticket // callback to receive ticket
+      Store of Ticket.t // callback to receive ticket
     | Go_mint of address   // to start minting process from implicit account
     | Go_redeem of address // to start redeem process from implicit account
     | Nope                 // callback to receive money
 let wallet_test_main 
-  (check_ticket : chusai_ticket-> chusai_ticket) 
+  (check_ticket : Ticket.t-> Ticket.t) 
   (action, store : wallet_parameter * wallet_storage) 
     : operation list * wallet_storage = 
     match action with
     | Store ticket ->         
-        let (addr, (payload, total)), ticket = read_ticket ticket in
+        let (addr, (payload, total)), ticket = Ticket.read_ticket ticket in
         begin
           let ticket = check_ticket ticket in
           [], (Some ticket)
@@ -40,7 +38,7 @@ let wallet_test_main
       [], store
     | Go_mint addr -> 
         let mint_contr : mint_parameter contract= Tezos.get_contract_with_error addr "No mint to mint" in
-        let mint_cb : chusai_ticket contract = Tezos.self "%store" in
+        let mint_cb : Ticket.t contract = Tezos.self "%store" in
         [Tezos.transaction (Mint mint_cb) Tezos.amount mint_contr], store
     | Go_redeem addr -> 
         let ticket = Option.unopt store in
@@ -58,7 +56,7 @@ let wallet_test_main
 type originated = Unit.originated
 type originated_wallet = (wallet_parameter, wallet_storage) originated
 (* originates a wallet, given a function to be applied on the ticket when receiving one *)
-let originate_wallet (injected_logic : chusai_ticket-> chusai_ticket) : originated_wallet = 
+let originate_wallet (injected_logic : Ticket.t-> Ticket.t) : originated_wallet = 
     Unit.originate 
        (wallet_test_main injected_logic)
        (None : wallet_storage)
@@ -134,7 +132,7 @@ let _test_mint_first_ticket  () =
 let _test_mint_first_ticket_mutez () = 
   begin
     let mint = originate_mint {payload = 0x00 ; minimum_amount = 100tez} in // fixes minimum amount at 100tea
-    let wallet = originate_wallet (fun (t : chusai_ticket) -> t) in
+    let wallet = originate_wallet (fun (t : Ticket.t) -> t) in
     (* minting *)
     let status = mint_  {wallet = wallet ; amount_ = 1tez ; mint = mint.originated_address}  (Unit.start ()) in // 1tez is less than minimum (100tez)
     (* asserts *)
@@ -152,7 +150,7 @@ let _test_mint_first_ticket_mutez () =
 let _test_mint_first_ticket_0tez () = 
   begin
     let mint = originate_mint mint_default_storage in
-    let wallet = originate_wallet (fun (t : chusai_ticket) -> t) in
+    let wallet = originate_wallet (fun (t : Ticket.t) -> t) in
     (* minting *)
     let status = mint_  {wallet = wallet ; amount_ = 0mutez ; mint = mint.originated_address}  (Unit.start ()) in
     (* asserts *)
@@ -195,9 +193,9 @@ let _test_mint_and_redeem () =
   - mint should refuse to redeem
 *)
 (* function used to split ticket in wallet after minting, will produce a 0-value ticket *)
-let turn_into_0value (ticket : chusai_ticket) : chusai_ticket = 
-  let (_, (_, amount_)), ticket = read_ticket ticket in
-  let opt : (chusai_ticket*chusai_ticket) option= split_ticket ticket (0n, amount_)  in
+let turn_into_0value (ticket : Ticket.t) : Ticket.t = 
+  let (_, (_, amount_)), ticket = Ticket.read_ticket ticket in
+  let opt : (Ticket.t*Ticket.t) option = Ticket.split_ticket ticket 0n amount_  in
   let ticket0, _ticket = Option.unopt(opt) in
   ticket0
 (* test *)
@@ -266,5 +264,3 @@ let suite = Unit.make_suite
 ;  Unit.make_test "Redeem fail : 0 value" "Fails to redeem a 0-value ticket" _test_redeem_0value_ticket                 
 ;  Unit.make_test "Reddem fail : wrong mint" "Mint at mint 1, but try to redeem at other mint 2" _test_redeem_at_wrong_mint               
 ]
-
-

@@ -1,4 +1,4 @@
-#include "../../commons/ticket_api_workaround.mligo"
+#import "../../commons/ticket/chusai_ticket.mligo" "Ticket"
 #include "../../commons/mint_interface.mligo"
 #include "../../commons/wallet_interface.mligo"
 #include "../../stdlib_ext/src/stdlibext.mligo"
@@ -13,7 +13,7 @@ Responsibility: Sends tez to the mint contract in order to obtain a ticket
 let mint_xtz ({mint_address; bridge_address; ticket_storage} : wallet_storage) : wallet_return =
   let ticket_value = Tezos.amount in
   let _ = if ticket_value = 0tez then throw_error "Amount should be non-zero" in
-  let callback_entrypoint = (Tezos.self "%mint_xtz_cb" : chusai_ticket contract) in
+  let callback_entrypoint = (Tezos.self "%mint_xtz_cb" : Ticket.t contract) in
   let mint_contract : mint_parameter contract = Tezos.get_contract_with_error mint_address (error_message "Mint smart contract address doesn't exist") in
   let ops = [Tezos.transaction (Mint callback_entrypoint) ticket_value mint_contract] in
   let new_storage = {
@@ -27,14 +27,14 @@ let mint_xtz ({mint_address; bridge_address; ticket_storage} : wallet_storage) :
 Responsibility: Stores the incoming ticket in to the contract storage 
 by joining with the existing ticket, if needed
 *)
-let mint_xtz_cb (ticket_to_add, {mint_address; bridge_address; ticket_storage} : chusai_ticket*wallet_storage) : wallet_return = 
-  let join_or_fail (existing_ticket : chusai_ticket) =  
-    let joined_tickets = join_tickets existing_ticket ticket_to_add in
+let mint_xtz_cb (ticket_to_add, {mint_address; bridge_address; ticket_storage} : Ticket.t*wallet_storage) : wallet_return = 
+  let join_or_fail (existing_ticket : Ticket.t) =  
+    let joined_tickets = Ticket.join_tickets existing_ticket ticket_to_add in
     let _ =  if (OptionExt.is_none joined_tickets) then throw_error "Ticket payload is invalid" in
     joined_tickets in 
-  let joined_tickets : chusai_ticket option = OptionExt.bind ticket_storage join_or_fail in
+  let joined_tickets : Ticket.t option = OptionExt.bind ticket_storage join_or_fail in
 
-  let new_ticket_storage : chusai_ticket option = OptionExt.or_else joined_tickets (Some ticket_to_add) in
+  let new_ticket_storage : Ticket.t option = OptionExt.or_else joined_tickets (Some ticket_to_add) in
   let new_storage = {
     mint_address = mint_address;
     bridge_address = bridge_address;
@@ -50,7 +50,7 @@ let redeem_xtz ({mint_address; bridge_address; ticket_storage} : wallet_storage)
   let new_storage = {
       mint_address = mint_address; 
       bridge_address = bridge_address; 
-      ticket_storage = (None : chusai_ticket option)
+      ticket_storage = (None : Ticket.t option)
     } in
   (ops, new_storage) 
 
@@ -64,7 +64,7 @@ let send ({mint_address; bridge_address; ticket_storage} : wallet_storage) : wal
   let new_storage = {
       mint_address = mint_address; 
       bridge_address = bridge_address; 
-      ticket_storage = (None : chusai_ticket option)
+      ticket_storage = (None : Ticket.t option)
     } in
   (ops, new_storage)
 
