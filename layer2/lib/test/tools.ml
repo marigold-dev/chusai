@@ -12,3 +12,7 @@ let check_false = Alcotest.(check bool "assert false" false)
 let mtm_from_list = Mtm.from_list Format.pp_print_string Format.pp_print_int
 
 let empty_mtm = Mtm.empty Format.pp_print_string Format.pp_print_int
+
+let verify_proof = Mtm.verify_proof Format.pp_print_string Format.pp_print_int
+
+let third (_a, _b, c) = c

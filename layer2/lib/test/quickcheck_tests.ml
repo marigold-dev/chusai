@@ -25,15 +25,15 @@ let quickcheck_test_remove_upsert_remove =
         input_list
         |> Tools.mtm_from_list
         |> Mtm.upsert k v
-        |> snd
+        |> Tools.third
         |> Mtm.remove k
-        |> snd
+        |> Tools.third
         |> Mtm.to_list in
       let right = 
         input_list
         |> Tools.mtm_from_list
         |> Mtm.remove k
-        |> snd
+        |> Tools.third
         |> Mtm.to_list in
       compare left right = 0)         
 
@@ -51,7 +51,7 @@ let quickcheck_test_remove =
       (fun (key_to_remove, input_unique) ->  
         let input_list_without_key = List.remove_assoc key_to_remove input_unique in
         let left_side = Tools.sorted input_list_without_key in
-        let right_side =  Mtm.to_list @@ snd @@ Mtm.remove key_to_remove @@ mtm_from_list input_unique in
+        let right_side =  Mtm.to_list @@ Tools.third @@ Mtm.remove key_to_remove @@ mtm_from_list input_unique in
         left_side = right_side)
 let quickcheck_test_verify_proof_insert =
   QCheck.Test.make ~count:quickcheck_test_number
@@ -61,8 +61,8 @@ let quickcheck_test_verify_proof_insert =
         let open Mtm in
         let input_list_without_kv = List.remove_assoc k input_list in
         let initial_map = Tools.mtm_from_list input_list_without_kv in
-        let proof, final_map = upsert k v initial_map in
-        verify_proof proof (root_hash initial_map) (root_hash final_map)
+        let op, proof, final_map = upsert k v initial_map in
+        Tools.verify_proof op proof (root_hash initial_map) (root_hash final_map)
         )
 
 let quickcheck_test_verify_proof_update =
@@ -72,8 +72,8 @@ let quickcheck_test_verify_proof_update =
       (fun ((k, v), input_list_with_kv) -> 
         let open Mtm in
         let initial_map = Tools.mtm_from_list input_list_with_kv in
-        let proof, final_map = upsert k v initial_map in
-        verify_proof proof (root_hash initial_map) (root_hash final_map)
+        let op, proof, final_map = upsert k v initial_map in
+        Tools.verify_proof op proof (root_hash initial_map) (root_hash final_map)
         )
 
 let quickcheck_test_verify_proof_remove_failure =
@@ -84,8 +84,8 @@ let quickcheck_test_verify_proof_remove_failure =
         let open Mtm in
         let input_list_without_key = List.remove_assoc key_to_remove input_unique in
         let initial_map = Tools.mtm_from_list input_list_without_key in
-        let proof, final_map = Mtm.remove key_to_remove initial_map in
-        verify_proof proof (root_hash initial_map) (root_hash final_map))
+        let op, proof, final_map = Mtm.remove key_to_remove initial_map in
+        Tools.verify_proof op proof (root_hash initial_map) (root_hash final_map))
         
 
 
@@ -99,8 +99,8 @@ let quickcheck_test_verify_proof_remove_leaf =
         (*d the last element in the list is guaranteed to be added as a leaf in the tree *)
         let key_to_remove, _ = CCList.last_opt input_unique |> Option.get in
         let initial_map = Tools.mtm_from_list input_unique in
-        let proof, final_map = Mtm.remove key_to_remove initial_map in
-        verify_proof proof (root_hash initial_map) (root_hash final_map))
+        let op, proof, final_map = Mtm.remove key_to_remove initial_map in
+        Tools.verify_proof op proof (root_hash initial_map) (root_hash final_map))
 
         
 let quickcheck_test_verify_proof_remove_non_leaf =
@@ -112,8 +112,8 @@ let quickcheck_test_verify_proof_remove_non_leaf =
         (* If the key to remove is the first in map then we are guaranteed to have a non-leaf node *)
         let input_unique = Tools.unique @@ (key_to_remove, v) :: input_list in
         let initial_map = Tools.mtm_from_list input_unique in
-        let proof, final_map = Mtm.remove key_to_remove initial_map in
-        let result = verify_proof proof (root_hash initial_map) (root_hash final_map) in
+        let op, proof, final_map = Mtm.remove key_to_remove initial_map in
+        let result = Tools.verify_proof op proof (root_hash initial_map) (root_hash final_map) in
         if result then true
         else 
           let input_list_as_str = String.concat ";" @@ List.map (fun (k,v) -> Format.sprintf "(\"%s\",%d)" k v) input_list in
@@ -133,6 +133,6 @@ let quickcheck_test_verify_proof_remove_non_leaf_2 =
         let input_unique = Tools.unique @@ (key_to_remove, v) :: input_list in
         let initial_map = Tools.mtm_from_list input_unique in
         let _ = Mtm__Debug.print "initial_map" initial_map in
-        let proof, final_map = Mtm.remove key_to_remove initial_map in
+        let op, proof, final_map = Mtm.remove key_to_remove initial_map in
         let _ = Mtm__Debug.print "final_map" final_map in
-        verify_proof proof (root_hash initial_map) (root_hash final_map))
+        Tools.verify_proof op proof (root_hash initial_map) (root_hash final_map))
