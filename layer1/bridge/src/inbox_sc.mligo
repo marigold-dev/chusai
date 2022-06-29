@@ -39,7 +39,7 @@ let is_same_ticket_key (k1 : ticket_key) (mint_address, payload : address * Tick
 
 let deposit (state: state) (owner: address) (ticket: Ticket.t) : operation list * state =
   let (addr, (payload, quantity)), fresh_ticket = Ticket.read_ticket ticket in
-  let joined_ticket = 
+  let opt_joined_ticket = 
     match state.ticket with
     | None -> 
       if is_same_ticket_key state.fixed_ticket_key (addr,payload) 
@@ -48,10 +48,13 @@ let deposit (state: state) (owner: address) (ticket: Ticket.t) : operation list 
       else None
     | Some ticket ->
       Ticket.join_tickets ticket fresh_ticket in
-  let _ = Option.unopt_with_error joined_ticket "Ticket key is invalid" in
+  let joined_ticket =
+    match opt_joined_ticket with
+     | None -> failwith "Ticket key is invalid"
+     | Some ticket -> ticket in
   let message = make_deposit_message owner quantity in
   let new_messages = push_message state message in
-  let new_state = { state with ticket = joined_ticket ; messages = new_messages} in
+  let new_state = { state with ticket = (Some joined_ticket) ; messages = new_messages} in
   ([], new_state)
 
 
