@@ -6,8 +6,8 @@ sig
 
   type ('k, 'v) op 
   
-  val empty : (Format.formatter -> 'k -> unit) -> (Format.formatter -> 'v -> unit) -> ('k, 'v) t
-  val from_list :  (Format.formatter -> 'k -> unit) -> (Format.formatter -> 'v -> unit) -> ('k * 'v) list -> ('k, 'v) t
+  val empty : ('k, 'v) t
+  val from_list : ('k * 'v) list -> ('k, 'v) t
   val to_list : ('k, 'v) t -> ('k * 'v) list
   
   val update_map : 'k -> ('v option -> 'v option) ->  ('k, 'v) t -> ('k, 'v) op * 'k proof * ('k, 'v) t
@@ -15,7 +15,7 @@ sig
   val remove : 'k ->  ('k, 'v) t -> ('k, 'v) op * 'k proof * ('k, 'v) t
 
   val root_hash : ('k, 'v) t -> hash
-  val verify_proof : (Format.formatter -> 'k -> unit) -> (Format.formatter -> 'v -> unit) -> ('k, 'v) op -> 'k proof -> hash -> hash -> bool
+  val verify_proof : ('k, 'v) op -> 'k proof -> hash -> hash -> bool
 
-  val show : ('k, 'v) t -> string
+  val show : (Format.formatter -> 'k -> unit) -> (Format.formatter -> 'v -> unit) -> ('k, 'v) t -> string
 end
