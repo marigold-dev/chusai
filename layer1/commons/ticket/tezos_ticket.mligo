@@ -14,7 +14,7 @@ type ticket_split = (t * t) option
     Create a [Ticket].
     FIXME: the parameter [address] is just mandatory for fixing the address
            of dummy_ticket but is not used here. *)
-let create_ticket (address: address) (payload: bytes) (quantity: nat) =
+let create_ticket (_address: address) (payload: bytes) (quantity: nat) =
   Tezos.create_ticket payload quantity
 
 (** [Tezos_ticket.read_ticket a_dummy_ticket]
