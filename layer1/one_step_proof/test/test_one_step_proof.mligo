@@ -43,7 +43,7 @@ let _test_proof () =
      Unit.act_as referee
        (fun () -> Unit.transfer_to_contract_
          contract.originated_contract
-         (chusai_contract, chusai_state, chusai_expected_state)
+         (One_step_proof (chusai_contract, chusai_state, chusai_expected_state))
          0tez
        )
    in
@@ -65,41 +65,3 @@ let test =
   Unit.run_suites 
   (  [ suite ]
   )
-
-(*
-let test =
-  let b_state = Bytes.pack 10 in
-  let b_fun = Test.eval (Bytes.pack Exp.lambda) in
-  let opt_fun = Test.run (fun (b_fun:bytes) ->
-    (Bytes.unpack b_fun : (bytes -> bytes option) option)) (Test.decompile b_fun : bytes) in
-  let f = (Test.decompile opt_fun : (bytes -> bytes option) option) in
-  match f with
-  | Some f -> (
-     match (f b_state) with
-     | Some x -> Test.log (Bytes.unpack x : int option)
-     | None -> Test.log ("none"))
-  | None -> Test.failwith "wroong"
-*)
-(*
-let michelson_push(b : bytes) : bytes option =
-  [%Michelson ({| {DROP; PUSH nat 1; PACK; SOME} |} : bytes -> bytes option)] b
-
-
-let test =
-  let b_state = Bytes.pack 10 in
-  let _ops, o_res = Exp.main ((michelson_push, b_state), (None : bytes option)) in
-  match o_res with
-  | None -> Test.log "no result"
-  | Some res -> (
-    let res = (Bytes.unpack res : int option) in
-    Test.log res)
-
-let test =
-  let b_state = Bytes.pack 10 in
-  let _ops, o_res = Exp.main ((Exp.lambda, b_state), (None : bytes option)) in
-  match o_res with
-  | None -> Test.log "no result"
-  | Some res -> (
-    let res = (Bytes.unpack res : int option) in
-    Test.log res)
-*)
