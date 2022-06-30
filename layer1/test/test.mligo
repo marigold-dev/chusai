@@ -11,7 +11,6 @@ let test =
     [ Stdlib_test.suites
     ; Wallet.suites
     ; Refutation_test.suites
-    ; [ Mint.suite 
-      ]
+    ; [ Mint.suite ]
     ]
   )

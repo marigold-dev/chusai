@@ -71,10 +71,24 @@ let _new_game_choice () =
         (Some Left)
         (player2 ()) 
 
+let _finished_game_choice () =
+    _test_split_ko
+        (End (player1 (), (ac 1n))) 
+        ((ab 5n), (bd 5n)) 
+        (Some Left)
+        (player2 ()) 
+
+let _finished_game () =
+    _test_split_ko
+        (End (player1 (), (ac 1n))) 
+        ((ab 5n), (bd 5n)) 
+        (None : choice option)
+        (player2 ()) 
+
 (* SUITE *)
 
 let suite = Unit.make_suite 
-    "Refutation"
+    "Refutation - split"
     "test suite for Game lib (apply_split)"
     [ Unit.make_test
         "Split new game"
@@ -104,4 +118,12 @@ let suite = Unit.make_suite
         "Split new game : Fails"
         "Apply a split on a new game while providing a choice"         
         _new_game_choice
+    ; Unit.make_test
+        "Split finished game : Fails"
+        "Apply a split on a finished game"
+        _finished_game
+    ; Unit.make_test
+        "Split finished game : Fails"
+        "Apply a split on a finished game while providing a choice"         
+        _finished_game_choice
     ]

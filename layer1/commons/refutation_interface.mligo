@@ -1,4 +1,4 @@
-type hash = nat
+type hash = bytes
 
 (** the length of a trace: nb of steps between two hashes*)
 type size = nat
@@ -8,7 +8,7 @@ it posits that a player can go from [h1] to [h2] in [size] moves.
 See [segment.mligo] for API *)
 type segment = hash * hash * size
 
-(** A split is a serie of consecutive segments (here, two) 
+(** A split is a series of two consecutive segments in a pair 
 See [segment.mligo] for API *)
 type split = segment * segment
 
@@ -30,12 +30,12 @@ type state =
     | End    of player * segment 
 
 (** Record storing the state of a game *)
-type game = {
-    // players (A starts defending)
-    player_a : player;
-    player_b : player;    
+type game = 
+{   // players (A starts defending)
+    player_a : player
+;   player_b : player
     // current state
-    state    : state
+;   state    : state
 }
 
 (* ********************************** *)
@@ -45,9 +45,9 @@ type game = {
 (* storage *)
 type game_id = nat    
 type game_map = (game_id,game) big_map 
-type storage = {
-    max_id : game_id ;
-    games  : game_map
+type storage = 
+{   max_id : game_id 
+;   games  : game_map
 }
 
 (* parameter *)

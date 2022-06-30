@@ -28,9 +28,6 @@ let _test_choose_B_L () =
 let _test_choose_B_R () =
     make_test_choose (player1 ()) Right (Split (player2 (), (ab 1n, bc 1n))) (End (player2 (),bc 1n))
 
-// let _test_choose_Fail (proposer: unit -> player) (state:unit -> state) (error : Game.Result.error) () = 
-//     let game = init_game_ (state ()) in
-//     Unit.assert_equals (Game.apply_choice (proposer (),Left,game)) (Error error) "Should fail (be None)"
 let assert_fail_with (game : Game.Result.t) (error : Game.Result.error) (msg : string) =
     match game with
     | Ok _ -> Unit.fail_with msg
@@ -45,7 +42,7 @@ let _test_choose_fail_on_start () =
     make_test_choose_Fail (player2 ()) Left (Start (ab 1n)) Wrong_move
 
 let _test_choose_fail_on_end () =
-    make_test_choose_Fail (player1 ()) Left ( End (player3 () , ab 1n)) Wrong_move 
+    make_test_choose_Fail (player1 ()) Left ( End (player3 () , ab 1n)) Wrong_player 
 
 let _test_choose_fail_wrong_proposer () =
     make_test_choose_Fail (player1 ()) Left (Split (player1 () , (ab 1n,bc 1n))) Wrong_player
@@ -56,7 +53,7 @@ let _test_choose_fail_wrong_size () =
 (* SUITE *)
 
 let suite = Unit.make_suite 
-    "Refutation" 
+    "Refutation - choice" 
     "test suite for Game lib (apply_choice)"
     [ Unit.make_test
         "Choose on a split: A,Left"

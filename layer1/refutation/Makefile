@@ -1,5 +1,5 @@
 
 .PHONY:build
 build:
-	$(LIGO_BUILD) refutation/src/refutation_sc.mligo > $(LAYER1_BUILD_DIR)/refutation_sc.tez
+	$(LIGO_BUILD) refutation/src/bissection_sc.mligo > $(LAYER1_BUILD_DIR)/bissection_sc.tez
 

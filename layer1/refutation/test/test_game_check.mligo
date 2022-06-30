@@ -31,10 +31,17 @@ let _test_check_player_bsplit () =
     ; Unit.assert_equals (Game.check_player (player3 (),game)) false "Not part of the game"
     ]
 
+let _test_check_player_end () =
+    let game = init_game_ (End (player2 (), ab 5n)) in
+    Unit.and_list 
+    [ Unit.assert_equals (Game.check_player (player1 (),game)) false "game has ended"
+    ; Unit.assert_equals (Game.check_player (player2 (),game)) false "game has ended"
+    ; Unit.assert_equals (Game.check_player (player3 (),game)) false "Not part of the game"
+    ]
 (* SUITE *)
 
 let suite = Unit.make_suite 
-    "Refutation" 
+    "Refutation - check" 
     "test suite for Game lib (check)"    
     [ Unit.make_test 
         "Check player: start"
@@ -48,4 +55,8 @@ let suite = Unit.make_suite
         "Check player: Bsplit"
         "test for different players against game in state split" 
         _test_check_player_bsplit
+    ; Unit.make_test
+        "Check player: End"
+        "test for different players against game in state end" 
+        _test_check_player_end
     ]

@@ -2,10 +2,10 @@
 #import "../src/game.mligo" "Game"
 #import "../src/segment.mligo" "Seg"
 #include "../../commons/refutation_interface.mligo"
-let a = 0n
-let b = 1n
-let c = 3n
-let d = 4n
+let a = 0x0101
+let b = 0x0202
+let c = 0x0707
+let d = 0x0808
 let ac (size:size) = Seg.make_segment a c size
 let ab (size:size) = Seg.make_segment a b size
 let ad (size:size) = Seg.make_segment a d size

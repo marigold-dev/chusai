@@ -66,7 +66,7 @@ let check_player (proposer, game : player * game) =
     match state with
     | Start  _ -> proposer = player_b 
     | Split (last_player,_) -> proposer <> last_player &&  (proposer = game.player_a ||proposer = player_b)
-    | _        -> true
+    | _        -> false
 
 (** [start_game (segment, alice, bob)] starts a game with [alice] defending [segment] against [bob] *)
 let start_game (seg, player_a ,player_b : segment * player * player) : Result.t =
@@ -103,7 +103,7 @@ let start_split_game (proposer, seg, player_a , split, player_b : player * segme
         | Error e -> Error e
         | Ok g -> apply_split (player_b, split, (None : choice option), g)
 
-(** [apply_choice (proposer, choice, game)] the player [proposer] make a [choice] among the parts of the last split in [game]*)
+(** [apply_choice (proposer, choice, game)] the player [proposer] makes a [choice] among the parts of the last split in [game]*)
 let apply_choice (proposer, choice, game : player * choice * game) : Result.t =
     if not (check_player (proposer, game)) then Error Wrong_player        
     else

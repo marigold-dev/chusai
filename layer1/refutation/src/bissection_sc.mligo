@@ -45,7 +45,6 @@ let update_game_in_store (id,new_game,store : game_id * game * storage) =
 let start_game (seg, player_a, player_b, store : segment * player * player * storage)  =
     let new_game = Game.Result.get_ok_or_raises (Game.start_game (seg, player_a ,player_b)) "refutation_sc: could not start game" in
     let new_id = store.max_id + 1n in
-    // FIXME: need a way to communicate game id to players -> views ?
     {max_id = new_id; games = Big_map.update new_id (Some new_game) store.games} 
 
 (** [start_split_game (segment, alice, split, bob, storage)] starts a game between [alice] (defending [segment]) and [bob], 
@@ -72,8 +71,8 @@ let action_choice (id, choice, store : game_id * choice * storage) =
   
 (* MAIN *)
 
-let main (_action, store : refutation_parameter * storage) : operation list * storage = 
-    match _action with
+let main (action, store : refutation_parameter * storage) : operation list * storage = 
+    match action with
     |  Endpoint_Choose (id, choice)                           -> [], action_choice (id, choice, store)
     |  Endpoint_Split (id, split, choice_opt)                 -> [], action_split (id, split, choice_opt, store)
     |  Endpoint_Start (seg, player_a ,player_b)               -> [], (start_game (seg, player_a ,player_b, store))

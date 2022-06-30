@@ -47,11 +47,11 @@ let choose (choice, split : choice * split) : segment =
     | Left  -> split.0
     | Right -> split.1
 
-(** checks that a split is well-formed *)
+(** checks that a [split] is well-formed *)
 let split_is_consistent ((s1,s2) : split) : bool =
     (end_ s1) = (start s2)
 
-(** checks that a [split] is a correct attackof a [segment]:
+(** checks that a [split] is a correct attack of a [segment]:
     it is an _attack_ : so the starting point is the same but the end must be different
 *)
 let check_split_against_segment ((s1,s2),segment : split * segment) : bool = 

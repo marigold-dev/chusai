@@ -4,14 +4,14 @@
 #include "utils.mligo"
 
 let _test_choose_left () = 
-    let s1 = Seg.make_segment 0n 1n 2n in
-    let s2 = Seg.make_segment 3n 4n 5n in
+    let s1 = ab 2n in
+    let s2 = bc 5n in
     let split = s1,s2 in
     Unit.assert_equals (Seg.choose (Left,split)) s1 "Should be s1"
 
 let _test_choose_right () = 
-    let s1 = Seg.make_segment 0n 1n 2n in
-    let s2 = Seg.make_segment 3n 4n 5n in
+    let s1 = ab 2n in
+    let s2 = bc 5n in
     let split = s1,s2 in
     Unit.assert_equals (Seg.choose (Right,split)) s2 "Should be s2" 
 
