@@ -21,10 +21,8 @@ type state = {
 ; messages: (nat, message list) big_map
 }
 
-
 let make_deposit_message (owner: address) (quantity: nat) : message =
   Deposit { owner = owner; quantity = quantity }
-
 
 (** Push a message into the inbox, indexed by the current rollup level **)
 let push_message (rollup_level: nat) (messages : (nat, message list) big_map) (message: message) : messages =
@@ -37,17 +35,17 @@ let push_message (rollup_level: nat) (messages : (nat, message list) big_map) (m
 let is_same_ticket_key (k1 : ticket_key) (mint_address, payload : address * Ticket.payload) : bool =
   k1.mint_address = mint_address && k1.payload = payload
 
-let deposit (rollup_level : nat) (stateticket : Ticket.t option) (fixed_ticket_key: ticket_key) (messages: (nat, message list) big_map) (owner: address) (ticket: Ticket.t) : operation list * state =
+let deposit (rollup_level : nat) (state_ticket : Ticket.t option) (fixed_ticket_key: ticket_key) (messages: (nat, message list) big_map) (owner: address) (ticket: Ticket.t) : operation list * state =
   let (addr, (payload, quantity)), fresh_ticket = Ticket.read_ticket ticket in
   let opt_joined_ticket = 
-    match stateticket with
+    match state_ticket with
     | None -> 
       if is_same_ticket_key fixed_ticket_key (addr,payload) 
         then
           Some fresh_ticket
       else None
     | Some ticket ->
-      Ticket.join_ticket ticket fresh_ticket in
+      Ticket.join_tickets ticket fresh_ticket in
   let joined_ticket =
     match opt_joined_ticket with
      | None -> failwith "Ticket key is invalid"
@@ -58,10 +56,9 @@ let deposit (rollup_level : nat) (stateticket : Ticket.t option) (fixed_ticket_k
   ([], new_state)
 
 
-let main (actionstate : entrypoint * state) : operation list * state =
-  let (action, state) = actionstate in
+let main (action, state : entrypoint * state) : operation list * state =
   let {rollup_level;ticket;fixed_ticket_key;messages} = state in
   match action with
-  | Inbox_deposit ticketParam ->
-    let ticket_owner = Tezos.get_sender() in
-    deposit rollup_level ticket fixed_ticket_key messages ticket_owner ticketParam
+  | Inbox_deposit ticketSent ->
+    let ticketSent_owner = Tezos.sender in
+    deposit rollup_level ticket fixed_ticket_key messages ticketSent_owner ticketSent

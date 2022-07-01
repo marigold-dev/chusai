@@ -24,7 +24,7 @@ let read_ticket (ticket: t) : ticket_content =
 
 (** [Tezos_ticket.join_tickets left_ticket right_ticket]
     Join two [Tezos_ticket] of the same key. *)
-let join_ticket (left: t) (right: t) : t option =
+let join_tickets (left: t) (right: t) : t option =
   Tezos.join_tickets (left, right)
 
 (** [Tezos_ticket.split ticket left_part right_part]
