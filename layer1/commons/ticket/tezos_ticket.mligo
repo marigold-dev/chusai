@@ -14,7 +14,7 @@ type ticket_split = (t * t) option
     Create a [Ticket].
     FIXME: the parameter [address] is just mandatory for fixing the address
            of dummy_ticket but is not used here. *)
-let create_ticket (address: address) (payload: bytes) (quantity: nat) =
+let create_ticket (_address: address) (payload: bytes) (quantity: nat) =
   Tezos.create_ticket payload quantity
 
 (** [Tezos_ticket.read_ticket a_dummy_ticket]
@@ -24,7 +24,7 @@ let read_ticket (ticket: t) : ticket_content =
 
 (** [Tezos_ticket.join_tickets left_ticket right_ticket]
     Join two [Tezos_ticket] of the same key. *)
-let join_ticket (left: t) (right: t) : t option =
+let join_tickets (left: t) (right: t) : t option =
   Tezos.join_tickets (left, right)
 
 (** [Tezos_ticket.split ticket left_part right_part]
