@@ -42,23 +42,28 @@ let quickcheck_test_remove =
     let open QCheck in
     triple (pair karb varb) (small_list (pair karb varb)) (small_list (pair karb varb))
     |> map (fun ((k,v), lst1, lst2) -> 
-      let lst = Tools.unique @@ List.concat [lst1; [(k,v)]; lst2] in
+      let all_items = List.concat [lst1; [(k,v)]; lst2] in
+      let lst = Tools.unique all_items in
       (k, lst)) in
 
   QCheck.Test.make ~count:quickcheck_test_number
     ~name:"sorted . List.remove  random . unique = to_list . Mtm.remove random . from_list"
     QCheck.(mygen small_printable_string int)
       (fun (key_to_remove, input_unique) ->  
-        let input_list_without_key = List.remove_assoc key_to_remove input_unique in
+        let _ = Mtm__Debug.print "key_to_remove" key_to_remove in 
+        let _ = Mtm__Debug.print "input_unique" input_unique in 
+        let input_list_without_key = Tools.remove_key key_to_remove input_unique in
+        let _ = Mtm__Debug.print "input_list_without_key" input_list_without_key in 
         let left_side = Tools.sorted input_list_without_key in
         let right_side =  Mtm.to_list @@ Tools.third @@ Mtm.remove key_to_remove @@ Mtm.from_list input_unique in
+        let _ = Mtm__Debug.print "result:" (left_side = right_side) in
         left_side = right_side)
 let quickcheck_test_verify_proof_insert =
   QCheck.Test.make ~count:quickcheck_test_number
     ~name:"verify insert"
     QCheck.(pair (pair small_string int) (small_list @@ pair small_string int))
       (fun ((k, v), input_list) -> 
-        let input_list_without_kv = List.remove_assoc k input_list in
+        let input_list_without_kv = Tools.remove_key k input_list in
         let initial_map = Mtm.from_list input_list_without_kv in
         let op, proof, final_map = Mtm.upsert k v initial_map in
         Mtm.verify_proof op proof (Mtm.root_hash initial_map) (Mtm.root_hash final_map)
@@ -79,7 +84,7 @@ let quickcheck_test_verify_proof_remove_failure =
     ~name:"verify remove inexistent key"
     QCheck.(Arbitraries.list_with_key_gen small_printable_string int)
       (fun ((key_to_remove, _), input_unique) ->  
-        let input_list_without_key = List.remove_assoc key_to_remove input_unique in
+        let input_list_without_key = Tools.remove_key key_to_remove input_unique in
         let initial_map = Mtm.from_list input_list_without_key in
         let op, proof, final_map = Mtm.remove key_to_remove initial_map in
         Mtm.verify_proof op proof (Mtm.root_hash initial_map) (Mtm.root_hash final_map))

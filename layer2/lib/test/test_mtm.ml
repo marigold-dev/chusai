@@ -41,6 +41,8 @@ let () =
         test_case "remove non_leaf 2" `Quick test_verify_proof_remove_non_leaf_2;
         test_case "quickcheck failure 1" `Quick test_quickcheck_failure_1;
         test_case "quickcheck failure 2" `Quick test_quickcheck_failure_2;
+        test_case "quickcheck failure 3" `Quick test_quickcheck_failure_3;
+        test_case "quickcheck failure 4" `Quick test_quickcheck_failure_4;
       ];
       
       "quickcheck - verify proof", [
