@@ -19,12 +19,12 @@ let create_ticket (address: address) (payload: bytes) (quantity: nat) =
 
 (** [Tezos_ticket.read_ticket a_dummy_ticket]
     Read a [Tezos_ticket]. *)
-let read (ticket: t) : ticket_content =
+let read_ticket (ticket: t) : ticket_content =
   Tezos.read_ticket ticket
 
 (** [Tezos_ticket.join_tickets left_ticket right_ticket]
     Join two [Tezos_ticket] of the same key. *)
-let join (left: t) (right: t) : t option =
+let join_ticket (left: t) (right: t) : t option =
   Tezos.join_tickets (left, right)
 
 (** [Tezos_ticket.split ticket left_part right_part]

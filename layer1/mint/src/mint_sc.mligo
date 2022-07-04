@@ -48,5 +48,3 @@ let main (action, store : mint_parameter * storage) : operation list * storage =
           Mint chusai_ticket_contr -> mint (chusai_ticket_contr, store)
         | Redeem (ticket, unit_callback) -> redeem (ticket, unit_callback, store))
     , store
-
-

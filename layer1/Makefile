@@ -18,4 +18,6 @@ test:
 
 metrics:
 	make -C wallet metrics
+
+
 .PHONY: test

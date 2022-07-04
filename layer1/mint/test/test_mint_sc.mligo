@@ -12,11 +12,9 @@ let _u = Test.reset_state 5n ([] : tez list)
   a minimum test implementation of wallet contract
   used as a proxy to test the mint
   doesn't join tickets or anything fancy
-
   takes a function "check_ticket" that allows injection of operation on the ticket received.
   Note : at the moment the Test module doesn't allow get_storage in the presence of tickets, 
     the check_ticket function can be used to go around the pb
-
   To obtain a main function that can be originated, use currying
 *)
 type wallet_storage = Ticket.t option
@@ -266,5 +264,3 @@ let suite = Unit.make_suite
 ;  Unit.make_test "Redeem fail : 0 value" "Fails to redeem a 0-value ticket" _test_redeem_0value_ticket                 
 ;  Unit.make_test "Reddem fail : wrong mint" "Mint at mint 1, but try to redeem at other mint 2" _test_redeem_at_wrong_mint               
 ]
-
-

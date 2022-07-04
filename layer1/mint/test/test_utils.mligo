@@ -44,4 +44,3 @@ let check_ticket (asserts : ticket_asserts) (t : Ticket.t) =
         assert_with_errors_opt (fun (a, b : nat * nat) -> a=b)   asserts.amount_  total "compare_tickets : wrong amount";
         ticket
     end
-

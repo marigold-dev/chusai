@@ -1,0 +1,5 @@
+(library 
+  (name chusai_lib)
+  (public_name chusai.lib)
+  (libraries
+    data-encoding))
