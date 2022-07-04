@@ -1,4 +1,8 @@
-let fold_lazy (none_fn : unit -> 'b) (some_fn : 'a -> 'b) (opt : 'a option) : 'b =
-  match opt with
-  | None -> none_fn ()
-  | Some x -> some_fn x
+module OptionExt : sig 
+  val fold_lazy : none:(unit -> 'b) -> some:('a -> 'b) -> 'a option -> 'b
+end = struct 
+  let fold_lazy ~none ~some opt : 'b =
+    match opt with
+    | None -> none ()
+    | Some x -> some x
+  end
