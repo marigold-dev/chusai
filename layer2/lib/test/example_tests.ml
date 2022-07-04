@@ -197,7 +197,6 @@ let test_quickcheck_failure_3 () =
   let v = 1 in
   let input_list = [("", 0); ("", 0); ("", -1)] in
   let input_list_without_kv = Tools.remove_key k input_list in
-  let _ = Format.printf "input_list_without_kv=%s" (String.concat ";" @@ List.map (fun (k, v) -> Format.sprintf "('%s', %d)" k v) input_list_without_kv) in
   let initial_map = Mtm.from_list input_list_without_kv in
   let op, proof, final_map = Mtm.upsert k v initial_map in
   check_true @@ Mtm.verify_proof op proof (Mtm.root_hash initial_map) (Mtm.root_hash final_map)
@@ -207,10 +206,6 @@ let test_quickcheck_failure_4 () =
   let k,v = "", 0 in
   let input_list_with_kv = [("", 0); ("", -1)] in
   let initial_map = Mtm.from_list input_list_with_kv in
-  let _ = Mtm__Debug.print "initial_map" initial_map in
   let op, proof, final_map = Mtm.upsert k v initial_map in
   let result = Mtm.verify_proof op proof (Mtm.root_hash initial_map) (Mtm.root_hash final_map) in
-  let _ = Mtm__Debug.print "Result:" result in
-  let _ = Mtm__Debug.print "Proof:" proof in
-  let _ = Mtm__Debug.print "Op:" op in
   check_true result

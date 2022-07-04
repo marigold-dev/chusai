@@ -207,6 +207,7 @@ module MerkleTreeMap(Hash : Hash_algo.Hash) : MerkleMap =
             updated_node.key = update_op.key && 
             updated_node.final_vhash = (H.value update_op.new_value) && 
             updated_node.initial_vhash = (H.value update_op.old_value)
+          | _ ->  false
           in 
           is_valid_update proof
         | Remove remove_op -> 
@@ -219,6 +220,7 @@ module MerkleTreeMap(Hash : Hash_algo.Hash) : MerkleMap =
             | ReplaceWithBiggestLeft replace -> replace.initial_key = remove_op.key && replace.final_key < remove_op.key
             | ReplaceWithLeftChild replace -> replace.initial_key = remove_op.key && replace.final_key < remove_op.key
             | ReplaceWithRightChild replace -> replace.initial_key = remove_op.key && replace.final_key > remove_op.key)
+          | _ ->  false
           in
           is_valid_remove proof
     end
@@ -329,19 +331,20 @@ module MerkleTreeMap(Hash : Hash_algo.Hash) : MerkleMap =
         Remove {key = current_node.content.key}, proof, node
 
     let replace_value (current_node : ('k, 'v) hnode) (new_value : 'v) : ('k, 'v) op * 'k proof * ('k, 'v) hnode option =
-        let new_vhash = H.value new_value in 
-        let p = Proof.ValueChanged {
-            initial_vhash = current_node.content.vhash;
-            final_vhash = new_vhash;
-            key = current_node.content.key;
-            lhash = H.node_hash current_node.content.left;
-            rhash = H.node_hash current_node.content.right;
-          } in
-        let n = H.node { current_node.content with
-          vhash = new_vhash;
+      let new_vhash = H.value new_value in 
+      let p = Proof.ValueChanged {
+          initial_vhash = current_node.content.vhash;
+          final_vhash = new_vhash;
+          key = current_node.content.key;
+          lhash = H.node_hash current_node.content.left;
+          rhash = H.node_hash current_node.content.right;
         } in
-        let op = Update {key = current_node.content.key; old_value = current_node.content.value; new_value = new_value} in 
-        op, p, Some n
+      let n = H.node { current_node.content with
+        value = new_value;
+        vhash = new_vhash;
+      } in
+      let op = Update {key = current_node.content.key; old_value = current_node.content.value; new_value = new_value} in 
+      op, p, Some n
 
     let noop (key : 'k) (hash : thash) : ('k, 'v) op * 'k proof * ('k, 'v) hnode option =
       Noop {key = key}, (Proof.NoChange hash), None 
