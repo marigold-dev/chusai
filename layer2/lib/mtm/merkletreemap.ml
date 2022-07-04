@@ -134,6 +134,7 @@ module MerkleTreeMap(Hash : Hash_algo.Hash) : MerkleMap =
       | NoChange of thash
       [@@deriving show]
 
+      (*True when the initial/final hashes computed from the proof match the given initial/final hashes *)
       let matches_hashes (proof : 'k t) (initial_root_hash : hash) (final_root_hash : hash) : bool =
         let rec compute_hashes (current_proof : 'k t) : thash * thash =
           let initial, final = match current_proof with
@@ -181,6 +182,7 @@ module MerkleTreeMap(Hash : Hash_algo.Hash) : MerkleMap =
         computed_initial_hash = initial_root_hash && computed_final_hash = final_root_hash
 
 
+      (* True if the given proof is a valid proof for the given op*)
       let matches_op (proof : 'k t) (op : ('k, 'v) op) : bool = 
         match op with
         | Noop noop -> 
@@ -248,7 +250,7 @@ module MerkleTreeMap(Hash : Hash_algo.Hash) : MerkleMap =
         } in
       Insert {key = key; value = value}, p, Some n
 
-    (* Returns the k,v of the biggest child in the subtree starting at current_node, the proof and the subtree without the biggest child *)
+    (* Returns the content (i.e. k,v) of the biggest child in the subtree starting at current_node, the proof and the subtree with the biggest child removed *)
     let rec extract_biggest_child (current_node : ('k, 'v) hnode) : 'k proof * 'k * 'v * ('k, 'v) hnode option =
       match current_node.content.left, current_node.content.right with 
       | None, None -> 
@@ -278,6 +280,9 @@ module MerkleTreeMap(Hash : Hash_algo.Hash) : MerkleMap =
         } in
         proof, biggest_key, biggest_value, Some current_without_biggest_child
 
+    (* Returns op, proof and a replacement for the current node, considering that the current_node is removed from the tree. 
+        In case of a leaf the returned node is None so there's no replacement. 
+        In case of a non-leaf the returned node is either the left/right child if the replacement is possible  *)
     let remove_node (current_node : ('k, 'v) hnode) : ('k, 'v) op * 'k proof * ('k, 'v) hnode option =
       let proof, node = 
         match current_node.content.left, current_node.content.right with
@@ -330,6 +335,8 @@ module MerkleTreeMap(Hash : Hash_algo.Hash) : MerkleMap =
         in
         Remove {key = current_node.content.key}, proof, node
 
+    (* Replaces the value in the current_node with the new_value. 
+       A new node is always returned.*)
     let replace_value (current_node : ('k, 'v) hnode) (new_value : 'v) : ('k, 'v) op * 'k proof * ('k, 'v) hnode option =
       let new_vhash = H.value new_value in 
       let p = Proof.ValueChanged {
@@ -346,6 +353,8 @@ module MerkleTreeMap(Hash : Hash_algo.Hash) : MerkleMap =
       let op = Update {key = current_node.content.key; old_value = current_node.content.value; new_value = new_value} in 
       op, p, Some n
 
+      (* Doesn't change anything. 
+         This happens when the search reached an empty leaf and the updater returned None so there is nothing to insert. *)
     let noop (key : 'k) (hash : thash) : ('k, 'v) op * 'k proof * ('k, 'v) hnode option =
       Noop {key = key}, (Proof.NoChange hash), None 
 
@@ -355,30 +364,40 @@ module MerkleTreeMap(Hash : Hash_algo.Hash) : MerkleMap =
       If the key doesn't exist (i.e. update is called with None) and the 
     *)
     let update_map (key : 'k) (updater : 'v option -> 'v option) (MerkleTreeMap root : ('k, 'v) t) : ('k, 'v) op * 'k proof * ('k, 'v) t =
+      (* Updates a possibly missing node. 
+         If the node is empty then we try to insert. If not empty then we try to update its content *)
       let rec update_opt_node (current_node_opt : ('k, 'v) hnode option) : ('k, 'v) op * 'k proof * ('k, 'v) hnode option =
         current_node_opt
         |> OptionExt.fold_lazy
           ~none:update_node_not_found 
           ~some:update_non_empty_node
 
+      (* We reached a situation when the node with the given key was not found. 
+         If the updater return a value we need to create a new leaf for it. Otherwise nothing will happen *)
       and update_node_not_found () =
         updater None
         |> OptionExt.fold_lazy 
           ~none: (fun () -> noop key H.tempty) 
           ~some: (insert key)
 
+      (* Some value in the subtree starting at current_node needs to be updated. 
+         Depending on the key value we will update the current node or the left subtree or the right subtree *)
       and update_non_empty_node (current_node : ('k, 'v) hnode) : ('k, 'v) op * 'k proof * ('k, 'v) hnode option =
         if current_node.content.key =  key then update_existing_node current_node
-        else if current_node.content.key < key then update_left_subtree current_node
-        else (*i.e. current_node.key > key *) update_right_subtree current_node
+        else if current_node.content.key < key then update_right_subtree current_node
+        else (*i.e. current_node.key > key *) update_left_subtree current_node
         
+      (* We found the node that needs to be updated. 
+         If the updater returns a Some new value then we replace the old value in the node with the new one.
+         If the updater returns None then we remove the current_node*)
       and update_existing_node (current_node : ('k, 'v) hnode) : ('k, 'v) op * 'k proof * ('k, 'v) hnode option =
         updater (Some current_node.content.value)
         |> OptionExt.fold_lazy
           ~none:(fun () -> remove_node current_node)
           ~some:(replace_value current_node)
 
-      and update_left_subtree  (current_node : ('k, 'v) hnode) : ('k, 'v) op * 'k proof * ('k, 'v) hnode option =
+      (* Go right with the search.*)
+      and update_right_subtree  (current_node : ('k, 'v) hnode) : ('k, 'v) op * 'k proof * ('k, 'v) hnode option =
         let op, update_right_proof, new_right_node = update_opt_node current_node.content.right in
 
         let p = Proof.GoRight {
@@ -393,7 +412,8 @@ module MerkleTreeMap(Hash : Hash_algo.Hash) : MerkleMap =
         } in
         op, p, Some n
 
-      and update_right_subtree (current_node : ('k, 'v) hnode) : ('k, 'v) op * 'k proof * ('k, 'v) hnode option =
+      (* Go left with the search *)
+      and update_left_subtree (current_node : ('k, 'v) hnode) : ('k, 'v) op * 'k proof * ('k, 'v) hnode option =
         let op, update_left_proof, new_left_node = update_opt_node current_node.content.left in
 
         let p = Proof.GoLeft {
@@ -418,6 +438,7 @@ module MerkleTreeMap(Hash : Hash_algo.Hash) : MerkleMap =
     let upsert (key : 'k) (value: 'v) (mtm : ('k, 'v) t) : ('k, 'v) op * 'k proof * ('k, 'v) t =
       update_map key (fun _ -> Some value) mtm
 
+    (* Verifies that the given op is valid for the given proof and that the given hashes are valid for the given proof*)
     let verify_proof (op : ('k, 'v) op) (proof : 'k proof) (initial_root_hash : hash) (final_root_hash : hash) : bool =
       Proof.matches_op proof op && 
       Proof.matches_hashes proof initial_root_hash final_root_hash
