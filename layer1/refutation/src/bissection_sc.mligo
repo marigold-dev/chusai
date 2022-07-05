@@ -36,16 +36,29 @@ let find_game (id, store : game_id * storage) =
     | None      -> (failwith "refutation_sc: no game at this id" : game)
     | Some game -> game
 
+let add_game_for_player (player, game_id, player_map : player * game_id * player_map) : player_map =
+    match Big_map.find_opt player player_map with 
+    | None   -> Big_map.update player (Some [game_id]) player_map
+    | Some l -> Big_map.update player (Some (game_id::l)) player_map
+
+(** *)
+let store_new_game (game, store : game * storage) : storage =
+    let new_id = store.max_id + 1n in
+    let new_games = Big_map.update new_id (Some game) store.games in
+    let new_games_of_players = add_game_for_player ((game.player_a), new_id, store.games_of_players) in
+    let new_games_of_players = add_game_for_player ((game.player_b), new_id, new_games_of_players) in
+    {store with max_id = new_id; games = new_games; games_of_players = new_games_of_players}
+    
+
 (* ENDPOINTS *)
 (** [update_game_in_store (id, game, storage)] updates the game in the [storage] at [id] with a new state [game] *)
 let update_game_in_store (id,new_game,store : game_id * game * storage) = 
-    {max_id = store.max_id; games = Big_map.update id (Some new_game) store.games} 
+    {store with max_id = store.max_id; games = Big_map.update id (Some new_game) store.games} 
 
 (** [start_game (segment, alice, bob, storage)] starts a game between [alice] (defending [segment]) and [bob]*)
 let start_game (seg, player_a, player_b, store : segment * player * player * storage)  =
     let new_game = Game.Result.get_ok_or_raises (Game.start_game (seg, player_a ,player_b)) "refutation_sc: could not start game" in
-    let new_id = store.max_id + 1n in
-    {max_id = new_id; games = Big_map.update new_id (Some new_game) store.games} 
+    store_new_game (new_game, store)
 
 (** [start_split_game (segment, alice, split, bob, storage)] starts a game between [alice] (defending [segment]) and [bob], 
     with [bob] starting his first move with [split] *)
@@ -54,8 +67,7 @@ let start_split_game (seg, player_a , split, player_b ,store : segment * player 
         (Game.start_split_game (Tezos.source, seg, player_a , split, player_b)) 
         "refutation_sc: could not start game" 
     in
-    let new_id = store.max_id + 1n in
-    {max_id = new_id; games = Big_map.update new_id (Some new_game) store.games} 
+    store_new_game (new_game, store)
 
 (** [action_split (game_id, split, choice, storage)] apply [split] on the part [choice] of the current state of game [game_id]*)
 let action_split (id, split, choice_opt, store : game_id * split * choice option * storage) : storage =
@@ -79,6 +91,8 @@ let main (action, store : refutation_parameter * storage) : operation list * sto
     |  Endpoint_Start_Split (seg, player_a , split, player_b) -> [], (start_split_game (seg, player_a , split, player_b, store))
 
 
-// TODO: implement view to find [game_id]
-(** Return the list of the current game I'm part of *)
-[@view] let my_games ((), store : unit * storage) : game list = ([]: game list)
+(** Return the list of the current game I'm playing, if any *)
+[@view] let my_games ((), store : unit * storage) : game_id list option = Big_map.find_opt Tezos.source store.games_of_players
+
+(** Return the list of the current game I'm playing, return the game corresponding to an id *)
+[@view] let get_game (game_id, store : game_id * storage) : game option = Big_map.find_opt game_id store.games

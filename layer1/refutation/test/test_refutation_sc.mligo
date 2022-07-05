@@ -2,31 +2,6 @@
 #import "../src/bissection_sc.mligo" "Bissection"
 #include "utils.mligo"
 
-(* UTILS *)
-// FIXME: need to redefine the type to allow specialization alias definition
-type originated = Unit.originated
-
-// define an alias for the specialization of type [originated]
-type originated_arbiter = (Bissection.refutation_parameter, Bissection.storage) originated
-let bissection_default_storage = 
-    {  max_id = 0n
-    ;  games = (Big_map.empty : Bissection.game_map)
-    }
-
-(** originate the bissection game contract *)
-let originate_bissection () = 
-    Unit.originate Bissection.main bissection_default_storage 0tez
-
-(** find the [max_id] in the storage*)
-let get_max_id (arbiter : originated_arbiter) = 
-    let storage = Test.get_storage arbiter.originated_typed_address in
-    storage.max_id
-
-(** find a game in the storage *)
-let get_game (arbiter : originated_arbiter) (id : game_id) = 
-    let storage = Test.get_storage arbiter.originated_typed_address in
-    Big_map.find_opt id storage.games
-
 (* TESTS *)    
 let _test_originate () = 
     let operator,users = Unit.init_default () in
@@ -114,12 +89,13 @@ let _test_start_wrong_split () =
     ;  fun () -> Unit.assert_equals (get_max_id arbiter) 0n "There should be no game"
     ;  fun () -> let game = get_game arbiter 1n in Unit.assert_equals game (None : game option) "There should NOT be a game"
     ] 
+
 (* SUITE*)
 
 let suite = 
     Unit.make_suite
-    "Refutation sc"
-    "test of the smart contract"
+    "Refutation sc (main)"
+    "test of the smart contract : endpoints"
     [   Unit.make_test
         "Origination"
         "Test only the origination of the contract"

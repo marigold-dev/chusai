@@ -44,10 +44,17 @@ type game =
 
 (* storage *)
 type game_id = nat    
+
+(** the map storing the games *)
 type game_map = (game_id,game) big_map 
+
+(** for each players, the list of games he's playing / has played *)
+type player_map = (player,game_id list) big_map
+
 type storage = 
 {   max_id : game_id 
 ;   games  : game_map
+;   games_of_players : player_map
 }
 
 (* parameter *)
