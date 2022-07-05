@@ -59,13 +59,6 @@ let redeem_ticket
       Redeem_xtz
       fund
 
-let check_ticket_value
-   (expected_payload: bytes)
-   (expected_quantity: nat)
-   (ticket: Ticket.t) : bool =
-   let (_, (payload, quantity)), _ = Ticket.read_ticket ticket in
-   (quantity = expected_quantity) && (expected_payload = payload)
-
 let _test_wallet_origination =
   Unit_test.make_test
     "just a origination of a Wallet_sc"
@@ -89,7 +82,7 @@ let _test_wallet_origination =
       in
       let expected = 0tez in
       let computed = Test.get_balance wallet.originated_address in
-      Unit_test.assert_ (expected = computed) "Balance should be 0tez" )
+      Unit_test.assert_equals computed expected "Balance should be 0tez" )
 
 
 let _test_wallet_mint_10tez_with_invalid_owner =
