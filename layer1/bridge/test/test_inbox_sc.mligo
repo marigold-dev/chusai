@@ -55,6 +55,7 @@ let originate_wallet
     (bridge : address)
     (default_ticket : Ticket.t option) : (wallet_entrypoint, wallet_state) originated =
     let default_state : wallet_state = {
+        owner_address = Tezos.self_address;
         mint_address = mint;
         bridge_address = bridge;
         ticket_storage = default_ticket

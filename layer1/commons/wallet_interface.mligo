@@ -3,6 +3,7 @@
 type chusai_ticket_storage = Ticket.t option
 
 type wallet_storage = {
+  owner_address : address;
   mint_address : address;
   bridge_address : address;
   ticket_storage : chusai_ticket_storage
