@@ -46,7 +46,6 @@ depends: [
   "odoc" {with-doc}
   "alcotest" {with-test}
   "tezt" {pinned & with-test}
-  "tezos-protocol-013-PtJakart-parameters" { >= "12.3" }
   "PtJakart-parameters" { pinned }
   "tezos-013-PtJakart-test-helpers" { pinned }
 ]
