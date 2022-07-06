@@ -52,6 +52,6 @@ depends: [
 
 pin-depends: [
   ["tezt.2.0.0" "git+https://gitlab.com/tezos/tezos.git"]
-  ["tezos-protocol-013-PtJakart-parameters.dev" "git+https://gitlab.com/ligolang/tezos-ligo/"]
+  ["tezos-protocol-013-PtJakart-parameters.13.0" "git+https://gitlab.com/ligolang/tezos-ligo/"]
   ["tezos-013-PtJakart-test-helpers.13.0" "git+https://gitlab.com/tezos/tezos" ]
 ]
