@@ -41,7 +41,7 @@ depends: [
   "tezos-rpc-http-server" { >= "12.3" }
   "tezos-crypto" { >= "12.3" }
   "tezos-protocol-013-PtJakart" { >= "12.3" }
-  "tezos-protocol-013-PtJakart-parameters" { pinned }
+  "tezos-protocol-013-PtJakart-parameters" { >= "12.3" }
   "tezos-013-PtJakart-test-helpers" { pinned }
   "tezos-client-013-PtJakart" { >= "12.3" }
   "preface" { >= "1.0.0" }
