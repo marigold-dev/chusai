@@ -1,4 +1,4 @@
-module type MerkleMap = sig
+module type MERKLEMAP = sig
   type hash
   type ('k, 'v) t
   type 'k proof

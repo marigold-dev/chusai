@@ -2,7 +2,7 @@ open Merklemap
 open Optionext
 
 (* A map implemented as a Merkle-ized binary search tree *)
-module MerkleTreeMap (Hash : Hash_algo.Hash) : MerkleMap = struct
+module Make (Hash : Hash_algo.HASH) : MERKLEMAP = struct
   type hash = Hash.t [@@deriving show]
   type khash = KHash of hash [@@deriving show]
   type vhash = VHash of hash [@@deriving show]

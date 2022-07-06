@@ -1,6 +1,11 @@
-open Mtm.Merkletreemap
-open Mtm.Sha256
-module Mtm = MerkleTreeMap (Sha256)
+open Mtm.Serializer_algo
+
+module Dump : SERIALIZER = struct
+  let serialize a = Batteries.dump a |> Bytes.of_string
+end
+
+module Sha3_256 = Mtm.Sha3_256.Make (Dump)
+module Mtm = Mtm.Merkle_tree_map.Make (Sha3_256)
 
 let sorted lst = List.sort (fun (k1, _) (k2, _) -> String.compare k1 k2) lst
 let unique lst = CCList.uniq ~eq:(fun (k1, _) (k2, _) -> k1 = k2) lst

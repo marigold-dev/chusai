@@ -1,7 +1,4 @@
-open Mtm.Merkletreemap
-open Mtm.Sha256
 open Tools
-module Mtm = MerkleTreeMap (Sha256)
 
 let quickcheck_test_number = 100
 

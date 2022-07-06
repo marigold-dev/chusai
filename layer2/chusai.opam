@@ -11,7 +11,7 @@ depends: [
   "alcotest" {with-test}
   "qcheck-alcotest" {with-test}
   "dune" {>= "2.9" & build & >= "2.9"}
-  "cryptokit" {>= "1.17"}
+  "hacl-star" {>= "0.4.5"}
   "containers" {>= "3.7"}
   "batteries" {>= "3.5.1"}
   "tezos-base58" {>= "1.0.0"}

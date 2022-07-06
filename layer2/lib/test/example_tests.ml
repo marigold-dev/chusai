@@ -1,7 +1,4 @@
-open Mtm.Merkletreemap
-open Mtm.Sha256
 open Tools
-module Mtm = MerkleTreeMap (Sha256)
 
 let test_empty () = check_lists [] (Mtm.to_list Mtm.empty)
 let test_from_empty_list () = check_lists [] (Mtm.to_list @@ Mtm.from_list [])
