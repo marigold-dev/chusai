@@ -47,16 +47,16 @@ let originate_bissection () =
     Unit.originate Bissection.main bissection_default_storage 0tez
 
 (** find the [max_id] in the storage*)
-let get_max_id (arbiter : originated_arbiter) = 
+let get_max_id (arbiter : originated_arbiter) : game_id = 
     let storage = Test.get_storage arbiter.originated_typed_address in
     storage.max_id
 
 (** find a game in the storage *)
-let get_game (arbiter : originated_arbiter) (id : game_id) = 
+let get_game (arbiter : originated_arbiter) (id : game_id) : game option = 
     let storage = Test.get_storage arbiter.originated_typed_address in
     Big_map.find_opt id storage.games
 
-let originate_bissection_from_file () = 
+let originate_bissection_from_file () : originated_arbiter = 
     let file = "refutation/src/bissection_sc.mligo" in
     let views = ["get_game"; "my_games"] in
     let storage = Test.compile_value bissection_default_storage in
