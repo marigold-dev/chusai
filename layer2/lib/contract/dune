@@ -1,0 +1,4 @@
+(library 
+  (name chusai_contract)
+  (public_name chusai.contract)
+  (libraries tezos-client-013-PtJakart tezos-013-PtJakart-test-helpers))
