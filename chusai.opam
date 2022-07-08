@@ -46,12 +46,8 @@ depends: [
   "odoc" {with-doc}
   "alcotest" {with-test}
   "tezt" {pinned & with-test}
-  "PtJakart-parameters" { pinned }
-  "tezos-013-PtJakart-test-helpers" { pinned }
 ]
 
 pin-depends: [
   ["tezt.2.0.0" "git+https://gitlab.com/tezos/tezos.git"]
-  ["PtJakart-parameters.dev" "git+https://gitlab.com/ligolang/tezos-ligo.git#86e9e5593679910f52a06cd2b7483f2ea3f5bd4c" ]
-  ["tezos-013-PtJakart-test-helpers.dev6" "git+https://gitlab.com/ligolang/tezos-ligo.git#86e9e5593679910f52a06cd2b7483f2ea3f5bd4c" ]
 ]
