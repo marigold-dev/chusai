@@ -36,9 +36,6 @@ let is_ok (type a b) (result : (a, b) t) : bool = match result with
     | _ -> true
 
 (** [get_ok_or_raises(Ok v)] is [v] or raises with [msg] *)
-let get_ok_or_raises (type a b) (result : (a, b) t) (msg : string) : a = match result with
-    | Error _ -> failwith msg
+let get_ok_or_raises (type a b) (result : (a, b) t) (pp: b -> string) : a = match result with
+    | Error e -> failwith (pp e)
     | Ok g -> g
-    
-(** [get_ok (Ok v)] is [v] or raises *)
-let get_ok (type a b) (result : (a, b) t) = get_ok_or_raises result "Could not open result"
