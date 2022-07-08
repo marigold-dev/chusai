@@ -11,8 +11,9 @@ build:
 	mkdir -p $(LAYER1_BUILD_DIR)
 
 	make -C wallet build
-	make -C mint build
+	make -C mint build 
 	make -C refutation build
+	make -C chain build
 
 test:
 	$(LIGO_TEST) test/test.mligo
