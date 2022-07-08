@@ -8,6 +8,12 @@ module Prelude =
 module OptionExt =
   struct
     [@inline]
+    let join (type a) (opt : (a option) option) : a option = 
+      match opt with
+        None -> None
+        | Some opt -> opt
+
+    [@inline]
     let bind (type a b) (ma : a option) (f : a -> b option) : b option = 
       match ma with
         None -> None 
