@@ -35,10 +35,10 @@ let is_ok (type a b) (result : (a, b) t) : bool = match result with
     | Error _ -> false
     | _ -> true
 
-(** [get_ok_or_raises(Ok v)] is [v] or raises with [msg] *)
-let get_ok_or_raises (type a b) (result : (a, b) t) (msg : string) : a = match result with
-    | Error _ -> failwith msg
+(** [get_ok_or_raises (Ok v) pp ] is [v], [get_ok_or_raises (Error e) pp_error ] raises with [pp_error e] *)
+let get_ok_or_raises (type a b) (result : (a, b) t) (pp_error : b -> string) : a = match result with
+    | Error e -> failwith (pp_error e)
     | Ok g -> g
     
 (** [get_ok (Ok v)] is [v] or raises *)
-let get_ok (type a b) (result : (a, b) t) = get_ok_or_raises result "Could not open result"
+let get_ok (type a b) (result : (a, b) t) = get_ok_or_raises result ( fun (_ : b) -> "Could not open result")

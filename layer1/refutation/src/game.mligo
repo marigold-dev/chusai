@@ -46,18 +46,19 @@ module Result = struct
     (** the alias for the results of game transition functions *)
     type t = (game, error) result
 
-    (* aliases for stdlib function for ease of reference *)
-    let has_failed : t -> bool = Stdlib_Result.is_error 
-    let is_ok : t -> bool = Stdlib_Result.is_ok 
-    let get_ok_or_raises : t -> string -> game = Stdlib_Result.get_ok_or_raises         
-    let get_ok : t -> game = Stdlib_Result.get_ok 
-
     (** pretty printer for errors *)
     let error_to_string (e : error) = match e with
         | Wrong_player -> "Wrong_player"
         | Split_failed -> "Split_failed"
         | Wrong_move -> "Wrong_move"
         | Segment_too_long -> "Segment_too_long"
+
+    (* aliases for stdlib function for ease of reference *)
+    let has_failed : t -> bool = Stdlib_Result.is_error 
+    let is_ok : t -> bool = Stdlib_Result.is_ok 
+    let get_game_or_raises (v : t) (msg : string) : game = Stdlib_Result.get_ok_or_raises v (fun ( e : error) -> (error_to_string e) ^ ": " ^ msg)        
+    let get_ok : t -> game = Stdlib_Result.get_ok 
+
 end
 
 (** [check_player (alice, game)] check that it's [alice]'s turn in [game] *)

@@ -57,13 +57,13 @@ let update_game_in_store (id,new_game,store : game_id * game * storage) =
 
 (** [start_game (segment, alice, bob, storage)] starts a game between [alice] (defending [segment]) and [bob]*)
 let start_game (seg, player_a, player_b, store : segment * player * player * storage)  =
-    let new_game = Game.Result.get_ok_or_raises (Game.start_game (seg, player_a ,player_b)) "refutation_sc: could not start game" in
+    let new_game = Game.Result.get_game_or_raises (Game.start_game (seg, player_a ,player_b)) "refutation_sc: could not start game" in
     store_new_game (new_game, store)
 
 (** [start_split_game (segment, alice, split, bob, storage)] starts a game between [alice] (defending [segment]) and [bob], 
     with [bob] starting his first move with [split] *)
 let start_split_game (seg, player_a , split, player_b ,store : segment * player * split * player * storage)  =
-    let new_game = Game.Result.get_ok_or_raises 
+    let new_game = Game.Result.get_game_or_raises 
         (Game.start_split_game (Tezos.source, seg, player_a , split, player_b)) 
         "refutation_sc: could not start game" 
     in
@@ -72,13 +72,13 @@ let start_split_game (seg, player_a , split, player_b ,store : segment * player 
 (** [action_split (game_id, split, choice, storage)] apply [split] on the part [choice] of the current state of game [game_id]*)
 let action_split (id, split, choice_opt, store : game_id * split * choice option * storage) : storage =
     let game = find_game (id, store) in
-    let new_game = Game.Result.get_ok_or_raises (Game.apply_split (Tezos.source, split,choice_opt,game)) "refutation_sc: could not split" in
+    let new_game = Game.Result.get_game_or_raises (Game.apply_split (Tezos.source, split,choice_opt,game)) "refutation_sc: could not split" in
     update_game_in_store (id,new_game,store)
 
 (** [action_choice (game_id, choice, storage)] choose the part [choice] on the current state of game [game_id] *)
 let action_choice (id, choice, store : game_id * choice * storage) =
     let game = find_game (id, store) in
-    let new_game = Game.Result.get_ok_or_raises (Game.apply_choice (Tezos.source, choice,game)) "refutation_sc: could not apply choice" in
+    let new_game = Game.Result.get_game_or_raises (Game.apply_choice (Tezos.source, choice,game)) "refutation_sc: could not apply choice" in
     update_game_in_store (id,new_game,store)
   
 (* MAIN *)
