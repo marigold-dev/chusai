@@ -28,8 +28,8 @@
  
 #include "../../commons/refutation_interface.mligo"
 
-let make_segment (start:hash) (end_:hash) (size:size) =
-    (start,end_,size)
+let make_segment (start:hash) (ending:hash) (size:size) =
+    (start,ending,size)
 
 let size (s : segment ) =
     s.2
@@ -37,8 +37,7 @@ let size (s : segment ) =
 let start (s : segment ) =
     s.0
 
-// FIXME: the trailing _ is ugly, need to find a better name
-let end_ (s : segment ) =
+let ending (s : segment ) =
     s.1
 
 (** chooses in a [split] the segment corresponding to a given [choice] *)
@@ -49,7 +48,7 @@ let choose (choice, split : choice * split) : segment =
 
 (** checks that a [split] is well-formed *)
 let split_is_consistent ((s1,s2) : split) : bool =
-    (end_ s1) = (start s2)
+    (ending s1) = (start s2)
 
 (** checks that a [split] is a correct attack of a [segment]:
     it is an _attack_ : so the starting point is the same but the end must be different
@@ -58,4 +57,4 @@ let check_split_against_segment ((s1,s2),segment : split * segment) : bool =
        (start segment) = (start s1)
     && split_is_consistent (s1,s2)
     && (size segment) = ((size s1) + (size s2))
-    && (end_ segment) <> (end_ s2)    
+    && (ending segment) <> (ending s2)    
