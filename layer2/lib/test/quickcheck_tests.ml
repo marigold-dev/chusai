@@ -34,6 +34,48 @@ let quickcheck_test_remove_upsert_remove =
       compare left right = 0)
 ;;
 
+let quickcheck_test_upsert_lookup =
+  QCheck.Test.make
+    ~count:quickcheck_test_number
+    ~name:" Some v = lookup k . upsert k v . from_list "
+    QCheck.(
+      pair
+        (pair small_string int)
+        (Arbitraries.nonempty_small_list @@ pair small_string int))
+    (fun (((k, v), input_list) : ('k * 'v) * ('k * 'v) list) ->
+      let result =
+        input_list
+        |> Mtm.from_list
+        |> Mtm.upsert k v
+        |> Tools.third
+        |> Mtm.lookup k
+        |> Tools.third
+      in
+      Some v = result)
+;;
+
+let quickcheck_test_upsert_remove_lookup =
+  QCheck.Test.make
+    ~count:quickcheck_test_number
+    ~name:"None = lookup k . remove k . upsert k v . from_list "
+    QCheck.(
+      pair
+        (pair small_string int)
+        (Arbitraries.nonempty_small_list @@ pair small_string int))
+    (fun (((k, v), input_list) : ('k * 'v) * ('k * 'v) list) ->
+      let result =
+        input_list
+        |> Mtm.from_list
+        |> Mtm.upsert k v
+        |> Tools.third
+        |> Mtm.remove k
+        |> Tools.third
+        |> Mtm.lookup k
+        |> Tools.third
+      in
+      Option.is_none result)
+;;
+
 let quickcheck_test_remove =
   let mygen (karb : 'k QCheck.arbitrary) (varb : 'v QCheck.arbitrary)
       : ('k * ('k * 'v) list) QCheck.arbitrary
@@ -145,4 +187,36 @@ let quickcheck_test_verify_proof_remove_non_leaf_2 =
       let initial_map = Mtm.from_list input_unique in
       let op, proof, final_map = Mtm.remove key_to_remove initial_map in
       Mtm.verify_proof op proof (Mtm.root_hash initial_map) (Mtm.root_hash final_map))
+;;
+
+let quickcheck_test_verify_proof_lookup_found =
+  QCheck.Test.make
+    ~count:quickcheck_test_number
+    ~name:"verify lookup key found"
+    QCheck.(
+      pair
+        (pair small_printable_string int)
+        (list_of_size (int_range 1 1).gen @@ pair small_printable_string int))
+    (fun ((key, v), input_list) ->
+      let input_unique = Tools.unique @@ ((key, v) :: input_list) in
+      let m = Mtm.from_list input_unique in
+      let op, proof, Some _ = Mtm.lookup key m in
+      let h = Mtm.root_hash m in
+      Mtm.verify_proof op proof h h)
+;;
+
+let quickcheck_test_verify_proof_lookup_not_found =
+  QCheck.Test.make
+    ~count:quickcheck_test_number
+    ~name:"verify lookup key NOT found"
+    QCheck.(
+      pair
+        (pair small_printable_string int)
+        (list_of_size (int_range 1 1).gen @@ pair small_printable_string int))
+    (fun ((key, v), input_list) ->
+      let input_unique = Tools.unique @@ Tools.remove_key key input_list in
+      let m = Mtm.from_list input_unique in
+      let op, proof, None = Mtm.lookup key m in
+      let h = Mtm.root_hash m in
+      Mtm.verify_proof op proof h h)
 ;;

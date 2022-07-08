@@ -7,6 +7,7 @@ module type MERKLEMAP = sig
   val empty : ('k, 'v) t
   val from_list : ('k * 'v) list -> ('k, 'v) t
   val to_list : ('k, 'v) t -> ('k * 'v) list
+  val lookup : 'k -> ('k, 'v) t -> ('k, 'v) op * 'k proof * 'v option
 
   val update_map
     :  'k

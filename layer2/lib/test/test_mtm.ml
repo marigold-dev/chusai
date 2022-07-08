@@ -67,11 +67,15 @@ let () =
         ; QCheck_alcotest.to_alcotest quickcheck_test_verify_proof_remove_leaf
         ; QCheck_alcotest.to_alcotest quickcheck_test_verify_proof_remove_non_leaf
         ; QCheck_alcotest.to_alcotest quickcheck_test_verify_proof_remove_non_leaf_2
+        ; QCheck_alcotest.to_alcotest quickcheck_test_verify_proof_lookup_found
+        ; QCheck_alcotest.to_alcotest quickcheck_test_verify_proof_lookup_not_found
         ] )
     ; ( "quickcheck - map operations"
       , [ QCheck_alcotest.to_alcotest quickcheck_test_to_list_from_list
         ; QCheck_alcotest.to_alcotest quickcheck_test_remove
         ; QCheck_alcotest.to_alcotest quickcheck_test_remove_upsert_remove
+        ; QCheck_alcotest.to_alcotest quickcheck_test_upsert_lookup
+        ; QCheck_alcotest.to_alcotest quickcheck_test_upsert_remove_lookup
         ] )
     ]
 ;;
