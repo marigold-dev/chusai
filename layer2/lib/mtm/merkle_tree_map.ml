@@ -68,7 +68,7 @@ module Make (Hash : Hash_algo.HASH) : MERKLEMAP = struct
   end
 
   module Proof = struct
-    type 'k remove_proof =
+    type 'k remove_step =
       | ReplaceWithLeftChild of
           { initial_key : 'k
           ; initial_vhash : vhash
@@ -93,7 +93,6 @@ module Make (Hash : Hash_algo.HASH) : MERKLEMAP = struct
           ; final_key : 'k
           ; final_vhash : vhash
           ; rhash : thash
-          ; replacement_proof_left : 'k t
           }
       | RemoveLeaf of
           { vhash : vhash
@@ -101,16 +100,14 @@ module Make (Hash : Hash_algo.HASH) : MERKLEMAP = struct
           }
     [@@deriving show]
 
-    and 'k t =
+    type 'k step =
       | GoLeft of
-          { left_proof : 'k t
-          ; key : 'k
+          { key : 'k
           ; vhash : vhash
           ; rhash : thash
           }
       | GoRight of
-          { right_proof : 'k t
-          ; key : 'k
+          { key : 'k
           ; vhash : vhash
           ; lhash : thash
           }
@@ -125,9 +122,12 @@ module Make (Hash : Hash_algo.HASH) : MERKLEMAP = struct
           { vhash : vhash
           ; key : 'k
           }
-      | Remove of 'k remove_proof
-      | NoChange of thash
-      | NotFound
+      | Remove of 'k remove_step
+      | NoChange of
+          { thash : thash
+          ; key : 'k
+          }
+      | NotFound of { thash : thash }
       | Found of
           { key : 'k
           ; vhash : vhash
@@ -136,42 +136,15 @@ module Make (Hash : Hash_algo.HASH) : MERKLEMAP = struct
           }
     [@@deriving show]
 
+    type 'k t = 'k step list
+
     (*True when the initial/final hashes computed from the proof match the given initial/final hashes *)
     let matches_hashes (proof : 'k t) (initial_root_hash : hash) (final_root_hash : hash)
         : bool
       =
-      let rec compute_hashes (current_proof : 'k t) : thash * thash =
-        let initial, final =
-          match current_proof with
-          | NewLeaf p -> H.tempty, H.combine H.tempty (H.key p.key) p.vhash H.tempty
-          | GoLeft p ->
-            let initial_lhash, final_lhash = compute_hashes p.left_proof in
-            let khash = H.key p.key in
-            let initial = H.combine initial_lhash khash p.vhash p.rhash in
-            let final = H.combine final_lhash khash p.vhash p.rhash in
-            initial, final
-          | GoRight p ->
-            let initial_rhash, final_rhash = compute_hashes p.right_proof in
-            let khash = H.key p.key in
-            let initial = H.combine p.lhash khash p.vhash initial_rhash in
-            let final = H.combine p.lhash khash p.vhash final_rhash in
-            initial, final
-          | ValueChanged p ->
-            let khash = H.key p.key in
-            let initial = H.combine p.lhash khash p.initial_vhash p.rhash in
-            let final = H.combine p.lhash khash p.final_vhash p.rhash in
-            initial, final
-          | Remove remove_proof -> compute_hashes_remove remove_proof
-          | NoChange h -> h, h
-          | NotFound -> H.tempty, H.tempty
-          | Found p ->
-            let khash = H.key p.key in
-            let h = H.combine p.lhash khash p.vhash p.rhash in
-            h, h
-          (* no changes so intial and final hashes are the same *)
-        in
-        initial, final
-      and compute_hashes_remove = function
+      let compute_hashes_for_remove ((initial_acc, final_acc) : thash * thash)
+          : 'k remove_step -> thash * thash
+        = function
         | RemoveLeaf p -> H.combine H.tempty (H.key p.key) p.vhash H.tempty, H.tempty
         | ReplaceWithLeftChild p ->
           let initial =
@@ -190,86 +163,127 @@ module Make (Hash : Hash_algo.HASH) : MERKLEMAP = struct
           in
           initial, final
         | ReplaceWithBiggestLeft p ->
-          let replacement_initial, replacement_final =
-            compute_hashes p.replacement_proof_left
-          in
           let initial =
-            H.combine replacement_initial (H.key p.initial_key) p.initial_vhash p.rhash
+            H.combine initial_acc (H.key p.initial_key) p.initial_vhash p.rhash
           in
-          let final =
-            H.combine replacement_final (H.key p.final_key) p.final_vhash p.rhash
-          in
+          let final = H.combine final_acc (H.key p.final_key) p.final_vhash p.rhash in
           initial, final
       in
-      let THash computed_initial_hash, THash computed_final_hash = compute_hashes proof in
+      let compute_hashes (step : 'k step) ((initial_acc, final_acc) : thash * thash)
+          : thash * thash
+        =
+        match step with
+        | NewLeaf p ->
+          let initial = H.tempty in
+          let final = H.combine H.tempty (H.key p.key) p.vhash H.tempty in
+          initial, final
+        | GoLeft p ->
+          let khash = H.key p.key in
+          let initial = H.combine initial_acc khash p.vhash p.rhash in
+          let final = H.combine final_acc khash p.vhash p.rhash in
+          initial, final
+        | GoRight p ->
+          let khash = H.key p.key in
+          let initial = H.combine p.lhash khash p.vhash initial_acc in
+          let final = H.combine p.lhash khash p.vhash final_acc in
+          initial, final
+        | ValueChanged p ->
+          let khash = H.key p.key in
+          let initial = H.combine p.lhash khash p.initial_vhash p.rhash in
+          let final = H.combine p.lhash khash p.final_vhash p.rhash in
+          initial, final
+        | Remove remove_proof ->
+          compute_hashes_for_remove (initial_acc, final_acc) remove_proof
+        | NoChange no_change -> no_change.thash, no_change.thash
+        | NotFound not_found -> not_found.thash, not_found.thash
+        | Found p ->
+          let khash = H.key p.key in
+          let h = H.combine p.lhash khash p.vhash p.rhash in
+          h, h
+        (* no changes so intial and final hashes are the same *)
+      in
+      let THash computed_initial_hash, THash computed_final_hash =
+        List.fold_right compute_hashes proof (H.tempty, H.tempty)
+      in
       computed_initial_hash = initial_root_hash && computed_final_hash = final_root_hash
     ;;
 
-    (* True if the given proof is a valid proof for the given op*)
+    (* Given a key and a proof it goes through the proof and consumes 
+       the GoLeft/GoRight steps as long as they are valid i.e. for the left steps 
+       the node's key is bigger and for the right steps the node's key is smaller
+       If the path was valid and returns a Some value containing the remaining steps 
+       from the original proof.
+    *)
+    let rec consume_path (key : 'k) : 'k t -> 'k t option = function
+      | [] -> None
+      | GoLeft current_step :: next_steps ->
+        if current_step.key > key then consume_path key next_steps else None
+      | GoRight current_step :: next_steps ->
+        if current_step.key < key then consume_path key next_steps else None
+      | remaining_path -> Some remaining_path
+    ;;
+
+    (* given a key and a remove proof it checks if the replacement was done correctly.
+       A correct replacement means that the replaced node's final key equals the replacement node key. 
+    *)
+    let rec is_valid_replacement (replaced_key : 'k) : 'k t -> bool = function
+      | [ Remove (RemoveLeaf remove_leaf) ] -> remove_leaf.key == replaced_key
+      | [ Remove (ReplaceWithLeftChild replace) ] -> replace.initial_key == replaced_key
+      | [ Remove (ReplaceWithRightChild replace) ] -> replace.initial_key == replaced_key
+      | Remove (ReplaceWithBiggestLeft replace) :: rest ->
+        replace.initial_key == replaced_key
+        && is_valid_replacement replace.initial_key rest
+      | GoRight _ :: rest -> is_valid_replacement replaced_key rest
+      | _ -> false
+    ;;
+
+    (* True if the given proof is a valid proof for the given op *)
     let matches_op (proof : 'k t) (op : ('k, 'v) op) : bool =
-      match op with
-      | Noop noop ->
-        let rec is_valid_noop = function
-          | NoChange _ -> true
-          | GoLeft go_left -> go_left.key > noop.key && is_valid_noop go_left.left_proof
-          | GoRight go_right ->
-            go_right.key < noop.key && is_valid_noop go_right.right_proof
-          | _ -> false
-        in
-        is_valid_noop proof
-      | Insert insert_op ->
-        let rec is_valid_insert = function
-          | GoLeft go_left ->
-            go_left.key > insert_op.key && is_valid_insert go_left.left_proof
-          | GoRight go_right ->
-            go_right.key < insert_op.key && is_valid_insert go_right.right_proof
-          | NewLeaf new_leaf ->
-            new_leaf.key = insert_op.key && new_leaf.vhash = H.value insert_op.value
-          | _ -> false
-        in
-        is_valid_insert proof
-      | Update update_op ->
-        let rec is_valid_update = function
-          | GoLeft go_left ->
-            go_left.key > update_op.key && is_valid_update go_left.left_proof
-          | GoRight go_right ->
-            go_right.key < update_op.key && is_valid_update go_right.right_proof
-          | ValueChanged updated_node ->
-            updated_node.key = update_op.key
-            && updated_node.final_vhash = H.value update_op.new_value
-            && updated_node.initial_vhash = H.value update_op.old_value
-          | _ -> false
-        in
-        is_valid_update proof
-      | Remove remove_op ->
-        let rec is_valid_remove = function
-          | GoLeft go_left ->
-            go_left.key > remove_op.key && is_valid_remove go_left.left_proof
-          | GoRight go_right ->
-            go_right.key < remove_op.key && is_valid_remove go_right.right_proof
-          | Remove remove_proof ->
-            (match remove_proof with
-            | RemoveLeaf remove_leaf -> remove_leaf.key = remove_op.key
-            | ReplaceWithBiggestLeft replace ->
-              replace.initial_key = remove_op.key && replace.final_key < remove_op.key
-            | ReplaceWithLeftChild replace ->
-              replace.initial_key = remove_op.key && replace.final_key < remove_op.key
-            | ReplaceWithRightChild replace ->
-              replace.initial_key = remove_op.key && replace.final_key > remove_op.key)
-          | _ -> false
-        in
-        is_valid_remove proof
-      | Lookup lookup_op ->
-        let rec is_valid_lookup = function
-          | GoLeft go_left ->
-            go_left.key > lookup_op.key && is_valid_lookup go_left.left_proof
-          | GoRight go_right ->
-            go_right.key < lookup_op.key && is_valid_lookup go_right.right_proof
-          | Found found -> found.key = lookup_op.key
-          | NotFound -> true
-          | _ -> false
-        in
-        is_valid_lookup proof
+      let result =
+        match op with
+        | Noop noop ->
+          consume_path noop.key proof
+          |> Option.map (function
+                 | [ NoChange no_change_proof ] -> true
+                 | _ -> false)
+        | Insert insert_op ->
+          consume_path insert_op.key proof
+          |> Option.map (function
+                 | [ NewLeaf new_leaf ] ->
+                   new_leaf.key = insert_op.key
+                   && new_leaf.vhash = H.value insert_op.value
+                 | _ -> false)
+        | Update update_op ->
+          consume_path update_op.key proof
+          |> Option.map (function
+                 | [ ValueChanged updated_node ] ->
+                   updated_node.key = update_op.key
+                   && updated_node.final_vhash = H.value update_op.new_value
+                   && updated_node.initial_vhash = H.value update_op.old_value
+                 | _ -> false)
+        | Remove remove_op ->
+          consume_path remove_op.key proof
+          |> Option.map (function
+                 | [ Remove (RemoveLeaf remove_leaf) ] -> remove_leaf.key = remove_op.key
+                 | [ Remove (ReplaceWithLeftChild replace) ] ->
+                   replace.initial_key = remove_op.key
+                   && replace.final_key < remove_op.key
+                 | [ Remove (ReplaceWithRightChild replace) ] ->
+                   replace.initial_key = remove_op.key
+                   && replace.final_key > remove_op.key
+                 | Remove (ReplaceWithBiggestLeft replace) :: proof_of_replacement ->
+                   replace.initial_key = remove_op.key
+                   && replace.final_key < remove_op.key
+                   && is_valid_replacement replace.final_key proof_of_replacement
+                 | _ -> false)
+        | Lookup lookup_op ->
+          consume_path lookup_op.key proof
+          |> Option.map (function
+                 | [ Found found ] -> found.key = lookup_op.key
+                 | [ NotFound not_found ] -> true
+                 | _ -> false)
+      in
+      CCOption.get_or ~default:false result
     ;;
   end
 
@@ -286,9 +300,9 @@ module Make (Hash : Hash_algo.HASH) : MERKLEMAP = struct
   let insert (key : 'k) (value : 'v) : ('k, 'v) op * 'k proof * ('k, 'v) hnode option =
     let khash = H.key key in
     let vhash = H.value value in
-    let p = Proof.NewLeaf { key; vhash } in
+    let proof = [ Proof.NewLeaf { key; vhash } ] in
     let n = H.node { key; value; khash; vhash; left = None; right = None } in
-    Insert { key; value }, p, Some n
+    Insert { key; value }, proof, Some n
   ;;
 
   (* Returns the content (i.e. k,v) of the biggest child in the subtree starting at current_node, the proof and the subtree with the biggest child removed *)
@@ -297,14 +311,14 @@ module Make (Hash : Hash_algo.HASH) : MERKLEMAP = struct
     =
     match current_node.content.left, current_node.content.right with
     | None, None ->
-      let proof =
+      let proof_step =
         Proof.Remove
           (Proof.RemoveLeaf
              { key = current_node.content.key; vhash = current_node.content.vhash })
       in
-      proof, current_node.content.key, current_node.content.value, None
+      [ proof_step ], current_node.content.key, current_node.content.value, None
     | Some left, None ->
-      let proof =
+      let proof_step =
         Proof.Remove
           (Proof.ReplaceWithLeftChild
              { initial_key = current_node.content.key
@@ -316,7 +330,7 @@ module Make (Hash : Hash_algo.HASH) : MERKLEMAP = struct
              ; final_rhash = H.node_hash left.content.right
              })
       in
-      ( proof
+      ( [ proof_step ]
       , current_node.content.key
       , current_node.content.value
       , current_node.content.left )
@@ -324,14 +338,14 @@ module Make (Hash : Hash_algo.HASH) : MERKLEMAP = struct
       let child_proof, biggest_key, biggest_value, right_wihout_biggest_child =
         extract_biggest_child right
       in
-      let proof =
+      let proof_step =
         Proof.GoRight
-          { right_proof = child_proof
-          ; key = current_node.content.key
+          { key = current_node.content.key
           ; vhash = current_node.content.vhash
           ; lhash = H.node_hash current_node.content.left
           }
       in
+      let proof = proof_step :: child_proof in
       let current_without_biggest_child =
         H.node { current_node.content with right = right_wihout_biggest_child }
       in
@@ -347,14 +361,14 @@ module Make (Hash : Hash_algo.HASH) : MERKLEMAP = struct
     let proof, node =
       match current_node.content.left, current_node.content.right with
       | None, None ->
-        let p =
+        let proof_step =
           Proof.Remove
             (Proof.RemoveLeaf
                { vhash = current_node.content.vhash; key = current_node.content.key })
         in
-        p, None
+        [ proof_step ], None
       | None, Some right_child ->
-        let p =
+        let proof_step =
           Proof.Remove
             (Proof.ReplaceWithRightChild
                { initial_key = current_node.content.key
@@ -367,9 +381,9 @@ module Make (Hash : Hash_algo.HASH) : MERKLEMAP = struct
                })
         in
         let n = H.node right_child.content in
-        p, Some n
+        [ proof_step ], Some n
       | Some left_child, None ->
-        let p =
+        let proof_step =
           Proof.Remove
             (Proof.ReplaceWithLeftChild
                { initial_key = current_node.content.key
@@ -381,13 +395,13 @@ module Make (Hash : Hash_algo.HASH) : MERKLEMAP = struct
                ; final_rhash = H.node_hash left_child.content.right
                })
         in
-        p, Some left_child
+        [ proof_step ], Some left_child
       | Some original_left, Some right ->
         let replacement_proof, replacement_key, replacement_value, new_left =
           extract_biggest_child original_left
         in
         let replacement_vhash = H.value replacement_value in
-        let p =
+        let proof_step =
           Proof.Remove
             (Proof.ReplaceWithBiggestLeft
                { initial_key = current_node.content.key
@@ -395,9 +409,9 @@ module Make (Hash : Hash_algo.HASH) : MERKLEMAP = struct
                ; final_key = replacement_key
                ; final_vhash = replacement_vhash
                ; rhash = right.thash
-               ; replacement_proof_left = replacement_proof
                })
         in
+        let proof = proof_step :: replacement_proof in
         let n =
           H.node
             { key = replacement_key
@@ -408,7 +422,7 @@ module Make (Hash : Hash_algo.HASH) : MERKLEMAP = struct
             ; right = current_node.content.right
             }
         in
-        p, Some n
+        proof, Some n
     in
     Remove { key = current_node.content.key }, proof, node
   ;;
@@ -419,7 +433,7 @@ module Make (Hash : Hash_algo.HASH) : MERKLEMAP = struct
       : ('k, 'v) op * 'k proof * ('k, 'v) hnode option
     =
     let new_vhash = H.value new_value in
-    let p =
+    let proof_step =
       Proof.ValueChanged
         { initial_vhash = current_node.content.vhash
         ; final_vhash = new_vhash
@@ -436,13 +450,13 @@ module Make (Hash : Hash_algo.HASH) : MERKLEMAP = struct
         ; new_value
         }
     in
-    op, p, Some n
+    op, [ proof_step ], Some n
   ;;
 
   (* Doesn't change anything. 
          This happens when the search reached an empty leaf and the updater returned None so there is nothing to insert. *)
   let noop (key : 'k) (hash : thash) : ('k, 'v) op * 'k proof * ('k, 'v) hnode option =
-    Noop { key }, Proof.NoChange hash, None
+    Noop { key }, [ Proof.NoChange { thash = hash; key } ], None
   ;;
 
   (* This implements a generic operation on the tree with the given root. It returns the following:
@@ -452,7 +466,7 @@ module Make (Hash : Hash_algo.HASH) : MERKLEMAP = struct
      4. the result of the operation (ex: the found value in case of a lookup)*)
   let process_tree
       (type k v result)
-      (handle_key_not_found : unit -> (k, v) op * k proof * (k, v) hnode option * result)
+      (handle_key_not_found : thash -> (k, v) op * k proof * (k, v) hnode option * result)
       (handle_key_found :
         (k, v) hnode -> (k, v) op * k proof * (k, v) hnode option * result)
       (key : k)
@@ -465,7 +479,9 @@ module Make (Hash : Hash_algo.HASH) : MERKLEMAP = struct
         : (k, v) op * k proof * (k, v) hnode option * result
       =
       current_node_opt
-      |> OptionExt.fold_lazy ~none:handle_key_not_found ~some:update_non_empty_node
+      |> OptionExt.fold_lazy
+           ~none:(fun () -> handle_key_not_found @@ H.node_hash current_node_opt)
+           ~some:update_non_empty_node
     (* We reached a situation when the node with the given key was not found. 
           If the updater return a value we need to create a new leaf for it. Otherwise nothing will happen *)
     (* Some value in the subtree starting at current_node needs to be updated. 
@@ -488,16 +504,16 @@ module Make (Hash : Hash_algo.HASH) : MERKLEMAP = struct
       let op, update_right_proof, new_right_node, result =
         update_opt_node current_node.content.right
       in
-      let p =
+      let proof_step =
         Proof.GoRight
           { lhash = H.node_hash current_node.content.left
-          ; right_proof = update_right_proof
           ; key = current_node.content.key
           ; vhash = current_node.content.vhash
           }
       in
+      let proof = proof_step :: update_right_proof in
       let n = H.node { current_node.content with right = new_right_node } in
-      op, p, Some n, result
+      op, proof, Some n, result
     (* Go left with the search *)
     and update_left_subtree (current_node : (k, v) hnode)
         : (k, v) op * k proof * (k, v) hnode option * result
@@ -505,16 +521,16 @@ module Make (Hash : Hash_algo.HASH) : MERKLEMAP = struct
       let op, update_left_proof, new_left_node, result =
         update_opt_node current_node.content.left
       in
-      let p =
+      let proof_step =
         Proof.GoLeft
           { rhash = H.node_hash current_node.content.right
-          ; left_proof = update_left_proof
           ; key = current_node.content.key
           ; vhash = current_node.content.vhash
           }
       in
+      let proof = proof_step :: update_left_proof in
       let n = H.node { current_node.content with left = new_left_node } in
-      op, p, Some n, result
+      op, proof, Some n, result
     in
     update_opt_node root
   ;;
@@ -540,10 +556,12 @@ module Make (Hash : Hash_algo.HASH) : MERKLEMAP = struct
   ;;
 
   (* A convenience function that wraps a process_tree "key-not-found" handler that doesn't create a new node but returns a value *)
-  let read_only_handle_key_not_found (handler : unit -> ('k, 'v) op * 'k proof * 'r) ()
+  let read_only_handle_key_not_found
+      (handler : thash -> ('k, 'v) op * 'k proof * 'r)
+      (thash : thash)
       : ('k, 'v) op * 'k proof * ('k, 'v) hnode option * 'r
     =
-    let o, p, r = handler () in
+    let o, p, r = handler thash in
     o, p, None, r
   ;;
 
@@ -551,11 +569,13 @@ module Make (Hash : Hash_algo.HASH) : MERKLEMAP = struct
       : ('k, 'v) op * 'k proof * 'v option
     =
     let op = Lookup { key } in
-    let handle_key_not_found () : ('k, 'v) op * 'k proof * 'v option =
-      op, Proof.NotFound, None
+    let handle_key_not_found (current_node_thash : thash)
+        : ('k, 'v) op * 'k proof * 'v option
+      =
+      op, [ Proof.NotFound { thash = current_node_thash } ], None
     in
     let handle_key_found (node : ('k, 'v) hnode) : ('k, 'v) op * 'k proof * 'v option =
-      let proof =
+      let proof_step =
         Proof.Found
           { key = node.content.key
           ; lhash = H.node_hash node.content.left
@@ -563,7 +583,7 @@ module Make (Hash : Hash_algo.HASH) : MERKLEMAP = struct
           ; vhash = node.content.vhash
           }
       in
-      op, proof, Some node.content.value
+      op, [ proof_step ], Some node.content.value
     in
     let op, proof, _new_root, result =
       process_tree
@@ -586,9 +606,9 @@ module Make (Hash : Hash_algo.HASH) : MERKLEMAP = struct
       (MerkleTreeMap root : ('k, 'v) t)
       : ('k, 'v) op * 'k proof * ('k, 'v) t
     =
-    let handle_key_not_found () : ('k, 'v) op * 'k proof * ('k, 'v) hnode option =
+    let handle_key_not_found thash : ('k, 'v) op * 'k proof * ('k, 'v) hnode option =
       updater None
-      |> OptionExt.fold_lazy ~none:(fun () -> noop key H.tempty) ~some:(insert key)
+      |> OptionExt.fold_lazy ~none:(fun () -> noop key thash) ~some:(insert key)
     in
     let handle_key_found (current_node : ('k, 'v) hnode)
         : ('k, 'v) op * 'k proof * ('k, 'v) hnode option
@@ -626,8 +646,9 @@ module Make (Hash : Hash_algo.HASH) : MERKLEMAP = struct
       (final_root_hash : hash)
       : bool
     =
-    Proof.matches_op proof op
-    && Proof.matches_hashes proof initial_root_hash final_root_hash
+    let matches_op = Proof.matches_op proof op in
+    let matches_hashes = Proof.matches_hashes proof initial_root_hash final_root_hash in
+    matches_op && matches_hashes
   ;;
 
   let from_list (kvs : ('k * 'v) list) : ('k, 'v) t =
@@ -660,11 +681,22 @@ module Make (Hash : Hash_algo.HASH) : MERKLEMAP = struct
       (MerkleTreeMap t : ('k, 'v) t)
       : string
     =
-    String.concat
-      ""
-      [ "MerkleTreeMap ("
-      ; Option.fold ~none:"Empty" ~some:(fun root -> show_hnode kfmt vfmt root) t
-      ; ")"
-      ]
+    "MerkleTreeMap ("
+    ^ Option.fold ~none:"Empty" ~some:(fun root -> show_hnode kfmt vfmt root) t
+    ^ ")"
+  ;;
+
+  let show_proof (kfmt : Format.formatter -> 'k -> unit) (proof : 'k proof) : string =
+    let steps_strs = List.map (Proof.show_step kfmt) proof in
+    "Proof [" ^ String.concat ";\n" steps_strs ^ "]"
+  ;;
+
+  let show_op
+      (kfmt : Format.formatter -> 'k -> unit)
+      (vfmt : Format.formatter -> 'v -> unit)
+      (op : ('k, 'v) op)
+      : string
+    =
+    "Op (" ^ show_op kfmt vfmt op ^ ")"
   ;;
 end

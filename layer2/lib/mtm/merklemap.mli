@@ -25,4 +25,12 @@ module type MERKLEMAP = sig
     -> (Format.formatter -> 'v -> unit)
     -> ('k, 'v) t
     -> string
+
+  val show_proof : (Format.formatter -> 'k -> unit) -> 'k proof -> string
+
+  val show_op
+    :  (Format.formatter -> 'k -> unit)
+    -> (Format.formatter -> 'v -> unit)
+    -> ('k, 'v) op
+    -> string
 end

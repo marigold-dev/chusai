@@ -30,7 +30,14 @@ let () =
         ; test_case "remove node/left/left" `Quick test_remove_node_left_left
         ; test_case "remove y node" `Quick test_remove_y_node
         ] )
-    ; ( "proof examples"
+    ; ( "quickcheck - map operations"
+      , [ QCheck_alcotest.to_alcotest quickcheck_test_to_list_from_list
+        ; QCheck_alcotest.to_alcotest quickcheck_test_remove
+        ; QCheck_alcotest.to_alcotest quickcheck_test_remove_upsert_remove
+        ; QCheck_alcotest.to_alcotest quickcheck_test_upsert_lookup
+        ; QCheck_alcotest.to_alcotest quickcheck_test_upsert_remove_lookup
+        ] )
+    ; ( "proof - examples"
       , [ test_case "insert in empty list" `Quick test_verify_proof_insert_in_empty_list
         ; test_case
             "insert left in one_element list"
@@ -55,12 +62,15 @@ let () =
             `Quick
             test_verify_remove_existing_key_right
         ; test_case "remove non_leaf 2" `Quick test_verify_proof_remove_non_leaf_2
-        ; test_case "quickcheck failure 1" `Quick test_quickcheck_failure_1
-        ; test_case "quickcheck failure 2" `Quick test_quickcheck_failure_2
-        ; test_case "quickcheck failure 3" `Quick test_quickcheck_failure_3
-        ; test_case "quickcheck failure 4" `Quick test_quickcheck_failure_4
+        ; test_case "chain replacements" `Quick test_verify_proof_for_chain_replacements
+        ; test_case "lookup found" `Quick test_verify_proof_lookup_found
+        ; test_case "lookup not found" `Quick test_verify_proof_lookup_not_found
+        ; test_case "quickcheck failure 1" `Quick test_quickcheck_regression_1
+        ; test_case "quickcheck failure 2" `Quick test_quickcheck_regression_2
+        ; test_case "quickcheck failure 3" `Quick test_quickcheck_regression_3
+        ; test_case "quickcheck failure 4" `Quick test_quickcheck_regression_4
         ] )
-    ; ( "quickcheck - verify proof"
+    ; ( "proof - quickcheck"
       , [ QCheck_alcotest.to_alcotest quickcheck_test_verify_proof_insert
         ; QCheck_alcotest.to_alcotest quickcheck_test_verify_proof_update
         ; QCheck_alcotest.to_alcotest quickcheck_test_verify_proof_remove_failure
@@ -69,13 +79,6 @@ let () =
         ; QCheck_alcotest.to_alcotest quickcheck_test_verify_proof_remove_non_leaf_2
         ; QCheck_alcotest.to_alcotest quickcheck_test_verify_proof_lookup_found
         ; QCheck_alcotest.to_alcotest quickcheck_test_verify_proof_lookup_not_found
-        ] )
-    ; ( "quickcheck - map operations"
-      , [ QCheck_alcotest.to_alcotest quickcheck_test_to_list_from_list
-        ; QCheck_alcotest.to_alcotest quickcheck_test_remove
-        ; QCheck_alcotest.to_alcotest quickcheck_test_remove_upsert_remove
-        ; QCheck_alcotest.to_alcotest quickcheck_test_upsert_lookup
-        ; QCheck_alcotest.to_alcotest quickcheck_test_upsert_remove_lookup
         ] )
     ]
 ;;
