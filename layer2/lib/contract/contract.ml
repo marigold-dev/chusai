@@ -8,7 +8,7 @@ let from_file filename =
   let s = really_input_string ch (in_channel_length ch) in
   close_in ch ;
   from_string s
-
+  
 (** [init_tezos_ctxt] initializes dummy tezos context *)
 let init_tezos_ctxt =
   let open Tezos_013_PtJakart_test_helpers in
@@ -39,3 +39,32 @@ let pack_chusai_contract chusai_contract_expr =
     code
   >>=?? fun (bytes, _ctxt) ->
   return bytes
+
+let lift_execution_arg ctxt entrypoint_ty
+    construct (arg : Alpha_context.Script.expr)  =
+  let arg = Tezos_micheline.Micheline.root arg in
+  Script_ir_translator.parse_data ctxt ~legacy:false ~allow_forged:false entrypoint_ty arg
+  >>=? fun (entrypoint_arg, ctxt) -> return (construct entrypoint_arg, ctxt)
+
+let execute script_expr storage_expr arg_expr entrypoint =
+  let open Tezos_013_PtJakart_test_helpers.Error_monad_operators in
+  let script = Alpha_context.Script.{code = lazy_expr script_expr; storage = lazy_expr storage_expr} in
+  init_tezos_ctxt >>=? fun ctxt ->
+  Script_ir_translator.parse_script
+    ctxt
+    ~legacy:false
+    ~allow_forged_in_storage:false
+    script
+  >>=?? fun (Ex_script (Script {code = _; storage_type = _; arg_type; storage = _; entrypoints; _}) , ctxt) ->
+  Gas_monad.run
+    ctxt
+    (Script_ir_translator.find_entrypoint ~error_details:Informative arg_type entrypoints entrypoint)
+  >>??= fun (r, ctxt) -> r
+  >>??= fun (Script_ir_translator.Ex_ty_cstr {ty = entrypoint_ty; construct; original_type_expr = _}) ->
+  lift_execution_arg ctxt entrypoint_ty construct arg_expr
+  >>=?? fun (_arg, _ctxt) ->
+  return _ctxt
+  (*Chusai_script_interpreter.interp (ctxt, step_constants) code (arg, storage)*)
+  (*>>=?? fun ((ops, new_storage), ctxt) ->*)
+  (*(ops, new_storage)*)
+
