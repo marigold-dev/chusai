@@ -82,25 +82,19 @@ End: One player has to provide a proof for segment of `length = 1`
 
 
 **Game 1: simple game (A defends)**
-```graphviz
-digraph {
-    Start   [shape=point, width=0.2]
-    end     [shape=doublecircle,label="", width=0.2]
-    Seg     [label="A Seg", color="blue"]
-    Split   [label="A split", color="red"]
-    
-    Start -> Seg
-    Seg:sw -> Split:nw [xlabel="A:s1,s2  ",style=dashed]
-    Split:ne -> Seg:se [label="   B:si"]
-    Seg -> end [label="A:proof",style=dotted]
-    
-    {rank=same;Seg end}
-}
+```mermaid
+graph
+    Start --> Seg
+    Seg -- A:s1,s2 --> Split
+    Split -- B:si --> Seg
+    Seg == A:proof ==> End
+    style Split stroke:#f00
+    style Seg stroke:#00f
 ```
 Legend:
 - dashed edge = bissection
 - solid edge = choice
-- dotted edge = proof
+- bold edge = proof
 - Red = B must make a move
 - Blue = A must make a move
 
@@ -136,40 +130,27 @@ Correctness:
 
 ### More dynamic version: splits upon splits
 **Game 2: provide split when challenging a segment (A defends at start)**
-```graphviz
-digraph{
-    Start [shape=point, width=0.2]
-    End [shape=doublecircle,label="", width=0.2]
-    Init [label="A Seg", color="red"]
-    Asplit [group=1,label="A Split", color="red"]
-    Bsplit [group=2,label="B Split", color="blue"]
-    Aseg   [group=1,label="A Seg", color="blue"]
-    Bseg   [group=2,label="B Seg", color="red"]
-    
-    Start -> Init
-    edge[style=dashed];
-    Init -> Bsplit      
-    Bsplit -> Asplit:nw 
-    Asplit -> Bsplit:se 
-    
-    edge[style=solid];
-    Bsplit -> Bseg      
-    Asplit -> Aseg      
-    
-    edge[style=dotted];
-    Aseg -> End         
-    Bseg -> End         
-    
-    {rank=same;Asplit Bsplit}
-    
-    {rank=same;Bseg Aseg}
-    
-}
+
+```mermaid
+graph
+    Start --> ASeg
+    ASeg -.-> BSplit
+    BSplit -.-> ASplit
+    ASplit -.-> BSplit
+    ASplit --> Aend
+    BSplit --> Bend
+    Aend ==> End
+    Bend ==> End
+    style ASeg stroke:#f00
+    style ASplit stroke:#f00
+    style Bend stroke:#f00
+    style BSplit stroke:#00f
+    style Aend stroke:#00f
 ```
 Legend:
 - dashed edge = bissection
 - solid edge = choice
-- dotted edge = proof
+- bold edge = proof
 - Red = B must make a move
 - Blue = A must make a move
  
