@@ -5,6 +5,7 @@
 #import "../bridge/test/test_inbox_sc.mligo" "Inbox"
 #import "../stdlib_ext/test/suites.mligo" "Stdlib_test"
 #import "../refutation/test/suites.mligo" "Refutation_test"
+#import "../chain/test/test_chain.mligo" "Chain"
 
 let test = 
   Unit.run_suites 
@@ -14,5 +15,6 @@ let test =
     ; Refutation_test.suites
     ; [ Mint.suite ]
     ; [ Inbox.suite ]
+    ; [ Chain.suite ]
     ]
   )

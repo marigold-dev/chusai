@@ -1,1 +1,1 @@
-#include "tezos_ticket.mligo"
+#include "dummy_ticket.mligo"
