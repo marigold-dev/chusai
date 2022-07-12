@@ -37,7 +37,7 @@ The transition functions return a game if they succeeded, or None if the move wa
 module Result = struct
     
     (** the different errors*)
-    type error = Wrong_player | Split_failed | Wrong_move | Segment_too_long
+    type error = Wrong_player | Dissection_failed | Wrong_move | Segment_too_long
     
     // FIXME: when defining monovariant of polyvariant type works with LIGO modules
     (** an alias for Result.t, needed because LIGO *)
@@ -49,7 +49,7 @@ module Result = struct
     (** pretty printer for errors *)
     let error_to_string (e : error) = match e with
         | Wrong_player -> "Wrong_player"
-        | Split_failed -> "Split_failed"
+        | Dissection_failed -> "Dissection_failed"
         | Wrong_move -> "Wrong_move"
         | Segment_too_long -> "Segment_too_long"
 
@@ -66,7 +66,7 @@ let check_player (proposer, game : player * game) =
     let {player_a; player_b; state} = game in
     match state with
     | Start  _ -> proposer = player_b 
-    | Split (last_player,_) -> proposer <> last_player &&  (proposer = game.player_a ||proposer = player_b)
+    | Dissection (last_player,_) -> proposer <> last_player &&  (proposer = game.player_a ||proposer = player_b)
     | _        -> false
 
 (** [start_game (segment, alice, bob)] starts a game with [alice] defending [segment] against [bob] *)
@@ -79,38 +79,38 @@ let start_game (seg, player_a ,player_b : segment * player * player) : Result.t 
             ;  state    = Start seg
             }
 
-(** [apply_split (proposer, split, choice, game)] try a play by [proposer]: 
-    Split of value [split] of the part [choice] of the current split of [game] *)
-let apply_split (proposer, split, choice_opt, game : player * split * (choice option) * game) : Result.t = 
+(** [apply_dissection (proposer, dissection, choice, game)] try a play by [proposer]: 
+    Dissection of value [dissection] of the part [choice] of the current dissection of [game] *)
+let apply_dissection (proposer, dissection, choice_opt, game : player * dissection * (choice option) * game) : Result.t = 
     if not (check_player (proposer, game)) then Error Wrong_player 
     else
         let apply_if_possible (segment : segment ) : Result.t =
-            if Seg.check_split_against_segment (split, segment) 
-            then Ok {game with state = Split(proposer,split)}
-            else Error Split_failed
+            if Seg.check_dissection_against_segment (dissection, segment) 
+            then Ok {game with state = Dissection(proposer,dissection)}
+            else Error Dissection_failed
         in
         match game.state, choice_opt with
         | Start segment, None              -> apply_if_possible segment
-        | Split (_,old_split), Some choice -> apply_if_possible (Seg.choose (choice,old_split))
+        | Dissection (_,old_dissection), Some choice -> apply_if_possible (Seg.choose (choice,old_dissection))
         | _ -> Error Wrong_move
 
-(** [start_game (proposer, segment, alice, split, bob)] starts a game with [alice] defending [segment] against [bob], whose first move is [split]. 
+(** [start_game (proposer, segment, alice, dissection, bob)] starts a game with [alice] defending [segment] against [bob], whose first move is [dissection]. 
     The game was started by [proposer]. *)
-let start_split_game (proposer, seg, player_a , split, player_b : player * segment * player * split * player) : Result.t =
+let start_dissection_game (proposer, seg, player_a , dissection, player_b : player * segment * player * dissection * player) : Result.t =
     if proposer <> player_b then Error Wrong_player
         else 
         let game : Result.t = start_game (seg, player_a , player_b) in
         match game with 
         | Error e -> Error e
-        | Ok g -> apply_split (player_b, split, (None : choice option), g)
+        | Ok g -> apply_dissection (player_b, dissection, (None : choice option), g)
 
-(** [apply_choice (proposer, choice, game)] the player [proposer] makes a [choice] among the parts of the last split in [game]*)
+(** [apply_choice (proposer, choice, game)] the player [proposer] makes a [choice] among the parts of the last dissection in [game]*)
 let apply_choice (proposer, choice, game : player * choice * game) : Result.t =
     if not (check_player (proposer, game)) then Error Wrong_player        
     else
         match game.state with
-        | Split (last_player,old_split) -> 
-            let segment = Seg.choose (choice, old_split) in 
+        | Dissection (last_player,old_dissection) -> 
+            let segment = Seg.choose (choice, old_dissection) in 
             if Seg.size segment > 1n then Error Segment_too_long
             else Ok { game with state = End (last_player,segment)}
 

@@ -10,23 +10,23 @@ let _test_check_player () =
     let game = init_game () in
     Unit.and_list 
     [ Unit.assert_equals (Game.check_player (player1 (),game)) false "A defends, so not first player to play"
-    ; Unit.assert_equals (Game.check_player (player2 (),game)) true "B has to provide a split"
+    ; Unit.assert_equals (Game.check_player (player2 (),game)) true "B has to provide a dissection"
     ; Unit.assert_equals (Game.check_player (player3 (),game)) false "Not part of the game"
     ]
 
-let _test_check_player_asplit () =
-    let game = init_game_ (Split (player1 (), (ab 5n, bc 5n))) in
+let _test_check_player_adissection () =
+    let game = init_game_ (Dissection (player1 (), (ab 5n, bc 5n))) in
     Unit.and_list 
     [ Unit.assert_equals (Game.check_player (player1 (),game)) false "A was last to play"
-    ; Unit.assert_equals (Game.check_player (player2 (),game)) true "B has to provide a split"
+    ; Unit.assert_equals (Game.check_player (player2 (),game)) true "B has to provide a dissection"
     ; Unit.assert_equals (Game.check_player (player3 (),game)) false "Not part of the game"
     ]
 
 
-let _test_check_player_bsplit () =
-    let game = init_game_ (Split (player2 (), (ab 5n, bc 5n))) in
+let _test_check_player_bdissection () =
+    let game = init_game_ (Dissection (player2 (), (ab 5n, bc 5n))) in
     Unit.and_list 
-    [ Unit.assert_equals (Game.check_player (player1 (),game)) true "A should provide split"
+    [ Unit.assert_equals (Game.check_player (player1 (),game)) true "A should provide dissection"
     ; Unit.assert_equals (Game.check_player (player2 (),game)) false "B was last to play"
     ; Unit.assert_equals (Game.check_player (player3 (),game)) false "Not part of the game"
     ]
@@ -48,13 +48,13 @@ let suite = Unit.make_suite
         "test for different players against game in starting state" 
         _test_check_player
     ; Unit.make_test
-        "Check player: Asplit"
-        "test for different players against game in state split" 
-        _test_check_player_asplit
+        "Check player: Adissection"
+        "test for different players against game in state dissection" 
+        _test_check_player_adissection
     ; Unit.make_test
-        "Check player: Bsplit"
-        "test for different players against game in state split" 
-        _test_check_player_bsplit
+        "Check player: Bdissection"
+        "test for different players against game in state dissection" 
+        _test_check_player_bdissection
     ; Unit.make_test
         "Check player: End"
         "test for different players against game in state end" 

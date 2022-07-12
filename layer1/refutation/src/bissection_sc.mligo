@@ -60,19 +60,19 @@ let start_game (seg, player_a, player_b, store : segment * player * player * sto
     let new_game = Game.Result.get_game_or_raises (Game.start_game (seg, player_a ,player_b)) "refutation_sc: could not start game" in
     store_new_game (new_game, store)
 
-(** [start_split_game (segment, alice, split, bob, storage)] starts a game between [alice] (defending [segment]) and [bob], 
-    with [bob] starting his first move with [split] *)
-let start_split_game (seg, player_a , split, player_b ,store : segment * player * split * player * storage)  =
+(** [start_dissection_game (segment, alice, dissection, bob, storage)] starts a game between [alice] (defending [segment]) and [bob], 
+    with [bob] starting his first move with [dissection] *)
+let start_dissection_game (seg, player_a , dissection, player_b ,store : segment * player * dissection * player * storage)  =
     let new_game = Game.Result.get_game_or_raises 
-        (Game.start_split_game (Tezos.source, seg, player_a , split, player_b)) 
+        (Game.start_dissection_game (Tezos.source, seg, player_a , dissection, player_b)) 
         "refutation_sc: could not start game" 
     in
     store_new_game (new_game, store)
 
-(** [action_split (game_id, split, choice, storage)] apply [split] on the part [choice] of the current state of game [game_id]*)
-let action_split (id, split, choice_opt, store : game_id * split * choice option * storage) : storage =
+(** [action_dissection (game_id, dissection, choice, storage)] apply [dissection] on the part [choice] of the current state of game [game_id]*)
+let action_dissection (id, dissection, choice_opt, store : game_id * dissection * choice option * storage) : storage =
     let game = find_game (id, store) in
-    let new_game = Game.Result.get_game_or_raises (Game.apply_split (Tezos.source, split,choice_opt,game)) "refutation_sc: could not split" in
+    let new_game = Game.Result.get_game_or_raises (Game.apply_dissection (Tezos.source, dissection,choice_opt,game)) "refutation_sc: could not dissect" in
     update_game_in_store (id,new_game,store)
 
 (** [action_choice (game_id, choice, storage)] choose the part [choice] on the current state of game [game_id] *)
@@ -86,9 +86,9 @@ let action_choice (id, choice, store : game_id * choice * storage) =
 let main (action, store : refutation_parameter * storage) : operation list * storage = 
     match action with
     |  Endpoint_Choose (id, choice)                           -> [], action_choice (id, choice, store)
-    |  Endpoint_Split (id, split, choice_opt)                 -> [], action_split (id, split, choice_opt, store)
+    |  Endpoint_Dissection (id, dissection, choice_opt)                 -> [], action_dissection (id, dissection, choice_opt, store)
     |  Endpoint_Start (seg, player_a ,player_b)               -> [], (start_game (seg, player_a ,player_b, store))
-    |  Endpoint_Start_Split (seg, player_a , split, player_b) -> [], (start_split_game (seg, player_a , split, player_b, store))
+    |  Endpoint_Start_Dissection (seg, player_a , dissection, player_b) -> [], (start_dissection_game (seg, player_a , dissection, player_b, store))
 
 
 (** Return the list of the current game I'm playing, if any *)

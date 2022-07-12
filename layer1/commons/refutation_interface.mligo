@@ -8,11 +8,11 @@ it posits that a player can go from [h1] to [h2] in [size] moves.
 See [segment.mligo] for API *)
 type segment = hash * hash * size
 
-(** A split is a series of two consecutive segments in a pair 
+(** A dissection is a series of two consecutive segments in a pair 
 See [segment.mligo] for API *)
-type split = segment * segment
+type dissection = segment * segment
 
-(** When attacking a split, one has to indicate on which part of the split there is disagreement *)
+(** When attacking a dissection, one has to indicate on which part of the dissection there is disagreement *)
 type choice = Left | Right
 
 (** players are represented by the address sending the moves *)
@@ -21,12 +21,12 @@ type player = address
 (* States of game *)
 (** The type of state of a game:
   - game was initialised, waiting for first move
-  - last move was a split, provided by one of the players
+  - last move was a dissection, provided by one of the players
   - the game has ended, player has to provide a proof for a segment
 *)
 type state = 
     | Start  of segment          
-    | Split of player * split    
+    | Dissection of player * dissection    
     | End    of player * segment 
 
 (** Record storing the state of a game *)
@@ -60,13 +60,13 @@ type storage =
 (* parameter *)
 (* There are two different endpoints for starting a game, corresponding to two possibles cases:
     - Endpoint_Start: any one can start a game between two competing blocks
-    - Endpoint_Start_Split: someone can challenge a block by providing a bissection
+    - Endpoint_Start_Dissection: someone can challenge a block by providing a bissection
    During a game, the players can send move using the [game_id]:
-    - Endpoint_Split: a split of one of the segment in the current split (the [choice] is an [option] because at the beginning of the game there is only one segment that can be split)
+    - Endpoint_Dissection: a dissection of one of the segment in the current dissection (the [choice] is an [option] because at the beginning of the game there is only one segment that can be dissection)
     - Endpoint_Choose: designate one of the segment as final, in effect asking the other to provide a proof
  *)
 type refutation_parameter =
     | Endpoint_Choose      of game_id * choice
-    | Endpoint_Split       of game_id * split * (choice option)    
+    | Endpoint_Dissection       of game_id * dissection * (choice option)    
     | Endpoint_Start       of segment * player * player
-    | Endpoint_Start_Split of segment * player * split *  player
+    | Endpoint_Start_Dissection of segment * player * dissection *  player

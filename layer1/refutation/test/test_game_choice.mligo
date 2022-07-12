@@ -17,16 +17,16 @@ let make_test_choose (proposer:player) (choice:choice) (state:state) (expected:s
 
 
 let _test_choose_A_L () =
-    make_test_choose (player2 ()) Left (Split (player1 (), (ab 1n, bc 1n))) (End (player1 (),ab 1n))
+    make_test_choose (player2 ()) Left (Dissection (player1 (), (ab 1n, bc 1n))) (End (player1 (),ab 1n))
 
 let _test_choose_A_R () =
-    make_test_choose (player2 ()) Right (Split (player1 (), (ab 1n, bc 1n))) (End (player1 (),bc 1n))
+    make_test_choose (player2 ()) Right (Dissection (player1 (), (ab 1n, bc 1n))) (End (player1 (),bc 1n))
 
 let _test_choose_B_L () =
-    make_test_choose (player1 ()) Left (Split (player2 (), (ab 1n, bc 1n))) (End (player2 (),ab 1n))
+    make_test_choose (player1 ()) Left (Dissection (player2 (), (ab 1n, bc 1n))) (End (player2 (),ab 1n))
 
 let _test_choose_B_R () =
-    make_test_choose (player1 ()) Right (Split (player2 (), (ab 1n, bc 1n))) (End (player2 (),bc 1n))
+    make_test_choose (player1 ()) Right (Dissection (player2 (), (ab 1n, bc 1n))) (End (player2 (),bc 1n))
 
 let assert_fail_with (game : Game.Result.t) (error : Game.Result.error) (msg : string) =
     match game with
@@ -45,10 +45,10 @@ let _test_choose_fail_on_end () =
     make_test_choose_Fail (player1 ()) Left ( End (player3 () , ab 1n)) Wrong_player 
 
 let _test_choose_fail_wrong_proposer () =
-    make_test_choose_Fail (player1 ()) Left (Split (player1 () , (ab 1n,bc 1n))) Wrong_player
+    make_test_choose_Fail (player1 ()) Left (Dissection (player1 () , (ab 1n,bc 1n))) Wrong_player
 
 let _test_choose_fail_wrong_size () =
-    make_test_choose_Fail (player1 ()) Left (Split (player2 () , (ab 2n,bc 1n)))  Segment_too_long
+    make_test_choose_Fail (player1 ()) Left (Dissection (player2 () , (ab 2n,bc 1n)))  Segment_too_long
 
 (* SUITE *)
 
@@ -56,20 +56,20 @@ let suite = Unit.make_suite
     "Refutation - choice" 
     "test suite for Game lib (apply_choice)"
     [ Unit.make_test
-        "Choose on a split: A,Left"
-        "Different cases of choose on a split" 
+        "Choose on a dissection: A,Left"
+        "Different cases of choose on a dissection" 
         _test_choose_A_L
     ; Unit.make_test
-        "Choose on a split: A,Right"
-        "Different cases of choose on a split" 
+        "Choose on a dissection: A,Right"
+        "Different cases of choose on a dissection" 
         _test_choose_A_R
     ; Unit.make_test
-        "Choose on a split: B,Left"
-        "Different cases of choose on a split" 
+        "Choose on a dissection: B,Left"
+        "Different cases of choose on a dissection" 
         _test_choose_B_L
     ; Unit.make_test
-        "Choose on a split: B,Right"
-        "Different cases of choose on a split" 
+        "Choose on a dissection: B,Right"
+        "Different cases of choose on a dissection" 
         _test_choose_B_R
     ; Unit.make_test
         "Choose on start: fail"
@@ -81,7 +81,7 @@ let suite = Unit.make_suite
         _test_choose_fail_on_end
     ; Unit.make_test
         "Choose on end: fail"
-        "Can't propose choose on a split you proposed"
+        "Can't propose choose on a dissection you proposed"
         _test_choose_fail_wrong_proposer
     ; Unit.make_test
         "Choose on end: fail"

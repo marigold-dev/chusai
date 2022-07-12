@@ -19,8 +19,8 @@ Correctness:
     - can there be opposing truthfull participants ?
     - difference between thruthfull/honest and correct ? another more relevant term ?
 - the game does not garantee that at the end, the segment found has anything to do with the correct execution. 
-    - During the bissection part, the states corresponding to the hashes exchanged are never checked: two players could exchange meaningless hash. 
-    - At the end, one of them must provide a proof for the segment found during bissection, and that proof must show that you go from hash to the other, not that the operation is part of a normal execution.
+    - During the dissection part, the states corresponding to the hashes exchanged are never checked: two players could exchange meaningless hash. 
+    - At the end, one of them must provide a proof for the segment found during dissection, and that proof must show that you go from hash to the other, not that the operation is part of a normal execution.
 - however, even if a block is not refuted, because a game was fixed, or because the challenger made a mistake, *it can still be challenged again*
     - as long as someone honest is observing the chain, he can challenge, and he will win if he makes no mistake.
 
@@ -30,7 +30,7 @@ The refutation game can be seperated in several parts:
 - initialisation
     - blocks challenged
     - bond setting
-- bissection
+- dissection
     - back and forth between players to find the first opcode disagreement
 - verification
     - checking of one step proof
@@ -64,7 +64,7 @@ The refutation game can be seperated in several parts:
 
 ```
 segment = hash * hash * size
-split = segment * segment
+dissection = segment * segment
 ```
 
 Start: One player proposes/defends a segment of `length > 1`
@@ -77,7 +77,7 @@ End: One player has to provide a proof for segment of `length = 1`
 - provides a proof 
     - proof is checked
 - or proposes 2 sub-segments
-    - must be correct split: same ends, same overall size, all sub-segment are shorter
+    - must be correct dissection: same ends, same overall size, all sub-segment are shorter
     -  `B` chooses which one to challenge
 
 
@@ -85,14 +85,14 @@ End: One player has to provide a proof for segment of `length = 1`
 ```mermaid
 graph
     Start --> Seg
-    Seg -- A:s1,s2 --> Split
-    Split -- B:si --> Seg
+    Seg -- A:s1,s2 --> Dissection
+    Dissection -- B:si --> Seg
     Seg == A:proof ==> End
-    style Split stroke:#f00
+    style Dissection stroke:#f00
     style Seg stroke:#00f
 ```
 Legend:
-- dashed edge = bissection
+- dashed edge = dissection
 - solid edge = choice
 - bold edge = proof
 - Red = B must make a move
@@ -108,47 +108,47 @@ Remarks:
 - size of final segment is not important, what's important is that a checker can validate `A`'s proof
 
 Correctness:
-- if `A` proposes only truthfull splits, `B` has no winning strategy (it is possible to avoid censorship on truthfull blocks)
+- if `A` proposes only truthfull dissections, `B` has no winning strategy (it is possible to avoid censorship on truthfull blocks)
 - if `A` proposes one untruthfull segment, `B` has winning strategy (it is possible to refute untruthfull block)
 
 ### options
 
 - not 2 sub-segment but more, or any number (`>1`)
-- provide split when chosing sub-segment
+- provide dissection when chosing sub-segment
     - challenger role alternate
     - do we force the ends to meet ?
-        - A proposes a split S1,S2 for a segment S proposed by B (S2 end is different than S end)
-        - B proposes a split S3,S4 for segment S2
+        - A proposes a dissection S1,S2 for a segment S proposed by B (S2 end is different than S end)
+        - B proposes a dissection S3,S4 for segment S2
             - do we check that S4 end is the same as S end ? That is, do we check that B is consistent during the whole game ?
 - more than 2 players
     - not a linear game but a tree ?
     - only staked players, stake lost when game lost
-    - possible for new players to propose split from any published segment
+    - possible for new players to propose dissection from any published segment
     - once defender lost once, stake is lost for good and can't be winned by anybody else
 - both player are staked on blocks, when they lose: lose stake + block rejected
     - is it necessary to provide block to initiate game or can a challenge be posed without providing a block first, as long as you have stake in the challenge ?
 
-### More dynamic version: splits upon splits
-**Game 2: provide split when challenging a segment (A defends at start)**
+### More dynamic version: dissections upon dissections
+**Game 2: provide dissection when challenging a segment (A defends at start)**
 
 ```mermaid
 graph
     Start --> ASeg
-    ASeg -.-> BSplit
-    BSplit -.-> ASplit
-    ASplit -.-> BSplit
-    ASplit --> Aend
-    BSplit --> Bend
+    ASeg -.-> BDissection
+    BDissection -.-> ADissection
+    ADissection -.-> BDissection
+    ADissection --> Aend
+    BDissection --> Bend
     Aend ==> End
     Bend ==> End
     style ASeg stroke:#f00
-    style ASplit stroke:#f00
+    style ADissection stroke:#f00
     style Bend stroke:#f00
-    style BSplit stroke:#00f
+    style BDissection stroke:#00f
     style Aend stroke:#00f
 ```
 Legend:
-- dashed edge = bissection
+- dashed edge = dissection
 - solid edge = choice
 - bold edge = proof
 - Red = B must make a move
@@ -156,13 +156,13 @@ Legend:
  
 From top to bottom:
 - Start with a segment provided by A
-- B propose a split
+- B propose a dissection
     - same start, same overall length, **different end**
-- A and B alternate proposing split
-    - if last split `(s1,s2)` was proposed by A
-    - then B chooses a segment in the split, either `s1` or `s2` 
-    - and propose a split for it
-- If they choose a segment of size `1`, they can't split, they demand a proof
+- A and B alternate proposing dissection
+    - if last dissection `(s1,s2)` was proposed by A
+    - then B chooses a segment in the dissection, either `s1` or `s2` 
+    - and propose a dissection for it
+- If they choose a segment of size `1`, they can't dissection, they demand a proof
 - The required party provides a proof
 
 ### Proposal for implementation
@@ -170,20 +170,20 @@ From top to bottom:
 ```
 type state = 
     | Start  of segment          
-    | Split  of player * split    
+    | Dissection  of player * dissection    
     | End    of player * segment
 ```
 At the beginning of the game, a `segment` of `A`is challenged.
 Then the two players `A` and `B` alternate, starting with `B`. They either
-- propose a `split`, *i.e* they designate which segment of the current `split` they attack, and provide a `split` for it.
-    - the new `split` must have the same start as the `segment` under attack, the same overall `length` but a different ending point/hash
-- ask for a proof of one of the `segment` in the current `split`
+- propose a `dissection`, *i.e* they designate which segment of the current `dissection` they challenge, and provide a `dissection` for it.
+    - the new `dissection` must have the same start as the challenged `segment`, the same overall `length` but a different ending point/hash
+- ask for a proof of one of the `segment` in the current `dissection`
 
 Remarks:
 - the two first steps can be combined in one: 
     - the start of the game
-    - the first split
-- a split can be defined with more that 2 segments, same rules apply 
+    - the first dissection
+- a dissection can be defined with more that 2 segments, same rules apply 
   
 ## Verification
 
