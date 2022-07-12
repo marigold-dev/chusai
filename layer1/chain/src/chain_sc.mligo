@@ -1,7 +1,12 @@
+(*
+    This smart contract is used only as a placeholder to try the /chain/ library. 
+*)
+
 #include "chain.mligo"
 type chain_storage = chain
 type chain_parameter = 
     | Receive of batch
+    | Remove  of index
 
 (* ENDPOINTS *)
 let main (action, store : chain_parameter * chain_storage) : operation list * chain_storage = 
@@ -12,6 +17,7 @@ let main (action, store : chain_parameter * chain_storage) : operation list * ch
         | None -> failwith "could not store"
         | Some c -> [] , c
         end
+    | Remove i -> [] , remove_batch (i, store)
 
 
 (* VIEWS *)
