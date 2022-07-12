@@ -25,7 +25,7 @@ let is_batch_valid (batch, store : batch * chain) : bool =
     | None -> false
     | Some parent -> parent.level < batch.level )
 
-let store_batch (batch, chain : batch * chain) : chain =
+let store_batch (batch, chain : batch * chain) : chain option =
     let add_to_children (newborn, parent, chain : index * index * chain) : (index, index list)  big_map  =
         let new_children = 
             match get_children (parent, chain) with
@@ -36,17 +36,12 @@ let store_batch (batch, chain : batch * chain) : chain =
     in
     if is_batch_valid (batch,chain) then
         let new_index = chain.max_index + 1n in
-        { chain with 
+        Some ({ chain with 
               batches = Big_map.update new_index (Some batch) chain.batches 
             ; max_index =  new_index
             ; children = add_to_children (new_index, batch.parent, chain)
-        }
-    else failwith "could not store invalid batch"
-
-let get_latest_batch (store : chain) : batch =
-    match get_batch (store.max_index, store) with
-    | None -> failwith "no batch"
-    | Some b -> b
+        })
+    else (None : chain option)// FIXME: use Result module to add information "could not store invalid batch"
 
 let remove_batch (index, chain: index * chain) : chain =
     let delete_batch (chain, index: chain * index) : chain =

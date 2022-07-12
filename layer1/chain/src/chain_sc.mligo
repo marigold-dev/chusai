@@ -6,7 +6,13 @@ type chain_parameter =
 (* ENDPOINTS *)
 let main (action, store : chain_parameter * chain_storage) : operation list * chain_storage = 
     match action with
-    | Receive b -> [] , store_batch (b, store)
+    | Receive b -> 
+        begin 
+        match store_batch (b, store) with
+        | None -> failwith "could not store"
+        | Some c -> [] , c
+        end
+
 
 (* VIEWS *)
 
