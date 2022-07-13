@@ -16,20 +16,25 @@ let quickcheck_test_to_list_from_list =
 let quickcheck_test_remove_upsert_remove =
   QCheck.Test.make
     ~count:quickcheck_test_number
-    ~name:" to_list . remove k . upsert k v . from_list = to_list . remove k . from_list "
+    ~name:
+      " to_list . remove k . Mtm.Upsert k v . from_list = to_list . remove k . from_list "
     QCheck.(pair (pair small_string int) (small_list @@ pair small_string int))
-    (fun (((k, v), input_list) : ('k * 'v) * ('k * 'v) list) ->
+    (fun (((key, value), input_list) : ('k * 'v) * ('k * 'v) list) ->
       let left =
         input_list
         |> Mtm.from_list
-        |> Mtm.upsert k v
-        |> Tools.third
-        |> Mtm.remove k
-        |> Tools.third
+        |> Mtm.execute (Mtm.Upsert { key; value })
+        |> Tools.get_tree
+        |> Mtm.execute (Mtm.Remove { key })
+        |> Tools.get_tree
         |> Mtm.to_list
       in
       let right =
-        input_list |> Mtm.from_list |> Mtm.remove k |> Tools.third |> Mtm.to_list
+        input_list
+        |> Mtm.from_list
+        |> Mtm.execute (Mtm.Remove { key })
+        |> Tools.get_tree
+        |> Mtm.to_list
       in
       compare left right = 0)
 ;;
@@ -37,41 +42,41 @@ let quickcheck_test_remove_upsert_remove =
 let quickcheck_test_upsert_lookup =
   QCheck.Test.make
     ~count:quickcheck_test_number
-    ~name:" Some v = lookup k . upsert k v . from_list "
+    ~name:" Some v = lookup k . Mtm.Upsert k v . from_list "
     QCheck.(
       pair
         (pair small_string int)
         (Arbitraries.nonempty_small_list @@ pair small_string int))
-    (fun (((k, v), input_list) : ('k * 'v) * ('k * 'v) list) ->
+    (fun (((key, value), input_list) : ('k * 'v) * ('k * 'v) list) ->
       let result =
         input_list
         |> Mtm.from_list
-        |> Mtm.upsert k v
-        |> Tools.third
-        |> Mtm.lookup k
-        |> Tools.third
+        |> Mtm.execute (Mtm.Upsert { key; value })
+        |> Tools.get_tree
+        |> Mtm.execute (Mtm.Lookup { key })
+        |> Tools.get_result
       in
-      Some v = result)
+      Some value = result)
 ;;
 
 let quickcheck_test_upsert_remove_lookup =
   QCheck.Test.make
     ~count:quickcheck_test_number
-    ~name:"None = lookup k . remove k . upsert k v . from_list "
+    ~name:"None = lookup k . remove k . Mtm.Upsert k v . from_list "
     QCheck.(
       pair
         (pair small_string int)
         (Arbitraries.nonempty_small_list @@ pair small_string int))
-    (fun (((k, v), input_list) : ('k * 'v) * ('k * 'v) list) ->
+    (fun (((key, value), input_list) : ('k * 'v) * ('k * 'v) list) ->
       let result =
         input_list
         |> Mtm.from_list
-        |> Mtm.upsert k v
-        |> Tools.third
-        |> Mtm.remove k
-        |> Tools.third
-        |> Mtm.lookup k
-        |> Tools.third
+        |> Mtm.execute (Mtm.Upsert { key; value })
+        |> Tools.get_tree
+        |> Mtm.execute (Mtm.Remove { key })
+        |> Tools.get_tree
+        |> Mtm.execute (Mtm.Lookup { key })
+        |> Tools.get_result
       in
       Option.is_none result)
 ;;
@@ -100,8 +105,8 @@ let quickcheck_test_remove =
       let left_side = Tools.sorted input_list_without_key in
       let right_side =
         Mtm.to_list
-        @@ Tools.third
-        @@ Mtm.remove key_to_remove
+        @@ Tools.get_tree
+        @@ Mtm.execute (Mtm.Remove { key = key_to_remove })
         @@ Mtm.from_list input_unique
       in
       let _ = Mtm__Debug.print "result:" (left_side = right_side) in
@@ -113,10 +118,11 @@ let quickcheck_test_verify_proof_insert =
     ~count:quickcheck_test_number
     ~name:"verify insert"
     QCheck.(pair (pair small_string int) (small_list @@ pair small_string int))
-    (fun ((k, v), input_list) ->
-      let input_list_without_kv = Tools.remove_key k input_list in
+    (fun ((key, value), input_list) ->
+      let input_list_without_kv = Tools.remove_key key input_list in
       let initial_map = Mtm.from_list input_list_without_kv in
-      let op, proof, final_map = Mtm.upsert k v initial_map in
+      let op = Mtm.Upsert { key; value } in
+      let _, proof, final_map = Mtm.execute op initial_map in
       Mtm.verify_proof op proof (Mtm.root_hash initial_map) (Mtm.root_hash final_map))
 ;;
 
@@ -125,9 +131,10 @@ let quickcheck_test_verify_proof_update =
     ~count:quickcheck_test_number
     ~name:"verify update"
     QCheck.(pair (pair small_string int) (small_list @@ pair small_string int))
-    (fun ((k, v), input_list_with_kv) ->
+    (fun ((key, value), input_list_with_kv) ->
       let initial_map = Mtm.from_list input_list_with_kv in
-      let op, proof, final_map = Mtm.upsert k v initial_map in
+      let op = Mtm.Upsert { key; value } in
+      let _, proof, final_map = Mtm.execute op initial_map in
       Mtm.verify_proof op proof (Mtm.root_hash initial_map) (Mtm.root_hash final_map))
 ;;
 
@@ -139,7 +146,8 @@ let quickcheck_test_verify_proof_remove_failure =
     (fun ((key_to_remove, _), input_unique) ->
       let input_list_without_key = Tools.remove_key key_to_remove input_unique in
       let initial_map = Mtm.from_list input_list_without_key in
-      let op, proof, final_map = Mtm.remove key_to_remove initial_map in
+      let op = Mtm.Remove { key = key_to_remove } in
+      let None, proof, final_map = Mtm.execute op initial_map in
       Mtm.verify_proof op proof (Mtm.root_hash initial_map) (Mtm.root_hash final_map))
 ;;
 
@@ -153,7 +161,8 @@ let quickcheck_test_verify_proof_remove_leaf =
       (*d the last element in the list is guaranteed to be added as a leaf in the tree *)
       let key_to_remove, _ = CCList.last_opt input_unique |> Option.get in
       let initial_map = Mtm.from_list input_unique in
-      let op, proof, final_map = Mtm.remove key_to_remove initial_map in
+      let op = Mtm.Remove { key = key_to_remove } in
+      let Some _, proof, final_map = Mtm.execute op initial_map in
       Mtm.verify_proof op proof (Mtm.root_hash initial_map) (Mtm.root_hash final_map))
 ;;
 
@@ -169,7 +178,8 @@ let quickcheck_test_verify_proof_remove_non_leaf =
       (* If the key to remove is the first in map then we are guaranteed to have a non-leaf node *)
       let input_unique = Tools.unique @@ ((key_to_remove, v) :: input_list) in
       let initial_map = Mtm.from_list input_unique in
-      let op, proof, final_map = Mtm.remove key_to_remove initial_map in
+      let op = Mtm.Remove { key = key_to_remove } in
+      let _, proof, final_map = Mtm.execute op initial_map in
       Mtm.verify_proof op proof (Mtm.root_hash initial_map) (Mtm.root_hash final_map))
 ;;
 
@@ -185,7 +195,8 @@ let quickcheck_test_verify_proof_remove_non_leaf_2 =
       (* If the key to remove is the first in map then we are guaranteed to have a non-leaf node *)
       let input_unique = Tools.unique @@ ((key_to_remove, v) :: input_list) in
       let initial_map = Mtm.from_list input_unique in
-      let op, proof, final_map = Mtm.remove key_to_remove initial_map in
+      let op = Mtm.Remove { key = key_to_remove } in
+      let _, proof, final_map = Mtm.execute op initial_map in
       Mtm.verify_proof op proof (Mtm.root_hash initial_map) (Mtm.root_hash final_map))
 ;;
 
@@ -200,7 +211,8 @@ let quickcheck_test_verify_proof_lookup_found =
     (fun ((key, v), input_list) ->
       let input_unique = Tools.unique @@ ((key, v) :: input_list) in
       let m = Mtm.from_list input_unique in
-      let op, proof, Some _ = Mtm.lookup key m in
+      let op = Mtm.Lookup { key } in
+      let Some _, proof, _ = Mtm.execute op m in
       let h = Mtm.root_hash m in
       Mtm.verify_proof op proof h h)
 ;;
@@ -216,7 +228,8 @@ let quickcheck_test_verify_proof_lookup_not_found =
     (fun ((key, v), input_list) ->
       let input_unique = Tools.unique @@ Tools.remove_key key input_list in
       let m = Mtm.from_list input_unique in
-      let op, proof, None = Mtm.lookup key m in
+      let op = Mtm.Lookup { key } in
+      let None, proof, _ = Mtm.execute op m in
       let h = Mtm.root_hash m in
       Mtm.verify_proof op proof h h)
 ;;

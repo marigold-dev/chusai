@@ -1,5 +1,5 @@
-open Intf
 open Optionext
+open Intf
 
 (* A map implemented as a Merkle-ized binary search tree *)
 module Make (Hash : HASH) : MERKLEMAP = struct
@@ -26,17 +26,11 @@ module Make (Hash : HASH) : MERKLEMAP = struct
 
   type ('k, 'v) op =
     | Lookup of { key : 'k }
-    | Insert of
+    | Upsert of
         { key : 'k
         ; value : 'v
         }
-    | Update of
-        { key : 'k
-        ; old_value : 'v
-        ; new_value : 'v
-        }
     | Remove of { key : 'k }
-    | Noop of { key : 'k }
   [@@deriving show]
 
   module H = struct
@@ -123,10 +117,6 @@ module Make (Hash : HASH) : MERKLEMAP = struct
           ; key : 'k
           }
       | Remove of 'k remove_step
-      | NoChange of
-          { thash : thash
-          ; key : 'k
-          }
       | NotFound of { thash : thash }
       | Found of
           { key : 'k
@@ -194,7 +184,6 @@ module Make (Hash : HASH) : MERKLEMAP = struct
           initial, final
         | Remove remove_proof ->
           compute_hashes_for_remove (initial_acc, final_acc) remove_proof
-        | NoChange no_change -> no_change.thash, no_change.thash
         | NotFound not_found -> not_found.thash, not_found.thash
         | Found p ->
           let khash = H.key p.key in
@@ -246,29 +235,20 @@ module Make (Hash : HASH) : MERKLEMAP = struct
     let matches_op (proof : 'k t) (op : ('k, 'v) op) : bool =
       let result =
         match op with
-        | Noop noop ->
-          consume_path noop.key proof
-          |> Option.map (function
-                 | [ NoChange no_change_proof ] -> true
-                 | _ -> false)
-        | Insert insert_op ->
-          consume_path insert_op.key proof
+        | Upsert upsert_op ->
+          consume_path upsert_op.key proof
           |> Option.map (function
                  | [ NewLeaf new_leaf ] ->
-                   new_leaf.key = insert_op.key
-                   && new_leaf.vhash = H.value insert_op.value
-                 | _ -> false)
-        | Update update_op ->
-          consume_path update_op.key proof
-          |> Option.map (function
+                   new_leaf.key = upsert_op.key
+                   && new_leaf.vhash = H.value upsert_op.value
                  | [ ValueChanged updated_node ] ->
-                   updated_node.key = update_op.key
-                   && updated_node.final_vhash = H.value update_op.new_value
-                   && updated_node.initial_vhash = H.value update_op.old_value
+                   updated_node.key = upsert_op.key
+                   && updated_node.final_vhash = H.value upsert_op.value
                  | _ -> false)
         | Remove remove_op ->
           consume_path remove_op.key proof
           |> Option.map (function
+                 | [ NotFound _ ] -> true
                  | [ Remove (RemoveLeaf remove_leaf) ] -> remove_leaf.key = remove_op.key
                  | [ Remove (ReplaceWithLeftChild replace) ] ->
                    replace.initial_key = remove_op.key
@@ -302,12 +282,12 @@ module Make (Hash : HASH) : MERKLEMAP = struct
     h
   ;;
 
-  let insert (key : 'k) (value : 'v) : ('k, 'v) op * 'k proof * ('k, 'v) hnode option =
+  let insert (key : 'k) (value : 'v) : 'k proof * ('k, 'v) hnode option =
     let khash = H.key key in
     let vhash = H.value value in
     let proof = [ Proof.NewLeaf { key; vhash } ] in
     let n = H.node { key; value; khash; vhash; left = None; right = None } in
-    Insert { key; value }, proof, Some n
+    proof, Some n
   ;;
 
   (* Returns the content (i.e. k,v) of the biggest child in the subtree starting at current_node, the proof and the subtree with the biggest child removed *)
@@ -360,9 +340,7 @@ module Make (Hash : HASH) : MERKLEMAP = struct
   (* Returns op, proof and a replacement for the current node, considering that the current_node is removed from the tree. 
         In case of a leaf the returned node is None so there's no replacement. 
         In case of a non-leaf the returned node is either the left/right child if the replacement is possible  *)
-  let remove_node (current_node : ('k, 'v) hnode)
-      : ('k, 'v) op * 'k proof * ('k, 'v) hnode option
-    =
+  let remove_node (current_node : ('k, 'v) hnode) : 'k proof * ('k, 'v) hnode option =
     let proof, node =
       match current_node.content.left, current_node.content.right with
       | None, None ->
@@ -429,13 +407,13 @@ module Make (Hash : HASH) : MERKLEMAP = struct
         in
         proof, Some n
     in
-    Remove { key = current_node.content.key }, proof, node
+    proof, node
   ;;
 
   (* Replaces the value in the current_node with the new_value. 
        A new node is always returned.*)
-  let replace_value (current_node : ('k, 'v) hnode) (new_value : 'v)
-      : ('k, 'v) op * 'k proof * ('k, 'v) hnode option
+  let update (current_node : ('k, 'v) hnode) (new_value : 'v)
+      : 'k proof * ('k, 'v) hnode option
     =
     let new_vhash = H.value new_value in
     let proof_step =
@@ -448,20 +426,7 @@ module Make (Hash : HASH) : MERKLEMAP = struct
         }
     in
     let n = H.node { current_node.content with value = new_value; vhash = new_vhash } in
-    let op =
-      Update
-        { key = current_node.content.key
-        ; old_value = current_node.content.value
-        ; new_value
-        }
-    in
-    op, [ proof_step ], Some n
-  ;;
-
-  (* Doesn't change anything. 
-         This happens when the search reached an empty leaf and the updater returned None so there is nothing to insert. *)
-  let noop (key : 'k) (hash : thash) : ('k, 'v) op * 'k proof * ('k, 'v) hnode option =
-    Noop { key }, [ Proof.NoChange { thash = hash; key } ], None
+    [ proof_step ], Some n
   ;;
 
   (* This implements a generic operation on the tree with the given root. It returns the following:
@@ -471,31 +436,36 @@ module Make (Hash : HASH) : MERKLEMAP = struct
      4. the result of the operation (ex: the found value in case of a lookup)*)
   let process_tree
       (type k v result)
-      (handle_key_not_found : thash -> (k, v) op * k proof * (k, v) hnode option * result)
-      (handle_key_found :
-        (k, v) hnode -> (k, v) op * k proof * (k, v) hnode option * result)
+      (handle_key_not_found : thash -> k proof * (k, v) hnode option)
+      (handle_key_found : (k, v) hnode -> k proof * (k, v) hnode option)
       (key : k)
       (root : (k, v) hnode option)
-      : (k, v) op * k proof * (k, v) hnode option * result
+      : v option * k proof * (k, v) hnode option
     =
     (* Updates a possibly missing node. 
           If the node is empty then we try to insert. If not empty then we try to update its content *)
     let rec update_opt_node (current_node_opt : (k, v) hnode option)
-        : (k, v) op * k proof * (k, v) hnode option * result
+        : v option * k proof * (k, v) hnode option
       =
       current_node_opt
       |> OptionExt.fold_lazy
-           ~none:(fun () -> handle_key_not_found @@ H.node_hash current_node_opt)
-           ~some:update_non_empty_node
+           ~none:(fun () ->
+             let proof, new_node = handle_key_not_found @@ H.node_hash current_node_opt in
+             None, proof, new_node)
+           ~some:(fun node ->
+             let value, proof, new_node = update_non_empty_node node in
+             value, proof, new_node)
     (* We reached a situation when the node with the given key was not found. 
           If the updater return a value we need to create a new leaf for it. Otherwise nothing will happen *)
     (* Some value in the subtree starting at current_node needs to be updated. 
           Depending on the key value we will update the current node or the left subtree or the right subtree *)
     and update_non_empty_node (current_node : (k, v) hnode)
-        : (k, v) op * k proof * (k, v) hnode option * result
+        : v option * k proof * (k, v) hnode option
       =
       if current_node.content.key = key
-      then handle_key_found current_node
+      then (
+        let proof, new_node = handle_key_found current_node in
+        Some current_node.content.value, proof, new_node)
       else if current_node.content.key < key
       then update_right_subtree current_node
       else (*i.e. current_node.key > key *) update_left_subtree current_node
@@ -504,9 +474,9 @@ module Make (Hash : HASH) : MERKLEMAP = struct
           If the updater returns None then we remove the current_node*)
     (* Go right with the search.*)
     and update_right_subtree (current_node : (k, v) hnode)
-        : (k, v) op * k proof * (k, v) hnode option * result
+        : v option * k proof * (k, v) hnode option
       =
-      let op, update_right_proof, new_right_node, result =
+      let result, update_right_proof, new_right_node =
         update_opt_node current_node.content.right
       in
       let proof_step =
@@ -518,12 +488,12 @@ module Make (Hash : HASH) : MERKLEMAP = struct
       in
       let proof = proof_step :: update_right_proof in
       let n = H.node { current_node.content with right = new_right_node } in
-      op, proof, Some n, result
+      result, proof, Some n
     (* Go left with the search *)
     and update_left_subtree (current_node : (k, v) hnode)
-        : (k, v) op * k proof * (k, v) hnode option * result
+        : v option * k proof * (k, v) hnode option
       =
-      let op, update_left_proof, new_left_node, result =
+      let result, update_left_proof, new_left_node =
         update_opt_node current_node.content.left
       in
       let proof_step =
@@ -535,51 +505,20 @@ module Make (Hash : HASH) : MERKLEMAP = struct
       in
       let proof = proof_step :: update_left_proof in
       let n = H.node { current_node.content with left = new_left_node } in
-      op, proof, Some n, result
+      result, proof, Some n
     in
     update_opt_node root
   ;;
 
-  (* A convenience function that wraps a process_tree handler that doesn't return anything and only updates the current node *)
-  let write_only_handler
-      (handler : 'i -> ('k, 'v) op * 'k proof * ('k, 'v) hnode option)
-      (input : 'i)
-      : ('k, 'v) op * 'k proof * ('k, 'v) hnode option * unit
+  let lookup (key : 'k) (root : ('k, 'v) hnode option)
+      : 'v option * 'k proof * ('k, 'v) hnode option
     =
-    let o, p, n = handler input in
-    o, p, n, ()
-  ;;
-
-  (* A convenience function that wraps a process_tree "key-found" handler that doesn't change the current node but returns a value *)
-  let read_only_handle_key_found
-      (handler : ('k, 'v) hnode -> ('k, 'v) op * 'k proof * 'r)
-      (input : ('k, 'v) hnode)
-      : ('k, 'v) op * 'k proof * ('k, 'v) hnode option * 'r
-    =
-    let o, p, r = handler input in
-    o, p, Some input, r
-  ;;
-
-  (* A convenience function that wraps a process_tree "key-not-found" handler that doesn't create a new node but returns a value *)
-  let read_only_handle_key_not_found
-      (handler : thash -> ('k, 'v) op * 'k proof * 'r)
-      (thash : thash)
-      : ('k, 'v) op * 'k proof * ('k, 'v) hnode option * 'r
-    =
-    let o, p, r = handler thash in
-    o, p, None, r
-  ;;
-
-  let lookup (key : 'k) (MerkleTreeMap root : ('k, 'v) t)
-      : ('k, 'v) op * 'k proof * 'v option
-    =
-    let op = Lookup { key } in
     let handle_key_not_found (current_node_thash : thash)
-        : ('k, 'v) op * 'k proof * 'v option
+        : 'k proof * ('k, 'v) hnode option
       =
-      op, [ Proof.NotFound { thash = current_node_thash } ], None
+      [ Proof.NotFound { thash = current_node_thash } ], root
     in
-    let handle_key_found (node : ('k, 'v) hnode) : ('k, 'v) op * 'k proof * 'v option =
+    let handle_key_found (node : ('k, 'v) hnode) : 'k proof * ('k, 'v) hnode option =
       let proof_step =
         Proof.Found
           { key = node.content.key
@@ -588,60 +527,49 @@ module Make (Hash : HASH) : MERKLEMAP = struct
           ; vhash = node.content.vhash
           }
       in
-      op, [ proof_step ], Some node.content.value
+      [ proof_step ], root
     in
-    let op, proof, _new_root, result =
-      process_tree
-        (read_only_handle_key_not_found handle_key_not_found)
-        (read_only_handle_key_found handle_key_found)
-        key
-        root
-    in
-    op, proof, result
+    process_tree handle_key_not_found handle_key_found key root
   ;;
 
-  (* 
-      The updater function is called with None when the element is missing or Some v when the v value exists in the map.
-      If the updater function returns None for an existing key then the element is removed.
-      If the key doesn't exist (i.e. update is called with None) and the updater returns Some value then the value is inserted
-      If the key doesn't exist and the updater returns None then the map is unchanged.
-    *)
-  let update_map
-      (key : 'k)
-      (updater : 'v option -> 'v option)
-      (MerkleTreeMap root : ('k, 'v) t)
-      : ('k, 'v) op * 'k proof * ('k, 'v) t
+  let upsert (key : 'k) (value : 'v) (root : ('k, 'v) hnode option)
+      : 'v option * 'k proof * ('k, 'v) hnode option
     =
-    let handle_key_not_found thash : ('k, 'v) op * 'k proof * ('k, 'v) hnode option =
-      updater None
-      |> OptionExt.fold_lazy ~none:(fun () -> noop key thash) ~some:(insert key)
+    let handle_key_not_found thash : 'k proof * ('k, 'v) hnode option =
+      insert key value
     in
     let handle_key_found (current_node : ('k, 'v) hnode)
-        : ('k, 'v) op * 'k proof * ('k, 'v) hnode option
+        : 'k proof * ('k, 'v) hnode option
       =
-      updater (Some current_node.content.value)
-      |> OptionExt.fold_lazy
-           ~none:(fun () -> remove_node current_node)
-           ~some:(replace_value current_node)
+      update current_node value
     in
-    let op, proof, new_root, _ =
-      process_tree
-        (write_only_handler handle_key_not_found)
-        (write_only_handler handle_key_found)
-        key
-        root
-    in
-    op, proof, MerkleTreeMap new_root
+    process_tree handle_key_not_found handle_key_found key root
   ;;
 
-  let remove (key : 'k) (mtm : ('k, 'v) t) : ('k, 'v) op * 'k proof * ('k, 'v) t =
-    update_map key (fun _ -> None) mtm
-  ;;
-
-  let upsert (key : 'k) (value : 'v) (mtm : ('k, 'v) t)
-      : ('k, 'v) op * 'k proof * ('k, 'v) t
+  let remove (key : 'k) (root : ('k, 'v) hnode option)
+      : 'v option * 'k proof * ('k, 'v) hnode option
     =
-    update_map key (fun _ -> Some value) mtm
+    let handle_key_not_found thash : 'k proof * ('k, 'v) hnode option =
+      [ Proof.NotFound { thash } ], None
+    in
+    let handle_key_found (current_node : ('k, 'v) hnode)
+        : 'k proof * ('k, 'v) hnode option
+      =
+      remove_node current_node
+    in
+    process_tree handle_key_not_found handle_key_found key root
+  ;;
+
+  let execute (op : ('k, 'v) op) (MerkleTreeMap mtm : ('k, 'v) t)
+      : 'v option * 'k proof * ('k, 'v) t
+    =
+    let result, proof, new_root =
+      match op with
+      | Lookup lookup_op -> lookup lookup_op.key mtm
+      | Upsert upsert_op -> upsert upsert_op.key upsert_op.value mtm
+      | Remove remove_op -> remove remove_op.key mtm
+    in
+    result, proof, MerkleTreeMap new_root
   ;;
 
   (* Verifies that the given op is valid for the given proof and that the given hashes are valid for the given proof*)
@@ -659,8 +587,8 @@ module Make (Hash : HASH) : MERKLEMAP = struct
 
   let from_list (kvs : ('k * 'v) list) : ('k, 'v) t =
     List.fold_left
-      (fun acc (k, v) ->
-        let _op, _proof, map = update_map k (CCFun.const @@ Some v) acc in
+      (fun acc (key, value) ->
+        let _, _proof, map = execute (Upsert { key; value }) acc in
         map)
       empty
       kvs

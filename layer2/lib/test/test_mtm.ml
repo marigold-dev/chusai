@@ -52,10 +52,6 @@ let () =
             `Quick
             test_verify_proof_update_one_elem_list
         ; test_case "remove from empty map" `Quick test_verify_remove_from_empty_map
-        ; test_case
-            "remove from nonempty map - interchanging proofs"
-            `Quick
-            test_verify_interchange_remove_proofs
         ; test_case "remove existing key left" `Quick test_verify_remove_existing_key_left
         ; test_case
             "remove existing key right"

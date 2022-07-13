@@ -18,26 +18,36 @@ let test_from_three_elem_list () =
 ;;
 
 let test_remove_from_empty () =
-  check_lists [] Mtm.(to_list @@ Tools.third @@ Mtm.remove "non-existent" Mtm.empty)
+  check_lists
+    []
+    Mtm.(
+      to_list
+      @@ Tools.get_tree
+      @@ Mtm.execute (Mtm.Remove { key = "non-existent" }) Mtm.empty)
 ;;
 
 let test_remove_missing_key () =
   check_lists
     ([ "b", 0 ]
     |> Mtm.from_list
-    |> Mtm.remove "non-existent"
-    |> Tools.third
+    |> Mtm.execute (Mtm.Remove { key = "non-existent" })
+    |> Tools.get_tree
     |> Mtm.to_list)
     [ "b", 0 ]
 ;;
 
 let test_remove_leaf () =
-  check_lists [] (Mtm.to_list @@ Tools.third @@ Mtm.remove "a" @@ Mtm.from_list [ "a", 1 ])
+  check_lists
+    []
+    (Mtm.to_list
+    @@ Tools.get_tree
+    @@ Mtm.execute (Mtm.Remove { key = "a" })
+    @@ Mtm.from_list [ "a", 1 ])
 ;;
 
 let test_remove_node_right () =
   let initial_map = Mtm.from_list [ "a", 1; "b", 2 ] in
-  let _op, _proof, final_map = Mtm.remove "a" initial_map in
+  let _op, _proof, final_map = Mtm.execute (Mtm.Remove { key = "a" }) initial_map in
   check_lists [ "b", 2 ] (Mtm.to_list final_map)
 ;;
 
@@ -45,14 +55,14 @@ let test_remove_node_right_right () =
   check_lists
     [ "b", 2; "c", 3 ]
     (Mtm.to_list
-    @@ Tools.third
-    @@ Mtm.remove "a"
+    @@ Tools.get_tree
+    @@ Mtm.execute (Mtm.Remove { key = "a" })
     @@ Mtm.from_list [ "a", 1; "b", 2; "c", 3 ])
 ;;
 
 let test_remove_node_right_left () =
   let initial_map = Mtm.from_list [ "a", 1; "c", 3; "b", 2 ] in
-  let _, _, final_map = Mtm.remove "a" initial_map in
+  let _, _, final_map = Mtm.execute (Mtm.Remove { key = "a" }) initial_map in
   check_lists [ "b", 2; "c", 3 ] (Mtm.to_list final_map)
 ;;
 
@@ -61,8 +71,8 @@ let test_remove_2 () =
     [ "a", 1; "c", 3; "d", 4 ]
     Mtm.(
       to_list
-      @@ Tools.third
-      @@ Mtm.remove "b"
+      @@ Tools.get_tree
+      @@ Mtm.execute (Mtm.Remove { key = "non_existent" })
       @@ Mtm.from_list [ "b", 2; "d", 4; "c", 3; "a", 1 ])
 ;;
 
@@ -71,8 +81,8 @@ let test_remove_node_right_left_left_left () =
     [ "b", 2; "c", 3; "d", 4; "e", 5 ]
     Mtm.(
       to_list
-      @@ Tools.third
-      @@ Mtm.remove "a"
+      @@ Tools.get_tree
+      @@ Mtm.execute (Mtm.Remove { key = "a" })
       @@ Mtm.from_list [ "a", 1; "e", 5; "d", 4; "c", 3; "b", 2 ])
 ;;
 
@@ -81,71 +91,83 @@ let test_remove_node_right_left_y () =
     [ "b", 2; "c", 3; "d", 4; "e", 5 ]
     Mtm.(
       to_list
-      @@ Tools.third
-      @@ Mtm.remove "a"
+      @@ Tools.get_tree
+      @@ Mtm.execute (Mtm.Remove { key = "a" })
       @@ Mtm.from_list [ "a", 1; "e", 5; "d", 4; "b", 2; "c", 3 ])
 ;;
 
 let test_remove_node_left () =
   check_lists
     [ "a", 1 ]
-    Mtm.(to_list @@ Tools.third @@ Mtm.remove "b" @@ Mtm.from_list [ "b", 2; "a", 1 ])
+    Mtm.(
+      to_list
+      @@ Tools.get_tree
+      @@ Mtm.execute (Mtm.Remove { key = "b" })
+      @@ Mtm.from_list [ "b", 2; "a", 1 ])
 ;;
 
 let test_remove_node_left_left () =
   check_lists
     [ "a", 1; "b", 2 ]
     Mtm.(
-      to_list @@ Tools.third @@ Mtm.remove "c" @@ Mtm.from_list [ "c", 3; "b", 2; "a", 1 ])
+      to_list
+      @@ Tools.get_tree
+      @@ Mtm.execute (Mtm.Remove { key = "c" })
+      @@ Mtm.from_list [ "c", 3; "b", 2; "a", 1 ])
 ;;
 
 let test_remove_y_node () =
   check_lists
     [ "a", 1; "c", 3 ]
     Mtm.(
-      to_list @@ Tools.third @@ Mtm.remove "b" @@ Mtm.from_list [ "a", 1; "b", 2; "c", 3 ])
+      to_list
+      @@ Tools.get_tree
+      @@ Mtm.execute (Mtm.Remove { key = "b" })
+      @@ Mtm.from_list [ "a", 1; "b", 2; "c", 3 ])
 ;;
 
 let check_pair = Alcotest.(check (option (pair string int)) "same key-value")
 
 let test_verify_proof_insert_in_empty_list () =
-  let k, v = "a", 1 in
+  let key, value = "a", 1 in
   let input_list = [] in
   let initial_map = Mtm.from_list input_list in
-  let op, proof, final_map = Mtm.upsert k v initial_map in
+  let op = Mtm.Upsert { key; value } in
+  let None, proof, final_map = Mtm.execute op initial_map in
   check_true
   @@ Mtm.verify_proof op proof (Mtm.root_hash initial_map) (Mtm.root_hash final_map)
 ;;
 
 let test_verify_proof_insert_right_in_one_elem_list () =
-  let k, v = "b", 2 in
   let input_list = [ "a", 1 ] in
   let initial_map = Mtm.from_list input_list in
-  let op, proof, final_map = Mtm.upsert k v initial_map in
+  let op = Mtm.Upsert { key = "b"; value = 2 } in
+  let None, proof, final_map = Mtm.execute op initial_map in
   check_true
   @@ Mtm.verify_proof op proof (Mtm.root_hash initial_map) (Mtm.root_hash final_map)
 ;;
 
 let test_verify_proof_insert_left_in_one_elem_list () =
-  let k, v = "a", 1 in
   let input_list = [ "b", 2 ] in
   let initial_map = Mtm.from_list input_list in
-  let op, proof, final_map = Mtm.upsert k v initial_map in
+  let op = Mtm.Upsert { key = "a"; value = 2 } in
+  let None, proof, final_map = Mtm.execute op initial_map in
   check_true
   @@ Mtm.verify_proof op proof (Mtm.root_hash initial_map) (Mtm.root_hash final_map)
 ;;
 
 let test_verify_proof_update_one_elem_list () =
-  let k, v = "a", 2 in
   let input_list = [ "a", 1 ] in
   let initial_map = Mtm.from_list input_list in
-  let op, proof, final_map = Mtm.upsert k v initial_map in
+  let op = Mtm.Upsert { key = "a"; value = 2 } in
+  let Some _, proof, final_map = Mtm.execute op initial_map in
   check_true
   @@ Mtm.verify_proof op proof (Mtm.root_hash initial_map) (Mtm.root_hash final_map)
 ;;
 
 let test_verify_remove_from_empty_map () =
-  let op, proof, final_map = Mtm.remove "a" Mtm.empty in
+  let op = Mtm.Remove { key = "a" } in
+  let None, proof, final_map = Mtm.execute op Mtm.empty in
   let _ =
     check_true
     @@ Mtm.verify_proof op proof (Mtm.root_hash Mtm.empty) (Mtm.root_hash final_map)
@@ -153,96 +175,72 @@ let test_verify_remove_from_empty_map () =
   ()
 ;;
 
-let test_verify_interchange_remove_proofs () =
-  let map_a = Mtm.from_list [ "a", 1 ] in
-  let map_c = Mtm.from_list [ "c", 1 ] in
-  let op_a, proof_a, final_map_a = Mtm.remove "b" map_a in
-  let op_c, proof_c, final_map_c = Mtm.remove "b" map_c in
-  let _ =
-    check_true
-    @@ Mtm.verify_proof op_a proof_a (Mtm.root_hash map_a) (Mtm.root_hash final_map_a)
-  in
-  let _ =
-    check_false
-    @@ Mtm.verify_proof op_c proof_c (Mtm.root_hash map_a) (Mtm.root_hash final_map_a)
-  in
-  let _ =
-    check_true
-    @@ Mtm.verify_proof op_c proof_c (Mtm.root_hash map_c) (Mtm.root_hash final_map_c)
-  in
-  let _ =
-    check_false
-    @@ Mtm.verify_proof op_a proof_a (Mtm.root_hash map_a) (Mtm.root_hash final_map_c)
-  in
-  ()
-;;
-
 let test_verify_remove_existing_key_right () =
   let initial_map = Mtm.from_list [ "a", 1; "b", 2 ] in
-  let _ = Mtm__Debug.print "initial map" initial_map in
-  let op, proof, final_map = Mtm.remove "b" initial_map in
-  let _ = Mtm__Debug.print "final map" final_map in
+  let op = Mtm.Remove { key = "b" } in
+  let Some _, proof, final_map = Mtm.execute op initial_map in
   check_true
   @@ Mtm.verify_proof op proof (Mtm.root_hash initial_map) (Mtm.root_hash final_map)
 ;;
 
 let test_verify_remove_existing_key_left () =
   let initial_map = Mtm.from_list [ "b", 2; "a", 1 ] in
-  let op, proof, final_map = Mtm.remove "a" initial_map in
+  let op = Mtm.Remove { key = "a" } in
+  let Some _, proof, final_map = Mtm.execute op initial_map in
   check_true
   @@ Mtm.verify_proof op proof (Mtm.root_hash initial_map) (Mtm.root_hash final_map)
 ;;
 
 let test_verify_proof_remove_non_leaf_2 () =
-  let key_to_remove = "a" in
   let input_list = [ "a", 1; "b", 2 ] in
   let initial_map = Mtm.from_list input_list in
-  let op, proof, final_map = Mtm.remove key_to_remove initial_map in
+  let op = Mtm.Remove { key = "a" } in
+  let Some _, proof, final_map = Mtm.execute op initial_map in
   check_true
   @@ Mtm.verify_proof op proof (Mtm.root_hash initial_map) (Mtm.root_hash final_map)
 ;;
 
 let test_verify_proof_for_chain_replacements () =
-  let key_to_remove = "e" in
   let input_list = [ "e", 1; "f", 2; "c", 3; "d", 4; "a", 5; "b", 6 ] in
   let initial_map = Mtm.from_list input_list in
-  let op, proof, final_map = Mtm.remove key_to_remove initial_map in
+  let op = Mtm.Remove { key = "e" } in
+  let Some _, proof, final_map = Mtm.execute op initial_map in
   check_true
   @@ Mtm.verify_proof op proof (Mtm.root_hash initial_map) (Mtm.root_hash final_map)
 ;;
 
 let test_verify_proof_lookup_not_found () =
-  let k, v = "a", 0 in
   let input_list_with_kv = [] in
   let map = Mtm.from_list input_list_with_kv in
-  let op, proof, None = Mtm.lookup k map in
+  let op = Mtm.Lookup { key = "a" } in
+  let None, proof, _ = Mtm.execute op map in
   let result = Mtm.verify_proof op proof (Mtm.root_hash map) (Mtm.root_hash map) in
   check_true result
 ;;
 
 let test_verify_proof_lookup_found () =
-  let k, v = "a", 0 in
   let input_list_with_kv = [ "a", "0" ] in
   let map = Mtm.from_list input_list_with_kv in
-  let op, proof, Some v = Mtm.lookup k map in
+  let op = Mtm.Lookup { key = "a" } in
+  let Some _, proof, _ = Mtm.execute op map in
   let result = Mtm.verify_proof op proof (Mtm.root_hash map) (Mtm.root_hash map) in
   check_true result
 ;;
 
 let test_remove_left_right_right () =
-  let key_to_remove = "c" in
   let input_list = [ "c", 3; "a", 1; "b", 2; "d", 4 ] in
   let initial_map = Mtm.from_list input_list in
-  let op, proof, final_map = Mtm.remove key_to_remove initial_map in
+  let op = Mtm.Remove { key = "c" } in
+  let Some _, proof, final_map = Mtm.execute op initial_map in
   check_true
   @@ Mtm.verify_proof op proof (Mtm.root_hash initial_map) (Mtm.root_hash final_map)
 ;;
 
 let test_remove_right_left_left () =
-  let key_to_remove = "c" in
   let input_list = [ "c", 3; "d", 4; "b", 2; "a", 1 ] in
   let initial_map = Mtm.from_list input_list in
-  let op, proof, final_map = Mtm.remove key_to_remove initial_map in
+  let op = Mtm.Remove { key = "c" } in
+  let Some _, proof, final_map = Mtm.execute op initial_map in
   check_true
   @@ Mtm.verify_proof op proof (Mtm.root_hash initial_map) (Mtm.root_hash final_map)
 ;;

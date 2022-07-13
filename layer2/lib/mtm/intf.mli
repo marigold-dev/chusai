@@ -1,7 +1,3 @@
-module type SERIALIZER = sig
-  val serialize : 'a -> bytes
-end
-
 module type HASH = sig
   type t
 
@@ -12,25 +8,49 @@ module type HASH = sig
   val ( ++ ) : t -> t -> t
 end
 
-module type MERKLEMAP = sig
-  type hash
+module type SERIALIZER = sig
+  val serialize : 'a -> bytes
+end
+
+(* Generic merkleized key-value storage type*)
+module type STORAGE = sig
+  (* The storage *)
   type ('k, 'v) t
-  type 'k proof
+
+  (* the operations available on this storage*)
   type ('k, 'v) op
+
+  (* the proof type *)
+  type 'k proof
+
+  (* Execute a storage operation and returns:
+     - maybe a value, depending on the operation:
+      Lookup -> return a value if the key was found or None 
+      Upsert -> return the original value if the key was found or None if it wasn't
+      Remove -> return the original value if the key was found or None if it wasn't
+     - the Merkle proof of the execution
+     - the new version of the storage
+     *)
+  val execute : ('k, 'v) op -> ('k, 'v) t -> 'v option * 'k proof * ('k, 'v) t
+end
+
+(* A STORAGE represented as a "merkle map"*)
+module type MERKLEMAP = sig
+  type ('k, 'v) op =
+    | Lookup of { key : 'k }
+    | Upsert of
+        { key : 'k
+        ; value : 'v
+        }
+    | Remove of { key : 'k }
+
+  type hash
+
+  include STORAGE with type ('k, 'v) op := ('k, 'v) op
 
   val empty : ('k, 'v) t
   val from_list : ('k * 'v) list -> ('k, 'v) t
   val to_list : ('k, 'v) t -> ('k * 'v) list
-  val lookup : 'k -> ('k, 'v) t -> ('k, 'v) op * 'k proof * 'v option
-
-  val update_map
-    :  'k
-    -> ('v option -> 'v option)
-    -> ('k, 'v) t
-    -> ('k, 'v) op * 'k proof * ('k, 'v) t
-
-  val upsert : 'k -> 'v -> ('k, 'v) t -> ('k, 'v) op * 'k proof * ('k, 'v) t
-  val remove : 'k -> ('k, 'v) t -> ('k, 'v) op * 'k proof * ('k, 'v) t
   val root_hash : ('k, 'v) t -> hash
   val verify_proof : ('k, 'v) op -> 'k proof -> hash -> hash -> bool
 
