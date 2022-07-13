@@ -34,15 +34,15 @@ module type MERKLEMAP = sig
   val root_hash : ('k, 'v) t -> hash
   val verify_proof : ('k, 'v) op -> 'k proof -> hash -> hash -> bool
 
-  val show
+  val pp
     :  (Format.formatter -> 'k -> unit)
     -> (Format.formatter -> 'v -> unit)
     -> ('k, 'v) t
     -> string
 
-  val show_proof : (Format.formatter -> 'k -> unit) -> 'k proof -> string
+  val pp_proof : (Format.formatter -> 'k -> unit) -> 'k proof -> string
 
-  val show_op
+  val pp_op
     :  (Format.formatter -> 'k -> unit)
     -> (Format.formatter -> 'v -> unit)
     -> ('k, 'v) op

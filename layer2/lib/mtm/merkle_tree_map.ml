@@ -681,7 +681,7 @@ module Make (Hash : HASH) : MERKLEMAP = struct
     go t
   ;;
 
-  let show
+  let pp
       (kfmt : Format.formatter -> 'k -> unit)
       (vfmt : Format.formatter -> 'v -> unit)
       (MerkleTreeMap t : ('k, 'v) t)
@@ -692,12 +692,12 @@ module Make (Hash : HASH) : MERKLEMAP = struct
     ^ ")"
   ;;
 
-  let show_proof (kfmt : Format.formatter -> 'k -> unit) (proof : 'k proof) : string =
+  let pp_proof (kfmt : Format.formatter -> 'k -> unit) (proof : 'k proof) : string =
     let steps_strs = List.map (Proof.show_step kfmt) proof in
     "Proof [" ^ String.concat ";\n" steps_strs ^ "]"
   ;;
 
-  let show_op
+  let pp_op
       (kfmt : Format.formatter -> 'k -> unit)
       (vfmt : Format.formatter -> 'v -> unit)
       (op : ('k, 'v) op)
