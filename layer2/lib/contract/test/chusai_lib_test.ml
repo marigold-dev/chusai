@@ -1,4 +1,4 @@
-open Chusai_contract.Contract
+open Chusai_contract
 open Tezos_error_monad.Error_monad.Legacy_monad_globals
 
 let of_bytes s = (Bytes.of_string (Hex.to_string (`Hex s)))
