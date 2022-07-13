@@ -7,6 +7,7 @@ let empty_chain =
     { max_index = 0n 
     ; batches = (Big_map.empty : (index, batch) big_map)
     ; children = (Big_map.empty : (index, index list) big_map)
+    ; latest_finalized = 0n
     }
 
 let batch (parent:index) (level:nat) : batch = 
@@ -19,7 +20,8 @@ let batch (parent:index) (level:nat) : batch =
 let _test_remove_one () = 
     let first = batch 0n 0n in
     let chain = 
-    { max_index = 1n 
+    { empty_chain with
+      max_index = 1n 
     ; batches = Big_map.literal [(1n, first)]
     ; children = (Big_map.empty : (index, index list) big_map)
     } in
@@ -33,7 +35,8 @@ let _test_remove_father () =
     let first = batch 0n 0n in
     let second = batch 1n 0n in
     let chain = 
-    { max_index = 1n 
+    { empty_chain with
+      max_index = 1n 
     ; batches = Big_map.literal [(1n, first) ; (2n, second)]
     ; children = Big_map.literal [(1n, [2n])]
     } in
@@ -49,7 +52,8 @@ let _test_remove_twins () =
     let second = batch 1n 0n in
     let third = batch 1n 0n in
     let chain = 
-    { max_index = 1n 
+    { empty_chain with
+      max_index = 1n 
     ; batches = Big_map.literal [(1n, first) ; (2n, second) ; (3n, third)]
     ; children = Big_map.literal [(1n, [3n;2n])]
     } in
@@ -66,7 +70,8 @@ let _test_remove_grand_child () =
     let second = batch 1n 0n in
     let third = batch 2n 0n in
     let chain = 
-    { max_index = 1n 
+    { empty_chain with
+      max_index = 1n 
     ; batches = Big_map.literal [(1n, first) ; (2n, second) ; (3n, third)]
     ; children = Big_map.literal [(1n, [2n]) ; (2n, [3n])]
     } in
@@ -95,7 +100,8 @@ let _test_receive_son () =
     let first = batch 0n 10n in
     let second = batch 1n 20n in
     let chain = 
-    { max_index = 1n 
+    { empty_chain with
+      max_index = 1n 
     ; batches = (Big_map.literal [(1n,first)])
     ; children = (Big_map.empty : (index, index list) big_map)
     } in
@@ -113,7 +119,8 @@ let _test_receive_siblings () =
     let second = batch 1n 20n in
     let third = batch 1n 20n in
     let chain = 
-    { max_index = 2n 
+    { empty_chain with
+      max_index = 2n 
     ; batches = (Big_map.literal [(1n, first) ; (2n, second)])
     ; children = (Big_map.literal [(1n, [2n])])
     } in
@@ -131,7 +138,8 @@ let _test_receive_orphan  () =
     let first = batch 0n 10n in
     let second = batch 3n 20n in
     let chain = 
-    { max_index = 1n 
+    { empty_chain with
+      max_index = 1n 
     ; batches = (Big_map.literal [(1n,first)])
     ; children = (Big_map.empty : (index, index list) big_map)
     } in

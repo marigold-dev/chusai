@@ -9,7 +9,7 @@ type batch =
     ;  proposer : address
     }
 type chain = 
-    {   max_index : nat                         // max_index is the biggest index ever used. Not necessarily the biggest still used, as the corresponding batch could have been removed.
+    {   max_index : index                         // max_index is the biggest index ever used. Not necessarily the biggest still used, as the corresponding batch could have been removed.
     ;   batches : (index, batch) big_map        // stores the batches
     ;   children : (index, index list) big_map  // stores the children of a batch, i.e. the index of the batches that designated it as immediat parent
     }
@@ -74,3 +74,4 @@ let find_latest_existing (chain : chain) : batch option =
     in
     let max_index = chain.max_index in
     find_existing max_index
+
