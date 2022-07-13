@@ -46,7 +46,7 @@ let lift_execution_arg ctxt entrypoint_ty
   Script_ir_translator.parse_data ctxt ~legacy:false ~allow_forged:false entrypoint_ty arg
   >>=? fun (entrypoint_arg, ctxt) -> return (construct entrypoint_arg, ctxt)
 
-let execute script_expr storage_expr arg_expr entrypoint =
+let execute ~script_expr ~storage_expr ~arg_expr ~entrypoint =
   let open Tezos_013_PtJakart_test_helpers.Error_monad_operators in
   let script = Alpha_context.Script.{code = lazy_expr script_expr; storage = lazy_expr storage_expr} in
   init_tezos_ctxt >>=? fun ctxt ->
@@ -55,16 +55,20 @@ let execute script_expr storage_expr arg_expr entrypoint =
     ~legacy:false
     ~allow_forged_in_storage:false
     script
-  >>=?? fun (Ex_script (Script {code = _; storage_type = _; arg_type; storage = _; entrypoints; _}) , ctxt) ->
+  >>=?? fun (Ex_script (Script {code; storage_type; arg_type; storage; entrypoints; _}) , ctxt) ->
   Gas_monad.run
     ctxt
     (Script_ir_translator.find_entrypoint ~error_details:Informative arg_type entrypoints entrypoint)
   >>??= fun (r, ctxt) -> r
   >>??= fun (Script_ir_translator.Ex_ty_cstr {ty = entrypoint_ty; construct; original_type_expr = _}) ->
   lift_execution_arg ctxt entrypoint_ty construct arg_expr
-  >>=?? fun (_arg, _ctxt) ->
-  return _ctxt
-  (*Chusai_script_interpreter.interp (ctxt, step_constants) code (arg, storage)*)
-  (*>>=?? fun ((ops, new_storage), ctxt) ->*)
-  (*(ops, new_storage)*)
-
+  >>=?? fun (arg, ctxt) ->
+  Chusai_script_interpreter.interp None (ctxt, Tezos_013_PtJakart_test_helpers.Contract_helpers.default_step_constants) code (arg, storage)
+  >>=? fun ((_ops, new_storage), ctxt) ->
+    Chusai_script_interpreter.wrap_tztrace_lwt @@
+    Script_ir_translator.pack_data
+    ctxt
+    storage_type
+    new_storage
+  >>=? fun (bytes, _ctxt) ->
+    return bytes
