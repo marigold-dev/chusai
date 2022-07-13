@@ -98,10 +98,7 @@ let quickcheck_test_remove =
       "sorted . List.remove  random . unique = to_list . Mtm.remove random . from_list"
     QCheck.(mygen small_printable_string int)
     (fun (key_to_remove, input_unique) ->
-      let _ = Mtm__Debug.print "key_to_remove" key_to_remove in
-      let _ = Mtm__Debug.print "input_unique" input_unique in
       let input_list_without_key = Tools.remove_key key_to_remove input_unique in
-      let _ = Mtm__Debug.print "input_list_without_key" input_list_without_key in
       let left_side = Tools.sorted input_list_without_key in
       let right_side =
         Mtm.to_list
@@ -109,7 +106,6 @@ let quickcheck_test_remove =
         @@ Mtm.execute (Mtm.Remove { key = key_to_remove })
         @@ Mtm.from_list input_unique
       in
-      let _ = Mtm__Debug.print "result:" (left_side = right_side) in
       left_side = right_side)
 ;;
 
