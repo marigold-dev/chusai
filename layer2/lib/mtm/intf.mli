@@ -1,3 +1,17 @@
+module type SERIALIZER = sig
+  val serialize : 'a -> bytes
+end
+
+module type HASH = sig
+  type t
+
+  val equal : t -> t -> bool
+  val pp : Format.formatter -> t -> unit
+  val empty : t
+  val hash : 'a -> t
+  val ( ++ ) : t -> t -> t
+end
+
 module type MERKLEMAP = sig
   type hash
   type ('k, 'v) t

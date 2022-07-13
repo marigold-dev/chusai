@@ -1,4 +1,4 @@
-open Mtm.Serializer_algo
+open Mtm.Intf
 
 module Dump : SERIALIZER = struct
   let serialize a = Batteries.dump a |> Bytes.of_string

@@ -1,6 +1,7 @@
+open Intf
 open Format
 
-module Make (Serializer : Serializer_algo.SERIALIZER) : Hash_algo.HASH = struct
+module Make (Serializer : SERIALIZER) : HASH = struct
   type t = Sha256 of string
 
   let pp (formatter : formatter) (Sha256 s : t) : unit = Format.fprintf formatter "%s" s
