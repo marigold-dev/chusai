@@ -144,26 +144,6 @@ let test_verify_proof_update_one_elem_list () =
   @@ Mtm.verify_proof op proof (Mtm.root_hash initial_map) (Mtm.root_hash final_map)
 ;;
 
-let test_verify_invalid_proof_insert () =
-  let map_a = Mtm.from_list [ "a", 0 ] in
-  let map_c = Mtm.from_list [ "c", 0 ] in
-  let op_ab, proof_ab, map_ab = Mtm.upsert "b" 1 map_a in
-  let op_bc, proof_bc, map_bc = Mtm.upsert "b" 1 map_c in
-  let _ =
-    check_true
-    @@ Mtm.verify_proof op_ab proof_ab (Mtm.root_hash map_a) (Mtm.root_hash map_ab)
-  in
-  let _ =
-    check_true
-    @@ Mtm.verify_proof op_bc proof_bc (Mtm.root_hash map_c) (Mtm.root_hash map_bc)
-  in
-  let _ =
-    check_false
-    @@ Mtm.verify_proof op_bc proof_bc (Mtm.root_hash map_c) (Mtm.root_hash map_bc)
-  in
-  ()
-;;
-
 let test_verify_remove_from_empty_map () =
   let op, proof, final_map = Mtm.remove "a" Mtm.empty in
   let _ =
