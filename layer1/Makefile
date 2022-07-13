@@ -12,6 +12,7 @@ build:
 
 	make -C wallet build
 	make -C mint build
+	make -C refutation build
 
 test:
 	$(LIGO_TEST) test/test.mligo
