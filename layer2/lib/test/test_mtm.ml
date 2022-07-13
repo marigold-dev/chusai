@@ -61,14 +61,12 @@ let () =
             "remove existing key right"
             `Quick
             test_verify_remove_existing_key_right
+        ; test_case "remove node left/right/right" `Quick test_remove_left_right_right
+        ; test_case "remove node right/left/left" `Quick test_remove_right_left_left
         ; test_case "remove non_leaf 2" `Quick test_verify_proof_remove_non_leaf_2
         ; test_case "chain replacements" `Quick test_verify_proof_for_chain_replacements
         ; test_case "lookup found" `Quick test_verify_proof_lookup_found
         ; test_case "lookup not found" `Quick test_verify_proof_lookup_not_found
-        ; test_case "quickcheck failure 1" `Quick test_quickcheck_regression_1
-        ; test_case "quickcheck failure 2" `Quick test_quickcheck_regression_2
-        ; test_case "quickcheck failure 3" `Quick test_quickcheck_regression_3
-        ; test_case "quickcheck failure 4" `Quick test_quickcheck_regression_4
         ] )
     ; ( "proof - quickcheck"
       , [ QCheck_alcotest.to_alcotest quickcheck_test_verify_proof_insert

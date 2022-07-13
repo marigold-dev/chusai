@@ -113,14 +113,6 @@ let test_verify_proof_insert_in_empty_list () =
   let input_list = [] in
   let initial_map = Mtm.from_list input_list in
   let op, proof, final_map = Mtm.upsert k v initial_map in
-  let _ =
-    Format.printf "op:%s\n" @@ Mtm.show_op Format.pp_print_string Format.pp_print_int op
-  in
-  let _ = Format.printf "proof:%s\n" @@ Mtm.show_proof Format.pp_print_string proof in
-  let _ =
-    Format.printf "final_map:%s\n"
-    @@ Mtm.show Format.pp_print_string Format.pp_print_int final_map
-  in
   check_true
   @@ Mtm.verify_proof op proof (Mtm.root_hash initial_map) (Mtm.root_hash final_map)
 ;;
@@ -138,19 +130,7 @@ let test_verify_proof_insert_left_in_one_elem_list () =
   let k, v = "a", 1 in
   let input_list = [ "b", 2 ] in
   let initial_map = Mtm.from_list input_list in
-  let _ =
-    Format.printf "initial_map:%s\n"
-    @@ Mtm.show Format.pp_print_string Format.pp_print_int initial_map
-  in
   let op, proof, final_map = Mtm.upsert k v initial_map in
-  let _ =
-    Format.printf "op:%s\n" @@ Mtm.show_op Format.pp_print_string Format.pp_print_int op
-  in
-  let _ = Format.printf "proof:%s\n" @@ Mtm.show_proof Format.pp_print_string proof in
-  let _ =
-    Format.printf "final_map:%s\n"
-    @@ Mtm.show Format.pp_print_string Format.pp_print_int final_map
-  in
   check_true
   @@ Mtm.verify_proof op proof (Mtm.root_hash initial_map) (Mtm.root_hash final_map)
 ;;
@@ -269,70 +249,20 @@ let test_verify_proof_lookup_found () =
   check_true result
 ;;
 
-let test_quickcheck_regression_1 () =
+let test_remove_left_right_right () =
   let key_to_remove = "c" in
-  let v = 3 in
-  let input_list = [ "a", 1; "b", 2; "d", 4 ] in
-  let input_unique = (key_to_remove, v) :: input_list in
-  let initial_map = Mtm.from_list input_unique in
-  let _ =
-    Format.printf "initial_map:%s\n"
-    @@ Mtm.show Format.pp_print_string Format.pp_print_int initial_map
-  in
+  let input_list = [ "c", 3; "a", 1; "b", 2; "d", 4 ] in
+  let initial_map = Mtm.from_list input_list in
   let op, proof, final_map = Mtm.remove key_to_remove initial_map in
-  let _ =
-    Format.printf "op:%s\n" @@ Mtm.show_op Format.pp_print_string Format.pp_print_int op
-  in
-  let _ = Format.printf "proof:%s\n" @@ Mtm.show_proof Format.pp_print_string proof in
-  let _ =
-    Format.printf "final_map:%s\n"
-    @@ Mtm.show Format.pp_print_string Format.pp_print_int final_map
-  in
   check_true
   @@ Mtm.verify_proof op proof (Mtm.root_hash initial_map) (Mtm.root_hash final_map)
 ;;
 
-let test_quickcheck_regression_2 () =
+let test_remove_right_left_left () =
   let key_to_remove = "c" in
-  let v = 3 in
-  let input_list = [ "d", 4; "b", 2; "a", 1 ] in
-  let input_unique = (key_to_remove, v) :: input_list in
-  let initial_map = Mtm.from_list input_unique in
-  let _ =
-    Format.printf "initial_map:%s\n"
-    @@ Mtm.show Format.pp_print_string Format.pp_print_int initial_map
-  in
+  let input_list = [ "c", 3; "d", 4; "b", 2; "a", 1 ] in
+  let initial_map = Mtm.from_list input_list in
   let op, proof, final_map = Mtm.remove key_to_remove initial_map in
-  let _ =
-    Format.printf "op:%s\n" @@ Mtm.show_op Format.pp_print_string Format.pp_print_int op
-  in
-  let _ = Format.printf "proof:%s\n" @@ Mtm.show_proof Format.pp_print_string proof in
-  let _ =
-    Format.printf "final_map:%s\n"
-    @@ Mtm.show Format.pp_print_string Format.pp_print_int final_map
-  in
   check_true
   @@ Mtm.verify_proof op proof (Mtm.root_hash initial_map) (Mtm.root_hash final_map)
-;;
-
-let test_quickcheck_regression_3 () =
-  let k = "" in
-  let v = 1 in
-  let input_list = [ "", 0; "", 0; "", -1 ] in
-  let input_list_without_kv = Tools.remove_key k input_list in
-  let initial_map = Mtm.from_list input_list_without_kv in
-  let op, proof, final_map = Mtm.upsert k v initial_map in
-  check_true
-  @@ Mtm.verify_proof op proof (Mtm.root_hash initial_map) (Mtm.root_hash final_map)
-;;
-
-let test_quickcheck_regression_4 () =
-  let k, v = "", 0 in
-  let input_list_with_kv = [ "", 0; "", -1 ] in
-  let initial_map = Mtm.from_list input_list_with_kv in
-  let op, proof, final_map = Mtm.upsert k v initial_map in
-  let result =
-    Mtm.verify_proof op proof (Mtm.root_hash initial_map) (Mtm.root_hash final_map)
-  in
-  check_true result
 ;;
