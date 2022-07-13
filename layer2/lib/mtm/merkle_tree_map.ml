@@ -226,15 +226,20 @@ module Make (Hash : Hash_algo.HASH) : MERKLEMAP = struct
     (* given a key and a remove proof it checks if the replacement was done correctly.
        A correct replacement means that the replaced node's final key equals the replacement node key. 
     *)
-    let rec is_valid_replacement (replaced_key : 'k) : 'k t -> bool = function
-      | [ Remove (RemoveLeaf remove_leaf) ] -> remove_leaf.key == replaced_key
-      | [ Remove (ReplaceWithLeftChild replace) ] -> replace.initial_key == replaced_key
-      | [ Remove (ReplaceWithRightChild replace) ] -> replace.initial_key == replaced_key
-      | Remove (ReplaceWithBiggestLeft replace) :: rest ->
-        replace.initial_key == replaced_key
-        && is_valid_replacement replace.initial_key rest
-      | GoRight _ :: rest -> is_valid_replacement replaced_key rest
-      | _ -> false
+    let is_valid_replacement (replaced_key : 'k) (proof : 'k t) : bool =
+      let rec go (acc : bool) (current_key : 'k) (current_proof : 'k t) : bool =
+        match current_proof with
+        | [ Remove (RemoveLeaf remove_leaf) ] -> acc && remove_leaf.key == replaced_key
+        | [ Remove (ReplaceWithLeftChild replace) ] ->
+          acc && replace.initial_key == replaced_key
+        | [ Remove (ReplaceWithRightChild replace) ] ->
+          acc && replace.initial_key == replaced_key
+        | Remove (ReplaceWithBiggestLeft replace) :: rest ->
+          go (acc && replace.initial_key == replaced_key) replace.initial_key rest
+        | GoRight go_right :: rest -> go acc replaced_key rest
+        | _ -> false
+      in
+      go true replaced_key proof
     ;;
 
     (* True if the given proof is a valid proof for the given op *)
@@ -598,7 +603,8 @@ module Make (Hash : Hash_algo.HASH) : MERKLEMAP = struct
   (* 
       The updater function is called with None when the element is missing or Some v when the v value exists in the map.
       If the updater function returns None for an existing key then the element is removed.
-      If the key doesn't exist (i.e. update is called with None) and the 
+      If the key doesn't exist (i.e. update is called with None) and the updater returns Some value then the value is inserted
+      If the key doesn't exist and the updater returns None then the map is unchanged.
     *)
   let update_map
       (key : 'k)
