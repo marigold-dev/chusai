@@ -1,7 +1,9 @@
 open Optionext
 open Intf
 
-(* A map implemented as a Merkle-ized binary search tree *)
+(* A map implemented as a Merkle-ized binary search tree 
+The implementation is based on a non-balanced binary search tree.
+   *)
 module Make (Hash : HASH) : MERKLEMAP = struct
   type hash = Hash.t [@@deriving show]
   type khash = KHash of hash [@@deriving show]
@@ -434,7 +436,7 @@ module Make (Hash : HASH) : MERKLEMAP = struct
      2. the proof for the above operation
      3. the updated version of the root, if the operation did any updates, or the original root, if nothing has changed
      4. the result of the operation (ex: the found value in case of a lookup)*)
-  let process_tree
+  let apply_on_node
       (type k v result)
       (handle_key_not_found : thash -> k proof * (k, v) hnode option)
       (handle_key_found : (k, v) hnode -> k proof * (k, v) hnode option)
@@ -529,7 +531,7 @@ module Make (Hash : HASH) : MERKLEMAP = struct
       in
       [ proof_step ], root
     in
-    process_tree handle_key_not_found handle_key_found key root
+    apply_on_node handle_key_not_found handle_key_found key root
   ;;
 
   let upsert (key : 'k) (value : 'v) (root : ('k, 'v) hnode option)
@@ -543,7 +545,7 @@ module Make (Hash : HASH) : MERKLEMAP = struct
       =
       update current_node value
     in
-    process_tree handle_key_not_found handle_key_found key root
+    apply_on_node handle_key_not_found handle_key_found key root
   ;;
 
   let remove (key : 'k) (root : ('k, 'v) hnode option)
@@ -557,7 +559,7 @@ module Make (Hash : HASH) : MERKLEMAP = struct
       =
       remove_node current_node
     in
-    process_tree handle_key_not_found handle_key_found key root
+    apply_on_node handle_key_not_found handle_key_found key root
   ;;
 
   let execute (op : ('k, 'v) op) (MerkleTreeMap mtm : ('k, 'v) t)
