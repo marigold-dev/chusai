@@ -28,12 +28,20 @@ let cost_of_instr : type a s r f. (a, s, r, f) Script_typed_ir.kinstr -> a -> s 
  [@@ocaml.inline always]
  [@@coq_axiom_with_reason "unreachable expression `.` not handled"]
 
+let cost_of_control : type a s r f. (a, s, r, f) Script_typed_ir.continuation -> Alpha_context.Gas.cost =
+ fun _ks -> Alpha_context.Gas.free
+
 let consume_instr local_gas_counter k accu stack =
   let cost = cost_of_instr k accu stack in
   Local_gas_counter.consume_opt local_gas_counter cost
   [@@ocaml.inline always]
 
-let rec next :
+let consume_control local_gas_counter ks =
+  let cost = cost_of_control ks in
+  Local_gas_counter.consume_opt local_gas_counter cost
+  [@@ocaml.inline always]
+
+let rec next:
     type a s r f.
     Local_gas_counter.outdated_context * Script_typed_ir.step_constants ->
     Local_gas_counter.local_gas_counter ->
@@ -41,8 +49,17 @@ let rec next :
     a ->
     s ->
     (r * f * Local_gas_counter.outdated_context * Local_gas_counter.local_gas_counter) tzresult Lwt.t =
- fun ((_ctxt, _) as _g) _gas _ks0 _accu _stack ->
-   fail Not_support
+ fun ((ctxt, _) as g) gas ks0 accu stack ->
+  match consume_control gas ks0 with
+  | None -> wrap_tzerror_lwt @@ fail Alpha_context.Gas.Operation_quota_exceeded
+  | Some gas -> (
+      match ks0 with
+      | KNil -> Lwt.return (Ok (accu, stack, ctxt, gas))
+      | KCons (k, ks) -> (step [@ocaml.tailcall]) g gas k ks accu stack
+      | KReturn (stack', ks) -> (next [@ocaml.tailcall]) g gas ks accu stack'
+      | KUndip (x, ks) -> (next [@ocaml.tailcall]) g gas ks x (accu, stack)
+      | _ ->
+          fail Not_support)
 
 and ifailwith : Chusai_script_interpreter_defs.ifailwith_type =
   let open Tezos_013_PtJakart_test_helpers.Error_monad_operators in
@@ -69,8 +86,7 @@ and step : type a s b t r f. (a, s, b, t, r, f) Chusai_script_interpreter_defs.s
       match i with
       | ILog (_, _, _, _) ->
           fail Not_support
-      | IHalt _ ->
-          fail Not_support
+      | IHalt _ -> (next [@ocaml.tailcall]) g gas ks accu stack
       (* stack ops *)
       | IDrop (_, k) ->
           let (accu, stack) = stack in
@@ -868,22 +884,3 @@ let step_descr ~log_now logger (ctxt, sc) descr accu stack =
 let interp logger g (Script_typed_ir.Lam (code, _)) arg =
   step_descr ~log_now:true logger g code arg (EmptyCell, EmptyCell)
   >|=? fun (ret, (EmptyCell, EmptyCell), ctxt) -> (ret, ctxt)
-
-(*
-let kstep logger ctxt step_constants kinstr accu stack =
-  let kinstr =
-    match logger with
-    | None -> kinstr
-    | Some logger -> ILog (kinfo_of_kinstr kinstr, LogEntry, logger, kinstr)
-  in
-  let (gas, outdated_ctxt) = local_gas_counter_and_outdated_context ctxt in
-  step (outdated_ctxt, step_constants) gas kinstr KNil accu stack
-  >>=? fun (accu, stack, ctxt, gas) ->
-  return (accu, stack, update_context gas ctxt)
-
-let internal_step ctxt step_constants gas kinstr accu stack =
-  step (ctxt, step_constants) gas kinstr KNil accu stack
-
-let step logger ctxt step_constants descr stack =
-  step_descr ~log_now:false logger (ctxt, step_constants) descr stack
-*)
