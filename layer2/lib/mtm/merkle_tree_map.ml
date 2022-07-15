@@ -3,6 +3,7 @@ open Intf
 
 (* A map implemented as a Merkle-ized binary search tree 
 The implementation is based on a non-balanced binary search tree.
+During element removal the replacement is done with the biggest-left-child
    *)
 module Make (Hash : HASH) : MERKLEMAP = struct
   type hash = Hash.t [@@deriving show]
@@ -341,7 +342,9 @@ module Make (Hash : HASH) : MERKLEMAP = struct
 
   (* Returns op, proof and a replacement for the current node, considering that the current_node is removed from the tree. 
         In case of a leaf the returned node is None so there's no replacement. 
-        In case of a non-leaf the returned node is either the left/right child if the replacement is possible  *)
+        In case of a non-leaf the returned node is left child if there is no right child or right child if there is no left child.
+        If both children exist then the the rotation with biggest-left-child happens 
+        *)
   let remove_node (current_node : ('k, 'v) hnode) : 'k proof * ('k, 'v) hnode option =
     let proof, node =
       match current_node.content.left, current_node.content.right with
