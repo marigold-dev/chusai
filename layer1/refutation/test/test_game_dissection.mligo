@@ -22,7 +22,7 @@ let _new_game () =
         (None : choice option)
         (player2 ()) 
 
-let _dissection_game () =
+let _dissection_game () = 
     _test_dissection_ok 
         (Dissection (player1 (), (ac 10n, cd 5n)))
         ((ab 5n), (bd 5n)) 

@@ -3,6 +3,9 @@
 #import "../src/segment.mligo" "Seg"
 #import "../src/bissection_sc.mligo" "Bissection"
 #include "../../commons/refutation_interface.mligo"
+
+#import "../../stdlib_ext/src/unit_test.mligo" "Unit"
+
 let a = 0x0101
 let b = 0x0202
 let c = 0x0707
@@ -60,9 +63,4 @@ let originate_bissection_from_file () : originated_arbiter =
     let file = "refutation/src/bissection_sc.mligo" in
     let views = ["get_game"; "my_games"] in
     let storage = Test.compile_value bissection_default_storage in
-    let address, _, _ = Test.originate_from_file file "main" views storage 0tez in
-    let typed_address : (Bissection.refutation_parameter, Bissection.storage) typed_address = Test.cast_address address in    
-    let contract = Test.to_contract typed_address in
-    { originated_typed_address = typed_address
-    ; originated_contract = contract
-    ; originated_address = address }
+    Unit.originate_from_file file "main" views bissection_default_storage 0tez
