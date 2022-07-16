@@ -23,11 +23,11 @@ let chusai_amount_to_xtz (chusai_amount : nat) : tez = chusai_amount * 1mutez
 
 (* MINTING *)
 let create_chusai_ticket (payload : Ticket.payload) : Ticket.t =
-    let n : nat = xtz_to_chusai_amount Tezos.amount  in
-    Ticket.create_ticket Tezos.self_address payload n
+    let n : nat = xtz_to_chusai_amount (Tezos.get_amount ())  in
+    Ticket.create_ticket (Tezos.get_self_address ()) payload n
 
 let mint (chusai_ticket_contr, store :Ticket.t contract * storage) : operation list =
-    let _check = if Tezos.amount < store.minimum_amount then failwith "mint_sc : no ticket for less than minimum amount" in
+    let _check = if (Tezos.get_amount ()) < store.minimum_amount then failwith "mint_sc : no ticket for less than minimum amount" in
     let ticket = create_chusai_ticket store.payload in
     let op = Tezos.transaction ticket 0tez chusai_ticket_contr in
     [op]
@@ -37,7 +37,7 @@ let mint (chusai_ticket_contr, store :Ticket.t contract * storage) : operation l
 let redeem (ticket, unit_callback, store :Ticket.t * unit contract * storage) : operation list =
     let (addr, (payload, total)), _ticket = Ticket.read_ticket ticket in
     let _check = if total = 0n then failwith "mint_sc : 0-value ticket" in
-    let _check = if addr <> Tezos.self_address then failwith "mint_sc : wrong ticketer" in
+    let _check = if addr <> (Tezos.get_self_address ()) then failwith "mint_sc : wrong ticketer" in
     let _check = if payload <> store.payload then failwith "mint_sc : wrong payload" in
     let op = Tezos.transaction unit (chusai_amount_to_xtz total) unit_callback in
     [op]

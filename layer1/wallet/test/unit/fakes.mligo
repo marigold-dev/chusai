@@ -4,7 +4,7 @@
 let fake_mint_main (action, store : mint_parameter * unit) : operation list * unit =
   match action with
   | Mint callback_entrypoint ->
-    let ticket = Ticket.create_ticket dummy_address dummy_payload (Tezos.amount / 1tez) in
+    let ticket = Ticket.create_ticket dummy_address dummy_payload ((Tezos.get_amount ()) / 1tez) in
     let op = Tezos.transaction ticket 0tez callback_entrypoint in 
     ([op], unit)
   | Redeem (ticket, callback_entrypoint) ->

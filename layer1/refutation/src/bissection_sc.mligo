@@ -64,7 +64,7 @@ let start_game (seg, player_a, player_b, store : segment * player * player * sto
     with [bob] starting his first move with [dissection] *)
 let start_dissection_game (seg, player_a , dissection, player_b ,store : segment * player * dissection * player * storage)  =
     let new_game = Game.Result.get_game_or_raises 
-        (Game.start_dissection_game (Tezos.source, seg, player_a , dissection, player_b)) 
+        (Game.start_dissection_game ((Tezos.get_source ()), seg, player_a , dissection, player_b)) 
         "refutation_sc: could not start game" 
     in
     store_new_game (new_game, store)
@@ -72,13 +72,13 @@ let start_dissection_game (seg, player_a , dissection, player_b ,store : segment
 (** [action_dissection (game_id, dissection, choice, storage)] apply [dissection] on the part [choice] of the current state of game [game_id]*)
 let action_dissection (id, dissection, choice_opt, store : game_id * dissection * choice option * storage) : storage =
     let game = find_game (id, store) in
-    let new_game = Game.Result.get_game_or_raises (Game.apply_dissection (Tezos.source, dissection,choice_opt,game)) "refutation_sc: could not dissect" in
+    let new_game = Game.Result.get_game_or_raises (Game.apply_dissection ((Tezos.get_source ()), dissection,choice_opt,game)) "refutation_sc: could not dissect" in
     update_game_in_store (id,new_game,store)
 
 (** [action_choice (game_id, choice, storage)] choose the part [choice] on the current state of game [game_id] *)
 let action_choice (id, choice, store : game_id * choice * storage) =
     let game = find_game (id, store) in
-    let new_game = Game.Result.get_game_or_raises (Game.apply_choice (Tezos.source, choice,game)) "refutation_sc: could not apply choice" in
+    let new_game = Game.Result.get_game_or_raises (Game.apply_choice ((Tezos.get_source ()), choice,game)) "refutation_sc: could not apply choice" in
     update_game_in_store (id,new_game,store)
   
 (* MAIN *)
@@ -92,7 +92,7 @@ let main (action, store : refutation_parameter * storage) : operation list * sto
 
 
 (** Return the list of the current game I'm playing, if any *)
-[@view] let my_games ((), store : unit * storage) : game_id list option = Big_map.find_opt Tezos.source store.games_of_players
+[@view] let my_games ((), store : unit * storage) : game_id list option = Big_map.find_opt (Tezos.get_source ()) store.games_of_players
 
 (** Return the list of the current game I'm playing, return the game corresponding to an id *)
 [@view] let get_game (game_id, store : game_id * storage) : game option = Big_map.find_opt game_id store.games

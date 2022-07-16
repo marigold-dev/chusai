@@ -18,7 +18,7 @@ let run_main_mint_xtz_test
 
 
   let wallet_initial_storage = {
-    owner_address = Tezos.self_address;
+    owner_address = (Tezos.get_self_address ());
     mint_address = mint_address;
     bridge_address = dummy_address;
     ticket_storage = (None : chusai_ticket_storage)

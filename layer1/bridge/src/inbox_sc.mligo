@@ -60,5 +60,5 @@ let main (action, state : entrypoint * state) : operation list * state =
   let {rollup_level;ticket;fixed_ticket_key;messages} = state in
   match action with
   | Inbox_deposit ticketSent ->
-    let ticketSent_owner = Tezos.sender in
+    let ticketSent_owner = (Tezos.get_sender ()) in
     deposit rollup_level ticket fixed_ticket_key messages ticketSent_owner ticketSent

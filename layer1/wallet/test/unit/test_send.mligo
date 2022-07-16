@@ -24,7 +24,7 @@ let run_main_send_test
   let bridge_address = (Tezos.address bridge_contract) in
   
   let wallet_initial_storage = {
-    owner_address = Tezos.self_address;
+    owner_address = (Tezos.get_self_address ());
     mint_address = dummy_address;
     bridge_address = bridge_address;
     ticket_storage = wallet_ticket

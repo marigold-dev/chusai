@@ -39,7 +39,7 @@ let wallet_test_main
     | Go_mint addr -> 
         let mint_contr : mint_parameter contract= Tezos.get_contract_with_error addr "No mint to mint" in
         let mint_cb : Ticket.t contract = Tezos.self "%store" in
-        [Tezos.transaction (Mint mint_cb) Tezos.amount mint_contr], store
+        [Tezos.transaction (Mint mint_cb) (Tezos.get_amount ()) mint_contr], store
     | Go_redeem addr -> 
         let ticket = Option.unopt store in
         let mint_contr : mint_parameter contract = Tezos.get_contract_with_error addr "No mint to redeem" in
