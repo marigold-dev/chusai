@@ -49,8 +49,8 @@ module type MERKLEMAP = sig
   include STORAGE with type ('k, 'v) op := ('k, 'v) op
 
   val empty : ('k, 'v) t
-  val from_list : ('k * 'v) list -> ('k, 'v) t
-  val to_list : ('k, 'v) t -> ('k * 'v) list
+  val of_seq : ('k * 'v) Seq.t -> ('k, 'v) t
+  val to_seq : ('k, 'v) t -> ('k * 'v) Seq.t
   val root_hash : ('k, 'v) t -> hash
   val verify_proof : ('k, 'v) op -> 'k proof -> hash -> hash -> bool
 

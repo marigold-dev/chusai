@@ -590,8 +590,8 @@ module Make (Hash : HASH) : MERKLEMAP = struct
     matches_op && matches_hashes
   ;;
 
-  let from_list (kvs : ('k * 'v) list) : ('k, 'v) t =
-    List.fold_left
+  let of_seq (kvs : ('k * 'v) Seq.t) : ('k, 'v) t =
+    Seq.fold_left
       (fun acc (key, value) ->
         let _, _proof, map = execute (Upsert { key; value }) acc in
         map)
@@ -599,17 +599,16 @@ module Make (Hash : HASH) : MERKLEMAP = struct
       kvs
   ;;
 
-  let to_list (MerkleTreeMap t : ('k, 'v) t) : ('k * 'v) list =
-    let rec go (node_opt : ('k, 'v) hnode option) : ('k * 'v) list =
+  let to_seq (MerkleTreeMap t : ('k, 'v) t) : ('k * 'v) Seq.t =
+    let rec go (node_opt : ('k, 'v) hnode option) : ('k * 'v) Seq.t =
       node_opt
       |> Option.map (fun node ->
-             List.concat
-               [ go node.content.left
-               ; [ node.content.key, node.content.value ]
-               ; go node.content.right
-               ])
-      |> Option.to_list
-      |> List.flatten
+              let left = go node.content.left in
+              let current = Seq.return (node.content.key, node.content.value) in
+              let right = go node.content.right in
+              Seq.append left @@ Seq.append current right)
+      |> Option.to_seq
+      |> CCSeq.flatten
     in
     go t
   ;;
