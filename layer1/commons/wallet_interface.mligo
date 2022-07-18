@@ -1,4 +1,4 @@
-#import "ticket/chusai_ticket.mligo" "Ticket"
+#import "ticket/tezos_ticket.mligo" "Ticket"
 
 type chusai_ticket_storage = Ticket.t option
 

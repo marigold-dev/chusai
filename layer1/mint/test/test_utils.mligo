@@ -1,4 +1,4 @@
-#import "../../commons/ticket/chusai_ticket.mligo" "Ticket"
+#import "../../commons/ticket/tezos_ticket.mligo" "Ticket"
 
 (* *********************************** *)
 (* Origination functions *)

@@ -1,5 +1,5 @@
 #import "../../commons/inbox_interface.mligo" "Inbox"
-#import "../../commons/ticket/chusai_ticket.mligo" "Ticket"
+#import "../../commons/ticket/tezos_ticket.mligo" "Ticket"
 
 #include "../../stdlib_ext/src/stdlibext.mligo"
 

@@ -1,4 +1,4 @@
-#import "../../../commons/ticket/chusai_ticket.mligo" "Ticket"
+#import "../../../commons/ticket/tezos_ticket.mligo" "Ticket"
 #import "../../../mint/src/mint_sc.mligo" "Mint"
 #import "../../../wallet/src/wallet_sc.mligo" "Wallet"
 #import "../../../commons/mint_interface.mligo" "Mint_interface"

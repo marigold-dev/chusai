@@ -1,4 +1,4 @@
-#import "ticket/chusai_ticket.mligo" "Ticket"
+#import "ticket/tezos_ticket.mligo" "Ticket"
 
 type message =
   | Deposit of {owner: address; quantity: nat}

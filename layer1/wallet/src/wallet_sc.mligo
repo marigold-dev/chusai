@@ -1,4 +1,4 @@
-#import "../../commons/ticket/chusai_ticket.mligo" "Ticket"
+#import "../../commons/ticket/tezos_ticket.mligo" "Ticket"
 #include "../../commons/mint_interface.mligo"
 #include "../../commons/wallet_interface.mligo"
 #include "../../stdlib_ext/src/stdlibext.mligo"

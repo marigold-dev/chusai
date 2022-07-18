@@ -1,5 +1,5 @@
 #include "tools.mligo"
-#import "../../../commons/ticket/chusai_ticket.mligo" "Ticket"
+#import "../../../commons/ticket/tezos_ticket.mligo" "Ticket"
 
 let fake_mint_main (action, store : mint_parameter * unit) : operation list * unit =
   match action with

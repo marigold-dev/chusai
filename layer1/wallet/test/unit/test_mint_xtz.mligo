@@ -2,6 +2,7 @@
 #include "fakes.mligo"
 #include "tools.mligo"
 #import "../../../stdlib_ext/src/unit_test.mligo" "Unit"
+#import "../../../stdlib_ext/src/proxy_ticket.mligo" "Proxy_ticket"
 
 type main_mint_test_props = {
   wallet_storage : wallet_storage;
