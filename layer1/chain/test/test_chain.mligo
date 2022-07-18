@@ -2,7 +2,6 @@
 #import "../../stdlib_ext/src/unit_test.mligo" "Unit"
 
 
-let _tbi () = Unit.fail_with "TBI"
 let empty_chain = 
     { max_index = 0n 
     ; batches = (Big_map.empty : (index, batch) big_map)

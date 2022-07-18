@@ -32,7 +32,7 @@ let store_batch (batch, chain : batch * chain) : chain option =
         let new_children = 
             match get_children (parent, chain) with
             | None ->  [newborn]
-            | Some sibligns -> newborn :: sibligns
+            | Some siblings -> newborn :: siblings
         in
         Big_map.update parent (Some new_children) chain.children
     in
