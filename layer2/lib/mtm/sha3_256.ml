@@ -8,11 +8,10 @@ module Make (Serializer : SERIALIZER) : HASH = struct
   let equal left right = left = right
 
   let hash (value : 'v) : t =
-    let open Tezos_base58 in
-    let h =
-      Serializer.serialize value |> Hacl_star.Hacl.SHA3_256.hash |> String.of_bytes
+    let h : string =
+      Serializer.serialize value |> Hacl_star.Hacl.SHA3_256.hash |> Bytes.to_string
     in
-    let (Base58 enc) = encode ~prefix:"" h in
+    let (Base58 enc) = Tezos_base58.encode ~prefix:"" h in
     enc
   ;;
 

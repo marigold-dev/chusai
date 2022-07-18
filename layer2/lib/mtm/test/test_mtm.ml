@@ -29,6 +29,7 @@ let () =
         ; test_case "remove node/left" `Quick test_remove_node_left
         ; test_case "remove node/left/left" `Quick test_remove_node_left_left
         ; test_case "remove y node" `Quick test_remove_y_node
+        ; test_case "remove 2" Quick test_remove_2
         ] )
     ; ( "quickcheck - map operations"
       , [ QCheck_alcotest.to_alcotest quickcheck_test_to_list_from_list

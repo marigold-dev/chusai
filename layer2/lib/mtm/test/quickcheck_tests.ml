@@ -143,7 +143,7 @@ let quickcheck_test_verify_proof_remove_failure =
       let input_list_without_key = Tools.remove_key key_to_remove input_unique in
       let initial_map = Mtm.from_list input_list_without_key in
       let op = Mtm.Remove { key = key_to_remove } in
-      let None, proof, final_map = Mtm.execute op initial_map in
+      let _, proof, final_map = Mtm.execute op initial_map in
       Mtm.verify_proof op proof (Mtm.root_hash initial_map) (Mtm.root_hash final_map))
 ;;
 
@@ -158,7 +158,7 @@ let quickcheck_test_verify_proof_remove_leaf =
       let key_to_remove, _ = CCList.last_opt input_unique |> Option.get in
       let initial_map = Mtm.from_list input_unique in
       let op = Mtm.Remove { key = key_to_remove } in
-      let Some _, proof, final_map = Mtm.execute op initial_map in
+      let _, proof, final_map = Mtm.execute op initial_map in
       Mtm.verify_proof op proof (Mtm.root_hash initial_map) (Mtm.root_hash final_map))
 ;;
 
@@ -208,7 +208,7 @@ let quickcheck_test_verify_proof_lookup_found =
       let input_unique = Tools.unique @@ ((key, v) :: input_list) in
       let m = Mtm.from_list input_unique in
       let op = Mtm.Lookup { key } in
-      let Some _, proof, _ = Mtm.execute op m in
+      let _, proof, _ = Mtm.execute op m in
       let h = Mtm.root_hash m in
       Mtm.verify_proof op proof h h)
 ;;
@@ -219,13 +219,13 @@ let quickcheck_test_verify_proof_lookup_not_found =
     ~name:"verify lookup key NOT found"
     QCheck.(
       pair
-        (pair small_printable_string int)
+        small_printable_string
         (list_of_size (int_range 1 1).gen @@ pair small_printable_string int))
-    (fun ((key, v), input_list) ->
+    (fun (key, input_list) ->
       let input_unique = Tools.unique @@ Tools.remove_key key input_list in
       let m = Mtm.from_list input_unique in
       let op = Mtm.Lookup { key } in
-      let None, proof, _ = Mtm.execute op m in
+      let _, proof, _ = Mtm.execute op m in
       let h = Mtm.root_hash m in
       Mtm.verify_proof op proof h h)
 ;;

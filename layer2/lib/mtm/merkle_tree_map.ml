@@ -1,4 +1,3 @@
-open Optionext
 open Intf
 
 (* A map implemented as a Merkle-ized binary search tree 
@@ -212,29 +211,31 @@ module Make (Hash : HASH) : MERKLEMAP = struct
         if current_step.key > key then consume_path key next_steps else None
       | GoRight current_step :: next_steps ->
         if current_step.key < key then consume_path key next_steps else None
-      | remaining_path -> Some remaining_path
+      | remaining_path -> Some remaining_path 
     ;;
 
     (* given a key and a remove proof it checks if the replacement was done correctly.
        A correct replacement means that the replaced node's final key equals the replacement node key. 
     *)
     let is_valid_replacement (replaced_key : 'k) (proof : 'k t) : bool =
-      let rec go (acc : bool) (current_key : 'k) (current_proof : 'k t) : bool =
+      let rec go (acc : bool) (current_replaced_key : 'k) (current_proof : 'k t) : bool =
         match current_proof with
-        | [ Remove (RemoveLeaf remove_leaf) ] -> acc && remove_leaf.key == replaced_key
+        | [ Remove (RemoveLeaf remove_leaf) ] -> acc && remove_leaf.key == current_replaced_key
         | [ Remove (ReplaceWithLeftChild replace) ] ->
-          acc && replace.initial_key == replaced_key
+          acc && replace.initial_key == current_replaced_key
         | [ Remove (ReplaceWithRightChild replace) ] ->
-          acc && replace.initial_key == replaced_key
+          acc && replace.initial_key == current_replaced_key
         | Remove (ReplaceWithBiggestLeft replace) :: rest ->
-          go (acc && replace.initial_key == replaced_key) replace.initial_key rest
-        | GoRight go_right :: rest -> go acc replaced_key rest
+          go (acc && replace.initial_key == current_replaced_key) replace.initial_key rest
+        | GoRight go_right :: rest -> 
+          go (acc && go_right.key < current_replaced_key) current_replaced_key rest
         | _ -> false
       in
       go true replaced_key proof
     ;;
 
-    (* True if the given proof is a valid proof for the given op *)
+    (** True if the given proof is a valid proof for the given op 
+       *)
     let matches_op (proof : 'k t) (op : ('k, 'v) op) : bool =
       let result =
         match op with
@@ -266,9 +267,9 @@ module Make (Hash : HASH) : MERKLEMAP = struct
                  | _ -> false)
         | Lookup lookup_op ->
           consume_path lookup_op.key proof
-          |> Option.map (function
+          |> Option.map (function 
                  | [ Found found ] -> found.key = lookup_op.key
-                 | [ NotFound not_found ] -> true
+                 | [ NotFound _ ] -> true
                  | _ -> false)
       in
       CCOption.get_or ~default:false result
@@ -440,7 +441,7 @@ module Make (Hash : HASH) : MERKLEMAP = struct
      3. the updated version of the root, if the operation did any updates, or the original root, if nothing has changed
      4. the result of the operation (ex: the found value in case of a lookup)*)
   let apply_on_node
-      (type k v result)
+      (type k v)
       (handle_key_not_found : thash -> k proof * (k, v) hnode option)
       (handle_key_found : (k, v) hnode -> k proof * (k, v) hnode option)
       (key : k)
@@ -452,14 +453,13 @@ module Make (Hash : HASH) : MERKLEMAP = struct
     let rec update_opt_node (current_node_opt : (k, v) hnode option)
         : v option * k proof * (k, v) hnode option
       =
-      current_node_opt
-      |> OptionExt.fold_lazy
-           ~none:(fun () ->
-             let proof, new_node = handle_key_not_found @@ H.node_hash current_node_opt in
-             None, proof, new_node)
-           ~some:(fun node ->
-             let value, proof, new_node = update_non_empty_node node in
-             value, proof, new_node)
+      match current_node_opt with 
+      | None ->
+        let proof, new_node = handle_key_not_found @@ H.node_hash current_node_opt in
+        None, proof, new_node
+       | Some node ->
+        let value, proof, new_node = update_non_empty_node node in
+        value, proof, new_node
     (* We reached a situation when the node with the given key was not found. 
           If the updater return a value we need to create a new leaf for it. Otherwise nothing will happen *)
     (* Some value in the subtree starting at current_node needs to be updated. 
@@ -540,7 +540,7 @@ module Make (Hash : HASH) : MERKLEMAP = struct
   let upsert (key : 'k) (value : 'v) (root : ('k, 'v) hnode option)
       : 'v option * 'k proof * ('k, 'v) hnode option
     =
-    let handle_key_not_found thash : 'k proof * ('k, 'v) hnode option =
+    let handle_key_not_found _thash : 'k proof * ('k, 'v) hnode option =
       insert key value
     in
     let handle_key_found (current_node : ('k, 'v) hnode)
