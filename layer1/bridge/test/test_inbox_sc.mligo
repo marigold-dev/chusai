@@ -35,7 +35,9 @@ let empty_state2 : inbox_state = {
 ;   messages = (Big_map.empty : (nat, message list) big_map)
 }
 
-let zero_ticket : Ticket.t = Ticket.create_ticket Tools.dummy_address 0x00 0n
+type ttt = bytes human_ticket
+let zero_ticket : ttt =
+  { amount = 0n ; ticketer = ("tz1fVd2fmqYy1TagTo4Pahgad2n3n8GzUX1N" : address); value = 0x00 ;}
 
 let originate_inbox_with_state (state : inbox_state) : (inbox_entrypoint, inbox_state) originated =
   originate_full Inbox.main state 0tez "Originated Inbox_sc"
@@ -55,7 +57,7 @@ let originate_wallet
     (bridge : address)
     (default_ticket : Ticket.t option) : (wallet_entrypoint, wallet_state) originated =
     let default_state : wallet_state = {
-        owner_address = (Tezos.get_self_address ());
+        owner_address = (Tezos.self_address);
         mint_address = mint;
         bridge_address = bridge;
         ticket_storage = default_ticket
@@ -118,14 +120,29 @@ let _test_success_deposit () =
     let leolio_deposit_result = deposit_ticket kirua_deposit_result leolio in
 
 
-    let inbox_storage = Test.get_storage rollup.originated_typed_address in
-    let messages = inbox_storage.messages in
+    let {messages ; ticket = _ ; fixed_ticket_key = _ ; rollup_level = _ } =
+      Test.get_storage rollup.originated_typed_address in
+    let {messages ; ticket ; fixed_ticket_key = _ ; rollup_level = _ } =
+      let x = Test.get_storage_of_address (Tezos.address (Test.to_contract rollup.originated_typed_address)) in
+      type ht = {
+          rollup_level: nat
+        ; ticket: bytes human_ticket option
+        ; fixed_ticket_key: Inbox.ticket_key
+        ; messages: (nat, message list) big_map
+        }
+      in
+      (Test.decompile x : ht)
+    in
     let opt_msgs = Big_map.find_opt 0n messages in
     let default_msg = [Deposit {owner = Tools.dummy_address; quantity = 0n}] in
     let msgs = OptionExt.default opt_msgs default_msg in
 
-    let inbox_ticket = OptionExt.default inbox_storage.ticket zero_ticket in
-    let ((_,(_,inbox_ticket_quantity)),_) = Ticket.read_ticket inbox_ticket in
+    let inbox_ticket : bytes human_ticket = match ticket with
+      | None -> zero_ticket
+      | Some x -> x
+    in
+    // let ((_,(_,inbox_ticket_quantity)),_) = Ticket.read_ticket inbox_ticket in
+    let inbox_ticket_quantity = inbox_ticket.amount in
 
     let gon_msg = Deposit {owner = gon.originated_address; quantity = 10000000n} in
     let kirua_msg = Deposit {owner = kirua.originated_address; quantity = 15000000n} in
@@ -133,7 +150,7 @@ let _test_success_deposit () =
 
     Unit.and_list 
     [  leolio_deposit_result
-    ;  Unit.assert_ (OptionExt.is_some inbox_storage.ticket) "the rollup storage must contain a ticket after deposits"
+    ;  Unit.assert_ (OptionExt.is_some ticket) "the rollup storage must contain a ticket after deposits"
     ;  Unit.assert_ ((compute_total_balance rollup) = inbox_ticket_quantity) "The sum of all the quantities stored on messages must be equal to the inbox ticket amount"
     ;  Unit.assert_ (msgs <> default_msg) "Messages list must be not empty"
     ;  Unit.assert_ (msgs = [leolio_msg;kirua_msg;gon_msg] ) "Messages list must be equal to a list with the 3 messages"

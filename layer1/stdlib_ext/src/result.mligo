@@ -42,3 +42,5 @@ let get_ok_or_raises (type a b) (result : (a, b) t) (pp_error : b -> string) : a
     
 (** [get_ok (Ok v)] is [v] or raises *)
 let get_ok (type a b) (result : (a, b) t) = get_ok_or_raises result ( fun (_ : b) -> "Could not open result")
+
+let ok (type a b) (x:a) : (a,b) t = Ok x
