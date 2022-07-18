@@ -7,11 +7,15 @@ type block =
     ;  level : nat
     ;  hash : hash
     ;  proposer : address
+    ;  date_of_proposition : timestamp
     }
 type chain = 
     {   max_index : index                         // max_index is the biggest index ever used. Not necessarily the biggest still used, as the corresponding block could have been removed.
     ;   blocks : (index, block) big_map        // stores the blocks
     ;   children : (index, index list) big_map  // stores the children of a block, i.e. the index of the blocks that designated it as immediat parent
+    ;   latest_finalized : index
+    ;   finality_period_in_days : nat
+    ;   bond_amount : tez
     }
 
 (* error type *) // FIXME: pretty minimal, if as no more value with finalization, relevance should be reexamined
@@ -79,3 +83,26 @@ let find_latest_existing (chain : chain) : block option =
     let max_index = chain.max_index in
     find_existing max_index
 
+let rec get_last_elt (type a) (l : a list) : a option =
+    match l with
+    | [] -> (None : a option)
+    | t::[] -> Some t
+    | t::q -> get_last_elt q 
+
+(* FINALIZATION *)
+let get_finalization_candidate (chain : chain) : index option =
+    match get_children (chain.latest_finalized, chain) with
+        | Some children -> get_last_elt children
+        | None -> None
+
+let finality_period (chain : chain) : int = 
+    chain.finality_period_in_days * 84000
+
+let check_age (date_of_birth, interval, date : timestamp * int * timestamp) : bool =
+    date_of_birth + interval < date
+
+let is_old_enough (block, chain, today : block * chain * timestamp) : bool =
+   check_age (block.date_of_proposition, finality_period chain, today)
+
+let finalize (index, chain : index * chain) : chain =
+    {chain with latest_finalized = index}

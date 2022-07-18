@@ -7,6 +7,9 @@ let empty_chain : chain =
     { max_index = 0n 
     ; blocks = (Big_map.empty : (index, block) big_map)
     ; children = (Big_map.empty : (index, index list) big_map)
+    ; latest_finalized = 0n
+    ; finality_period_in_days = 7n
+    ; bond_amount = 1tez
     }
 
 let block (parent:index) (level:nat) : block = 
@@ -14,6 +17,7 @@ let block (parent:index) (level:nat) : block =
         ;  level = level
         ;  hash = 0x0101
         ;  proposer = ("tz1gjaF81ZRRvdzjobyfVNsAeSC6PScjfQwN" : address)
+        ;  date_of_proposition = ("2000-01-01t10:10:10Z" : timestamp)
         }
         
 let _test_remove_none () =
