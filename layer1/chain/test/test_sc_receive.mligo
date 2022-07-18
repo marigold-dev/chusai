@@ -5,11 +5,23 @@
 type originated = Unit.originated // FIXME LIGO
 type originated_chain = (chain_parameter, chain_storage) originated
 
+let bond : tez = 1tez
 let empty_chain : chain = 
     { max_index = 0n 
     ; blocks = (Big_map.empty : (index, block) big_map)
     ; children = (Big_map.empty : (index, index list) big_map)
+    ; latest_finalized = 0n
+    ; finality_period_in_days = 7n
+    ; bond_amount = bond
     }
+
+let prototype_block = 
+        {  parent = 0n
+        ;  level = 0n
+        ;  hash = 0x0101
+        ;  proposer = ("tz1KqTpEZ7Yob7QbPE4Hy4Wo8fHG8LhKxZSx" : address)
+        ;  date_of_proposition = ("2000-01-01t10:10:10Z" : timestamp)
+        }
 
 let originate_chain () : originated_chain = 
     let empty_storage : chain_storage = 
@@ -29,12 +41,13 @@ let _test_receive_first_block () =
     let alice, _bob, _carol = actors in 
     let chain : originated_chain = Unit.act_as operator originate_chain  in
     let my_block  = 
-        {  parent = 0n
+        {  prototype_block with
+           parent = 0n
         ;  level = 0n
-        ;  hash = 0x0101
         ;  proposer = alice.address
         } in 
-    let send_block () = Unit.transfer_to_contract_ chain.originated_contract (Receive my_block) 0tez in
+    let _ = Test.compile_value (Receive my_block) in 
+    let send_block () = Unit.transfer_to_contract_ chain.originated_contract (Receive my_block) bond in
     let result = Unit.act_as alice send_block in
     let storage = Test.get_storage chain.originated_typed_address in
     Unit.and_list 
@@ -53,18 +66,18 @@ let _test_receive_son () =
 
     // act
     let first_block  = 
-        {  parent = 0n
+        {  prototype_block with
+           parent = 0n
         ;  level = 0n
-        ;  hash = 0x0101
         ;  proposer = alice.address
         } in 
     let second_block = 
-        {  parent = 1n
+        {  prototype_block with
+           parent = 1n
         ;  level = 10n
-        ;  hash = 0x0101
         ;  proposer = bob.address
         } in 
-    let send_block (block : block) () = Unit.transfer_to_contract_ chain.originated_contract (Receive block) 0tez in
+    let send_block (block : block) () = Unit.transfer_to_contract_ chain.originated_contract (Receive block) bond in
     let result_alice = Unit.act_as alice (send_block first_block) in
     let result_bob = Unit.act_as bob (send_block second_block) in
 
@@ -88,18 +101,18 @@ let _test_receive_orphan () =
     
     // act
     let first_block  = 
-        {  parent = 0n
+        {  prototype_block with
+           parent = 0n
         ;  level = 0n
-        ;  hash = 0x0101
         ;  proposer = alice.address
         } in 
     let second_block = 
-        {  parent = 3n
+        {  prototype_block with
+           parent = 3n
         ;  level = 10n
-        ;  hash = 0x0101
         ;  proposer = bob.address
         } in 
-    let send_block (block : block) () = Unit.transfer_to_contract_ chain.originated_contract (Receive block) 0tez in
+    let send_block (block : block) () = Unit.transfer_to_contract_ chain.originated_contract (Receive block) bond in
     let result_alice = Unit.act_as alice (send_block first_block) in
     let result_bob = Unit.act_as bob (send_block second_block) in
 
@@ -123,24 +136,24 @@ let _test_receive_siblings () =
 
     // act
     let first_block  = 
-        {  parent = 0n
+        {  prototype_block with
+           parent = 0n
         ;  level = 0n
-        ;  hash = 0x0101
         ;  proposer = alice.address
         } in 
     let second_block = 
-        {  parent = 1n
+        {  prototype_block with
+           parent = 1n
         ;  level = 10n
-        ;  hash = 0x0101
         ;  proposer = bob.address
         } in 
     let third_block = 
-        {  parent = 1n
+        {  prototype_block with
+           parent = 1n
         ;  level = 20n
-        ;  hash = 0x0202
         ;  proposer = alice.address
         } in 
-    let send_block (block : block) () = Unit.transfer_to_contract_ chain.originated_contract (Receive block) 0tez in
+    let send_block (block : block) () = Unit.transfer_to_contract_ chain.originated_contract (Receive block) bond in
     let result_first = Unit.act_as alice (send_block first_block) in
     let result_second = Unit.act_as bob (send_block second_block) in
     let result_third = Unit.act_as bob (send_block third_block) in
@@ -160,12 +173,13 @@ let _test_remove_block () =
     let alice, _bob, _carol = actors in 
     let chain : originated_chain = Unit.act_as operator originate_chain  in
     let my_block  = 
-        {  parent = 0n
+        {  prototype_block with
+           parent = 0n
         ;  level = 0n
         ;  hash = 0x0101
         ;  proposer = alice.address
         } in 
-    let send_block () = Unit.transfer_to_contract_ chain.originated_contract (Receive my_block) 0tez in
+    let send_block () = Unit.transfer_to_contract_ chain.originated_contract (Receive my_block) bond in
     let result = Unit.act_as alice send_block in
     let storage = Test.get_storage chain.originated_typed_address in
     let sanity_check = Unit.and_list 
@@ -173,7 +187,7 @@ let _test_remove_block () =
     ;  Unit.assert_equals 1n (storage.max_index) "max_index should be 1"
     ;  Unit.assert_equals (Some my_block) (get_block (1n, storage)) "the block should have been stored"
     ] in
-    let remove_block () = Unit.transfer_to_contract_ chain.originated_contract (Remove 1n) 0tez in
+    let remove_block () = Unit.transfer_to_contract_ chain.originated_contract (Remove 1n) bond in
     let result_remove = Unit.act_as operator remove_block in
     let storage = Test.get_storage chain.originated_typed_address in
     Unit.and_list 
@@ -191,24 +205,27 @@ let _test_remove_parent_of_two () =
     let chain : originated_chain = Unit.act_as operator originate_chain  in
 
     let first_block  = 
-        {  parent = 0n
+        {  prototype_block with
+           parent = 0n
         ;  level = 0n
         ;  hash = 0x0101
         ;  proposer = alice.address
         } in 
-    let second_block = 
-        {  parent = 1n
+    let second_block =
+        {  prototype_block with
+           parent = 1n
         ;  level = 10n
         ;  hash = 0x0101
         ;  proposer = bob.address
         } in 
     let third_block = 
-        {  parent = 1n
+        {  prototype_block with
+           parent = 1n
         ;  level = 20n
         ;  hash = 0x0202
         ;  proposer = alice.address
         } in 
-    let send_block (block : block) () = Unit.transfer_to_contract_ chain.originated_contract (Receive block) 0tez in
+    let send_block (block : block) () = Unit.transfer_to_contract_ chain.originated_contract (Receive block) bond in
     let result_first = Unit.act_as alice (send_block first_block) in
     let result_second = Unit.act_as bob (send_block second_block) in
     let result_third = Unit.act_as bob (send_block third_block) in
@@ -224,7 +241,7 @@ let _test_remove_parent_of_two () =
     ] in
 
     // act
-    let remove_block () = Unit.transfer_to_contract_ chain.originated_contract (Remove 1n) 0tez in
+    let remove_block () = Unit.transfer_to_contract_ chain.originated_contract (Remove 1n) bond in
     let result_remove = Unit.act_as operator remove_block in
 
     //assert
