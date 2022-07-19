@@ -20,13 +20,13 @@ module Bridge =
 
 module Wallet =
   struct
-    let extract_ticket_from_storage ({owner_address; mint_address; bridge_address; ticket_storage} : wallet_storage) : nat =
+    let extract_ticket_from_storage (x : wallet_storage) : nat =
         OptionExt.default
           (Option.map
             (fun (ticket : Ticket.t) ->
               let content, _new_ticket = Ticket.read_ticket ticket in
               let _, (_, ticket_value) = content in
               ticket_value)
-            ticket_storage)
+            x.ticket_storage)
           0n
   end

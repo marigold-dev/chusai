@@ -66,7 +66,7 @@ let check_player (proposer, game : player * game) =
     let {player_a; player_b; state} = game in
     match state with
     | Start  _ -> proposer = player_b 
-    | Dissection (last_player,_) -> proposer <> last_player &&  (proposer = game.player_a ||proposer = player_b)
+    | Dissection (last_player,_) -> proposer <> last_player &&  (proposer = player_a ||proposer = player_b)
     | _        -> false
 
 (** [start_game (segment, alice, bob)] starts a game with [alice] defending [segment] against [bob] *)
