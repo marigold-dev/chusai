@@ -20,7 +20,7 @@
    OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
    SOFTWARE. *)
 
-(** Support for termination signals (a la Unix). *)
+(** Support for termination signals. *)
 
 (** Description of all termination signals. *)
 val all : Cmdliner.Cmd.Exit.info list

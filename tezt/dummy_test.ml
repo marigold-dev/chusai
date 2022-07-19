@@ -30,11 +30,7 @@ let test_dummy =
       in
       let () =
         let open Tezt.Check in
-        ( = )
-          bob_balance
-          Z.zero
-          Util.z
-          ~error_msg:"Alice balance should be equal to 20tez"
+        ( = ) bob_balance Z.zero Util.z ~error_msg:"Bob balance should be equal to 0tez"
       in
       Lwt.return_unit)
 ;;

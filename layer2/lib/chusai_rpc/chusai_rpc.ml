@@ -32,7 +32,7 @@ let balances () =
 
 let balance_for () =
   RPC_service.get_service
-    ~description:"Get the balance for a paritcular rollup participant"
+    ~description:"Get the balance for a particular rollup participant"
     ~query:RPC_query.empty
     ~output:Data_encoding.(option z)
     RPC_path.(open_root / "balances" /: RPC_arg.string)

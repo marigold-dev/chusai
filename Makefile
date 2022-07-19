@@ -25,7 +25,6 @@ test-layer2:
 
 test-layer1:
 	make -C layer1 test
-	make -C integration_tests test
 
 tezt: build
 	dune exec tezt/tezt_chusai.exe -- --verbose
