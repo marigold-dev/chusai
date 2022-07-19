@@ -1,7 +1,8 @@
+
+.PHONY: build layer1 layer2 test-layer1 test-layer2 test clean package metrics opam-deps opam-dev-deps
+
 VERSION := $(shell git describe)
 
-MAKEFILE_PATH := $(abspath $(lastword $(MAKEFILE_LIST)))
-export BUILD_ROOT:= $(dir $(MAKEFILE_PATH))
 
 build: layer1 layer2
 
