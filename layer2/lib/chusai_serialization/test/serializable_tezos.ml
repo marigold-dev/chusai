@@ -1,5 +1,5 @@
-open Chusai_lib
-open Chusai_lib.Serializable
+open Chusai_serialization
+open Serializable
 
 module Micheline_tezos : MICHELINE = struct
 

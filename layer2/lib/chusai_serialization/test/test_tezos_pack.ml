@@ -1,4 +1,4 @@
-open Chusai_lib
+open Chusai_serialization
 
 module Tezos_micheline_repr = struct
   let test_bytes () =

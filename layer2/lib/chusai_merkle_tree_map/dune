@@ -1,5 +1,6 @@
 (library
- (name mtm)
+ (name chusai_merkle_tree_map)
+ (public_name chusai.merkle_tree_map)
  (modules_without_implementation intf)
  (libraries hacl-star containers bin_prot tezos-base58)
  (preprocess

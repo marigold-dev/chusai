@@ -1,4 +1,4 @@
-open Chusai_lib
+open Chusai_serialization
 
 let of_bytes s = (Bytes.of_string (Hex.to_string (`Hex s)))
 

@@ -1,3 +1,0 @@
-(test
- (name chusai_lib_test)
- (libraries alcotest chusai.lib tezos-micheline))

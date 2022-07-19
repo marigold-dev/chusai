@@ -1,0 +1,3 @@
+(test
+ (name chusai_lib_test)
+ (libraries alcotest chusai.serialization tezos-micheline))

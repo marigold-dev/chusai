@@ -1,14 +1,15 @@
-open Mtm.Intf
+open Chusai_merkle_tree_map.Intf
 
 module Dump : SERIALIZER = struct
   let serialize a = Batteries.dump a |> Bytes.of_string
 end
 
-module Sha3_256 = Mtm.Sha3_256.Make (Dump)
-module Mtm_impl = Mtm.Merkle_tree_map.Make (Sha3_256)
+module Sha3_256 = Chusai_merkle_tree_map.Sha3_256.Make (Dump)
+module Mtm_impl = Chusai_merkle_tree_map.Merkle_tree_map.Make (Sha3_256)
 
-module Mtm =  struct
+module Mtm = struct
   include Mtm_impl
+
   let from_list lst = List.to_seq lst |> of_seq
   let to_list mtm = to_seq mtm |> List.of_seq
 end
