@@ -44,6 +44,13 @@ depends: [
   "tezos-stdlib-unix" { >= "12.3" }
   "tezos-client-base" { >= "12.3" }
   "tezos-client-base-unix" { >= "12.3" }
+  "tezos-event-logging"{ >= "12.3" }
+  "tezos-shell-services" { >= "12.3" }
+  "tezos-rpc" { >= "12.3" }
+  "tezos-rpc-http" { >= "12.3" }
+  "tezos-rpc-http-client" { >= "12.3" }
+  "tezos-rpc-http-client-unix" { >= "12.3" }
+  "tezos-rpc-http-server" { >= "12.3" }
   "tezos-crypto" { >= "12.3" }
   "tezos-protocol-013-PtJakart" { >= "12.3" }
   "tezos-client-013-PtJakart" { >= "12.3" }
