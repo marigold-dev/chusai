@@ -14,8 +14,8 @@ let main (action, store : chain_parameter * chain_storage) : operation list * ch
     | Receive b -> 
         begin 
         match store_batch (b, store) with
-        | None -> failwith "could not store"
-        | Some c -> [] , c
+        | Error _ -> failwith "could not store"
+        | Ok c -> [] , c
         end
     | Remove i -> [] , remove_batch (i, store)
 

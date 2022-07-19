@@ -1,5 +1,5 @@
 #import "../../stdlib_ext/src/stdlibext.mligo" "Stdlib"
-
+#import "../../stdlib_ext/src/result.mligo" "Stdlib_Result"
 type hash = bytes
 type index = nat
 type batch = 
@@ -14,6 +14,10 @@ type chain =
     ;   children : (index, index list) big_map  // stores the children of a batch, i.e. the index of the batches that designated it as immediat parent
     }
 
+(* error type *) // FIXME: pretty minimal, if as no more value with finalization, relevance should be reexamined
+type chain_error = 
+    | Invalid_batch
+type result = Stdlib_Result.t
     
 let get_batch (index, store : index * chain) : batch option = Big_map.find_opt index store.batches
 let get_children (index, store : index * chain) : index list option = Big_map.find_opt index store.children
@@ -27,7 +31,7 @@ let is_batch_valid (batch, chain : batch * chain) : bool =
     | Some parent -> parent.level < batch.level )
 
 (* [store_batch (batch,chain)] stores a batch in the chain, checking validity, referencing it as a children. *)
-let store_batch (batch, chain : batch * chain) : chain option =
+let store_batch (batch, chain : batch * chain) : (chain, chain_error) result =
     let add_to_children (newborn, parent, chain : index * index * chain) : (index, index list)  big_map  =
         let new_children = 
             match get_children (parent, chain) with
@@ -38,12 +42,12 @@ let store_batch (batch, chain : batch * chain) : chain option =
     in
     if is_batch_valid (batch,chain) then
         let new_index = chain.max_index + 1n in
-        Some ({ chain with 
+        Ok ({ chain with 
               batches = Big_map.update new_index (Some batch) chain.batches 
             ; max_index =  new_index
             ; children = add_to_children (new_index, batch.parent, chain)
         })
-    else (None : chain option)// FIXME: use Result module to add information "could not store invalid batch"
+    else Error Invalid_batch
 
 (* [remove_batch (index,chain)] remove batch at rank [index] from [chain]. Removes the children also. *)
 let remove_batch (index, chain: index * chain) : chain =

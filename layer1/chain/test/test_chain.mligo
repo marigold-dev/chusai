@@ -1,12 +1,12 @@
 #include "../src/chain.mligo"
 #import "../../stdlib_ext/src/unit_test.mligo" "Unit"
+#import "../../stdlib_ext/src/result.mligo" "Stdlib_Result"
 
 
-let empty_chain = 
+let empty_chain : chain = 
     { max_index = 0n 
     ; batches = (Big_map.empty : (index, batch) big_map)
     ; children = (Big_map.empty : (index, index list) big_map)
-    ; latest_finalized = 0n
     }
 
 let batch (parent:index) (level:nat) : batch = 
@@ -88,9 +88,9 @@ let _test_receive_first_block () =
     let chain = empty_chain in
     let new_chain = store_batch (first, chain) in
     Unit.and_lazy_list 
-    [  fun () -> Unit.assert_not_none new_chain "store should have succeeded"
-    ;  fun () -> let new_chain = Option.unopt new_chain in Unit.assert_equals 1n (new_chain.max_index) "max_index should be 1"
-    ;  fun () -> let new_chain = Option.unopt new_chain in Unit.assert_equals (Some first) (get_batch (1n, new_chain)) "the batch should have been stored"
+    [  fun () -> Unit.assert_ (Stdlib_Result.is_ok new_chain) "store should have succeeded"
+    ;  fun () -> let new_chain = Stdlib_Result.get_ok new_chain in Unit.assert_equals 1n (new_chain.max_index) "max_index should be 1"
+    ;  fun () -> let new_chain = Stdlib_Result.get_ok new_chain in Unit.assert_equals (Some first) (get_batch (1n, new_chain)) "the batch should have been stored"
     ]
 
 
@@ -106,11 +106,11 @@ let _test_receive_son () =
     } in
     let new_chain = store_batch (second, chain) in
     Unit.and_lazy_list 
-    [  fun () -> Unit.assert_not_none new_chain "store should have succeeded"
-    ;  fun () -> let new_chain = Option.unopt new_chain in Unit.assert_equals 2n (new_chain.max_index) "max_index should be 2"
-    ;  fun () -> let new_chain = Option.unopt new_chain in Unit.assert_equals (Some first) (get_batch (1n, new_chain)) "the first batch should have been stored"
-    ;  fun () -> let new_chain = Option.unopt new_chain in Unit.assert_equals (Some second) (get_batch (2n, new_chain)) "the second batch should have been stored"
-    ;  fun () -> let new_chain = Option.unopt new_chain in Unit.assert_equals (Some [2n]) (get_children (1n, new_chain)) "second batch is a child of first"
+    [  fun () -> Unit.assert_ (Stdlib_Result.is_ok new_chain) "store should have succeeded"
+    ;  fun () -> let new_chain = Stdlib_Result.get_ok new_chain in Unit.assert_equals 2n (new_chain.max_index) "max_index should be 2"
+    ;  fun () -> let new_chain = Stdlib_Result.get_ok new_chain in Unit.assert_equals (Some first) (get_batch (1n, new_chain)) "the first batch should have been stored"
+    ;  fun () -> let new_chain = Stdlib_Result.get_ok new_chain in Unit.assert_equals (Some second) (get_batch (2n, new_chain)) "the second batch should have been stored"
+    ;  fun () -> let new_chain = Stdlib_Result.get_ok new_chain in Unit.assert_equals (Some [2n]) (get_children (1n, new_chain)) "second batch is a child of first"
     ]
 
 let _test_receive_siblings () = 
@@ -125,12 +125,12 @@ let _test_receive_siblings () =
     } in
     let new_chain = store_batch (third, chain) in
     Unit.and_lazy_list 
-    [  fun () -> Unit.assert_not_none new_chain "store should have succeeded"
-    ;  fun () -> let new_chain = Option.unopt new_chain in Unit.assert_equals 3n (new_chain.max_index) "max_index should be 3"
-    ;  fun () -> let new_chain = Option.unopt new_chain in Unit.assert_equals (Some first) (get_batch (1n, new_chain)) "the first batch should have been stored"
-    ;  fun () -> let new_chain = Option.unopt new_chain in Unit.assert_equals (Some second) (get_batch (2n, new_chain)) "the second batch should have been stored"
-    ;  fun () -> let new_chain = Option.unopt new_chain in Unit.assert_equals (Some third) (get_batch (3n, new_chain)) "the third batch should have been stored"
-    ;  fun () -> let new_chain = Option.unopt new_chain in Unit.assert_equals (Some [3n ; 2n]) (get_children (1n, new_chain)) "second and third batch are children of first"
+    [  fun () -> Unit.assert_ (Stdlib_Result.is_ok new_chain) "store should have succeeded"
+    ;  fun () -> let new_chain = Stdlib_Result.get_ok new_chain in Unit.assert_equals 3n (new_chain.max_index) "max_index should be 3"
+    ;  fun () -> let new_chain = Stdlib_Result.get_ok new_chain in Unit.assert_equals (Some first) (get_batch (1n, new_chain)) "the first batch should have been stored"
+    ;  fun () -> let new_chain = Stdlib_Result.get_ok new_chain in Unit.assert_equals (Some second) (get_batch (2n, new_chain)) "the second batch should have been stored"
+    ;  fun () -> let new_chain = Stdlib_Result.get_ok new_chain in Unit.assert_equals (Some third) (get_batch (3n, new_chain)) "the third batch should have been stored"
+    ;  fun () -> let new_chain = Stdlib_Result.get_ok new_chain in Unit.assert_equals (Some [3n ; 2n]) (get_children (1n, new_chain)) "second and third batch are children of first"
     ]
 
 let _test_receive_orphan  () = 
@@ -143,7 +143,7 @@ let _test_receive_orphan  () =
     ; children = (Big_map.empty : (index, index list) big_map)
     } in
     let new_chain = store_batch (second, chain) in
-    Unit.assert_equals (None : chain option) new_chain "store should have failed"
+    Unit.assert_ (Stdlib_Result.is_error new_chain)  "store should have failed"
 
 
 (* Creation of test suite *)

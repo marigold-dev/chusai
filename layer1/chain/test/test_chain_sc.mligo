@@ -5,11 +5,10 @@
 type originated = Unit.originated // FIXME LIGO
 type originated_chain = (chain_parameter, chain_storage) originated
 
-let empty_chain = 
+let empty_chain : chain = 
     { max_index = 0n 
     ; batches = (Big_map.empty : (index, batch) big_map)
     ; children = (Big_map.empty : (index, index list) big_map)
-    ; latest_finalized = 0n
     }
 
 let originate_chain () : originated_chain = 
