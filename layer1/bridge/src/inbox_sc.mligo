@@ -14,12 +14,16 @@ type ticket_key = {
 ; payload: Ticket.payload
 }
 
-type state = {
+type 'a state_ = {
   rollup_level: nat
-; ticket: Ticket.t option
+; ticket: 'a
 ; fixed_ticket_key: ticket_key
 ; messages: (nat, message list) big_map
 }
+
+type state = (Ticket.t option) state_
+type human_state = (Ticket.payload human_ticket option) state_
+
 
 let make_deposit_message (owner: address) (quantity: nat) : message =
   Deposit { owner = owner; quantity = quantity }

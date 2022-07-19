@@ -15,7 +15,7 @@
     : operation list * address option =
   let (v,amt) = p in
   let init_storage : whole_s = mk_storage (Tezos.create_ticket v amt) in
-  let op,addr = Tezos.create_contract main (None: key_hash option) 1mutez init_storage in
+  let op,addr = Tezos.create_contract main (None: key_hash option) 0mutez init_storage in
   [op], Some addr
 
 
