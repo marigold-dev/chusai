@@ -1,8 +1,6 @@
-description: "Chusai is an implementation of Optimistic Rollups in Smart-contracts"
-
 opam-version: "2.0"
 version: "dev"
-synopsis: "desc"
+synopsis: "Chusai is an implementation of Optimistic Rollups in Smart-contracts"
 maintainer: "contact@marigold.dev"
 authors: [ "Marigold <contact@marigold.dev>" ]
 
@@ -42,8 +40,11 @@ depends: [
   "tezos-micheline" { >= "12.3" }
   "tezos-stdlib" { >= "12.3" }
   "tezos-stdlib-unix" { >= "12.3" }
+  "tezos-client-base" { >= "12.3" }
+  "tezos-client-base-unix" { >= "12.3" }
   "tezos-protocol-013-PtJakart" { >= "12.3" }
   "tezos-client-013-PtJakart" { >= "12.3" }
+  "preface" { >= "1.0.0" }
   "ocaml" { < "4.13.0" }
 ]
 
