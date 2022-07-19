@@ -1,4 +1,4 @@
-COMPILER_ARGS=--protocol ithaca
+COMPILER_ARGS=--protocol jakarta
 LIGO_VERSION=0.43.0
 
 LIGO=docker run --rm -v $(PWD)/layer1:$(PWD)/layer1 -w $(PWD)/layer1 ligolang/ligo:$(LIGO_VERSION)
