@@ -1,0 +1,13 @@
+(library
+ (name chusai_rpc)
+ (libraries
+  preface
+  lwt
+  lwt.unix
+  tezos-stdlib
+  tezos-error-monad
+  tezos-lwt-result-stdlib
+  tezos-shell-services
+  tezos-rpc
+  chusai_tezos
+  chusai_common))
