@@ -27,12 +27,14 @@ depends: [
   "alcotest" {with-test}
   "qcheck-alcotest" {with-test}
   "tezt" {pinned & with-test}
+  "dune" { >= "2.9" }
+  "cmdliner" { >= "1.0.0"}
+  "lwt" { >= "5.3.0" }
   "batteries" {>= "3.5.1"} 
   "bin_prot" {>= "0.15.0"}
   "containers" {>= "3.9"}
   "dune" { >= "2.9" }
   "data-encoding" { >= "0.4" }
-  "lwt" { >= "5.3.0" }
   "hacl-star" {>= "0.4.5"}
   "ppx_deriving" {>= "5.2.1"}
   "tezos-base" { >= "12.3" }
@@ -42,6 +44,7 @@ depends: [
   "tezos-stdlib-unix" { >= "12.3" }
   "tezos-client-base" { >= "12.3" }
   "tezos-client-base-unix" { >= "12.3" }
+  "tezos-crypto" { >= "12.3" }
   "tezos-protocol-013-PtJakart" { >= "12.3" }
   "tezos-client-013-PtJakart" { >= "12.3" }
   "preface" { >= "1.0.0" }
