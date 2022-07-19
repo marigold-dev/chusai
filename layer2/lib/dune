@@ -1,0 +1,4 @@
+(library
+ (name chusailib)
+ (preprocess
+  (pps ppx_deriving.show)))

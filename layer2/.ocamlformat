@@ -1,0 +1,7 @@
+version = 0.20.0
+profile = janestreet
+parse-docstrings
+break-separators = before
+break-infix = fit-or-vertical
+break-fun-decl = fit-or-vertical
+break-fun-sig = fit-or-vertical
