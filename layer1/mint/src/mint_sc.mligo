@@ -6,7 +6,7 @@
     Configuration of the mint.
     Parametrized value are in storage : they should be fixed at origination
 *)
-type storage = {
+type storage = [@layout:comb] {
     (* the payload, fixed for the mint *)
     payload : Ticket.payload;
     (* minimum amount accepted by the mint. *)
