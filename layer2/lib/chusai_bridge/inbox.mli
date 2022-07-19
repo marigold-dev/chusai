@@ -37,9 +37,7 @@ type store =
 
 val store : Z.t -> message list Chusai_common.Map.Z.t -> store
 val empty_store : store
-val message_to_script : ?location:int -> ?annot:string list -> message -> Script.t
 val message_from_script : Script.t -> message option
-val store_to_script : ?location:int -> ?annot:string list -> store -> Script.t
 val store_from_script : Script.t -> (Z.t * Z.t) option
 val messages_from_big_map_entry : Script.t -> message list tzresult
 val to_ledger : message list Chusai_common.Map.Z.t -> Z.t Chusai_common.Map.String.t

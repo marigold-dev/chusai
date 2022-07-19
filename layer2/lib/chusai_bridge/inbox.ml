@@ -36,16 +36,6 @@ type store =
 let store cursor messages = { cursor; messages }
 let empty_store = store Z.zero Chusai_common.Map.Z.empty
 
-let message_to_script ?(location = Tezos_micheline.Micheline.dummy_location) ?(annot = [])
-  =
-  let loc = location in
-  let open Tezos_micheline.Micheline in
-  let open Chusai_tezos.Protocol.Alpha_context.Script in
-  function
-  | Deposit { owner; quantity } ->
-    Prim (loc, D_Pair, [ String (loc + 1, owner); Int (loc + 1, quantity) ], annot)
-;;
-
 let message_from_script =
   let open Tezos_micheline.Micheline in
   let open Chusai_tezos.Protocol.Alpha_context.Script in
@@ -58,42 +48,12 @@ let message_from_script =
   | _ -> None
 ;;
 
-let messages_to_script_list loc messages =
-  let open Chusai_common.Map.Z in
-  fold
-    (fun key messages acc ->
-      let open Tezos_micheline.Micheline in
-      let open Chusai_tezos.Protocol.Alpha_context.Script in
-      let messages = List.map (message_to_script ~location:(loc + 3)) messages in
-      let elt =
-        Prim (loc + 1, D_Elt, [ Int (loc + 2, key); Seq (loc + 2, messages) ], [])
-      in
-      elt :: acc)
-    messages
-    []
-;;
-
-let store_to_script
-    ?(location = Tezos_micheline.Micheline.dummy_location)
-    ?(annot = [])
-    { cursor; messages }
-  =
-  let loc = location in
-  let open Tezos_micheline.Micheline in
-  let open Chusai_tezos.Protocol.Alpha_context.Script in
-  Prim
-    ( loc
-    , D_Pair
-    , [ Int (loc + 1, cursor); Seq (loc + 1, messages_to_script_list (loc + 1) messages) ]
-    , annot )
-;;
-
 let store_from_script node =
   let open Tezos_micheline.Micheline in
   let open Chusai_tezos.Protocol.Alpha_context.Script in
   match node with
-  | Prim (_, D_Pair, [ Int (_, cursor); _; Int (_, bigmap_index); _; _ ], _) ->
-    Some (cursor, bigmap_index)
+  | Prim (_, D_Pair, [ Int (_, cursor); _ticket; _ticket_kind; Int (_, bigmap_index) ], _)
+    -> Some (cursor, bigmap_index)
   | _ -> None
 ;;
 
