@@ -96,16 +96,15 @@ let _test_Wallet_sc_minted_ticket_and_join_with_existed_ticket_in_storage () =
 let _test_Wallet_sc_join_arbitary_ticket_and_ticket_in_storage () =
   run_main_mint_xtz_test 
     (fun (contr : wallet_parameter contract) ->
-      let addr_proxy = Proxy_ticket.init_transfer (fun (t:bytes ticket) -> Mint_xtz_cb t) in
-      let () =
+      let status1 = Unit.transfer_to_contract_ contr Mint_xtz 10tez in
+      let tx_ticket () =
+        let addr_proxy = Proxy_ticket.init_transfer (fun (t:bytes ticket) -> Mint_xtz_cb t) in
         let ticket_data = (Bytes.pack "test" , 10n) in
         let addr = Tezos.address contr in
         Proxy_ticket.transfer addr_proxy (ticket_data,addr)
       in
-      // let ticket = Ticket.create_ticket dummy_address (Bytes.pack "test") 10n in
-      // let status = Unit.transfer_to_contract_ contr Mint_xtz 10tez in
-      // Unit.transfer_to_contract status contr (Mint_xtz_cb ticket) 0tez)
-      Unit.and_list ([]: Unit.Metrics.result list)
+      let operation () = Unit.try_with tx_ticket in
+      Unit.and_lazy status1 operation
     )
     (fun (result : Unit.result) ({wallet_storage; wallet_balance; mint_balance} : main_mint_test_props) -> 
       let {owner_address = _ ; mint_address = _ ; bridge_address = _; ticket_storage = _} = wallet_storage in
@@ -120,10 +119,8 @@ let _test_Wallet_sc_join_arbitary_ticket_and_ticket_in_storage () =
 let suite = Unit.make_suite
 "Wallet_sc"
 "Test suite for Mint_xtz endpoint"
-[
-  Unit.make_test "Mint fail : 0tez" "Should refuse to mint for 0tez"  _test_Wallet_sc_mint_xtz_with_0tez  
+[ Unit.make_test "Mint fail : 0tez" "Should refuse to mint for 0tez"  _test_Wallet_sc_mint_xtz_with_0tez  
 ; Unit.make_test "Mint ok" "should store a ticket" _test_Wallet_sc_mint_xtz_with_10tez
 ; Unit.make_test "Mint ok" "should store sum of tickets" _test_Wallet_sc_minted_ticket_and_join_with_existed_ticket_in_storage
- Unit.make_test "Mint fail" "invalid payload for ticket" _test_Wallet_sc_join_arbitary_ticket_and_ticket_in_storage
+; Unit.make_test "Mint fail" "invalid payload for ticket" _test_Wallet_sc_join_arbitary_ticket_and_ticket_in_storage
 ]
-

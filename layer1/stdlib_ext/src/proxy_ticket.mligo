@@ -33,10 +33,9 @@ let init_transfer (type vt whole_p) (mk_param: vt ticket -> whole_p) : vt proxy_
 
 let transfer (type vt)
     (taddr_proxy : vt proxy_address)
-    (info        : (vt * nat) * address) : unit = 
+    (info        : (vt * nat) * address) : test_exec_result = 
   let ticket_info, dst_addr = info in
-  let _ = Test.transfer_to_contract_exn (Test.to_contract taddr_proxy) (ticket_info , dst_addr) 1mutez in
-  ()
+  Test.transfer_to_contract (Test.to_contract taddr_proxy) (ticket_info , dst_addr) 1mutez
 
 let originate (type vt whole_s vp)
     (ticket_info : vt * nat)
