@@ -20,7 +20,6 @@ type wallet_state = Wallet_interface.wallet_storage
 type mint_configuration = Mint.storage
 type mint_entrypoint = Mint_interface.mint_parameter
 
-
 let dummy_ticket_info = 0x00 , 0n
 type ttt = bytes human_ticket (* work around for https://gitlab.com/ligolang/ligo/-/issues/1435 *)
 
@@ -56,16 +55,9 @@ let originate_mint_with () : (mint_entrypoint, mint_configuration) originated =
     originate_mint dummy_ticket_info default_config
 
 let originate_wallet
-    (mint : address)
-    (bridge : address)
+    (mk_state : Ticket.t -> wallet_state)
     (ticket_info : Ticket.payload * nat) : (wallet_entrypoint, wallet_state) originated =
-    let default_state (t: Ticket.t) : wallet_state = {
-        owner_address = (Tezos.self_address);
-        mint_address = mint;
-        bridge_address = bridge;
-        ticket_storage = Some t
-    } in
-    originate_full Wallet.main ticket_info default_state "Originate Wallet_sc"
+    originate_full Wallet.main ticket_info mk_state "Originate Wallet_sc"
 
 let mint_ticket
     (previous: Unit.result)
@@ -98,8 +90,6 @@ let compute_total_balance (inbox: (inbox_entrypoint,inbox_state) originated) : n
         | Deposit {owner = _; quantity} -> acc + quantity
       ) 0n messages
 
-let empty_ticket () : Ticket.t option = None
-
 let _test_success_deposit () =
   begin
     log_ "a successful scenario test for deposit";
@@ -108,9 +98,15 @@ let _test_success_deposit () =
     let rollup = originate_inbox_with_state dummy_ticket_info (empty_state mint.originated_address) in
 
     (** Wallets origination **)
-    let gon = originate_wallet mint.originated_address rollup.originated_address dummy_ticket_info in
-    let kirua = originate_wallet mint.originated_address rollup.originated_address dummy_ticket_info in
-    let leolio = originate_wallet mint.originated_address rollup.originated_address dummy_ticket_info in
+    let mk_state (_: Ticket.t) : wallet_state = {
+        owner_address = (Tezos.self_address);
+        mint_address = mint.originated_address ;
+        bridge_address = rollup.originated_address;
+        ticket_storage = None
+    } in
+    let gon = originate_wallet mk_state dummy_ticket_info in
+    let kirua = originate_wallet mk_state dummy_ticket_info in
+    let leolio = originate_wallet mk_state dummy_ticket_info in
 
     (** Mint tickets **)
     let gon_mint_result = mint_ticket (Unit.start ()) gon 10tez in
@@ -131,10 +127,7 @@ let _test_success_deposit () =
     let default_msg = [Deposit {owner = Tools.dummy_address; quantity = 0n}] in
     let msgs = OptionExt.default opt_msgs default_msg in
 
-    let inbox_ticket = match ticket with
-      | None -> zero_ticket
-      | Some x -> x
-    in
+    let inbox_ticket = OptionExt.default ticket zero_ticket in
     // let ((_,(_,inbox_ticket_quantity)),_) = Ticket.read_ticket inbox_ticket in
     let inbox_ticket_quantity = inbox_ticket.amount in
 
@@ -157,12 +150,30 @@ let _test_fail_payload_deposit () =
     log_ "_test_fail_payload_deposit";
     let mint = originate_mint_with () in
     let rollup = originate_inbox_with_state dummy_ticket_info (empty_state mint.originated_address) in
-    let gon = originate_wallet mint.originated_address rollup.originated_address dummy_ticket_info in
+    let gon =
+      let mk_state (_t: Ticket.t) : wallet_state = {
+          owner_address = (Tezos.self_address);
+          mint_address = mint.originated_address ;
+          bridge_address = rollup.originated_address;
+          ticket_storage = None
+        }
+      in
+      originate_wallet mk_state dummy_ticket_info
+    in
 
     (** Same ticketer because the empty state used at the rollup origination use dummy_address, and , 
        the create_ticket use here is from the dummy implementation which use the same dummy address as a ticketer.
        but we have different payload here**)
-    let jhon = originate_wallet mint.originated_address rollup.originated_address (0x01, 10n) in
+    let mk_state_with_ticket (t: Ticket.t) : wallet_state = {
+        owner_address = (Tezos.self_address);
+        mint_address = mint.originated_address ;
+        bridge_address = rollup.originated_address;
+        ticket_storage = Some t
+      }
+    in
+    let jhon =
+      originate_wallet mk_state_with_ticket (0x01, 10n)
+    in
     let gon_mint_result = mint_ticket (Unit.start ()) gon 10tez in
 
     let gon_deposit_result = deposit_ticket gon_mint_result gon in
@@ -180,7 +191,14 @@ let _test_fail_ticketer_deposit () =
     let rollup = originate_inbox_with_state dummy_ticket_info empty_state2 in
 
     (**Same payload but different ticketer thanks to empty_state2**)
-    let jhon = originate_wallet mint.originated_address rollup.originated_address (0x00, 10n) in
+    let mk_state_with_ticket (t: Ticket.t) : wallet_state = {
+        owner_address = (Tezos.self_address);
+        mint_address = mint.originated_address ;
+        bridge_address = rollup.originated_address;
+        ticket_storage = Some t
+      }
+    in
+    let jhon = originate_wallet mk_state_with_ticket (0x00, 10n) in
     let jhon_deposit_result = deposit_ticket (Unit.start ()) jhon in
 
     Unit.and_list
@@ -195,7 +213,14 @@ let _test_fail_entire_key_deposit () =
     let rollup = originate_inbox_with_state dummy_ticket_info empty_state2 in
 
     (**different ticketer and payload**)
-    let jhon = originate_wallet mint.originated_address rollup.originated_address (0x01, 10n) in
+    let mk_state_with_ticket (t: Ticket.t) : wallet_state = {
+        owner_address = (Tezos.self_address);
+        mint_address = mint.originated_address ;
+        bridge_address = rollup.originated_address;
+        ticket_storage = Some t
+      }
+    in
+    let jhon = originate_wallet mk_state_with_ticket (0x01, 10n) in
     let jhon_deposit_result = deposit_ticket (Unit.start ()) jhon in
 
     Unit.and_list
@@ -212,7 +237,14 @@ let _test_fail_0ticket_deposit () =
     let rollup = originate_inbox_with_state dummy_ticket_info (empty_state mint.originated_address) in
 
     (** Wallets origination **)
-    let gon = originate_wallet mint.originated_address rollup.originated_address dummy_ticket_info in
+    let mk_state (_: Ticket.t) : wallet_state = {
+        owner_address = (Tezos.self_address);
+        mint_address = mint.originated_address ;
+        bridge_address = rollup.originated_address;
+        ticket_storage = None
+      }
+    in
+    let gon = originate_wallet mk_state dummy_ticket_info in
 
     (** Mint tickets **)
     let gon_mint_result = mint_ticket (Unit.start ()) gon 0tez in
@@ -239,39 +271,30 @@ let suite = Unit.make_suite
 
 // let test1 = _test_success_deposit ()
 
-
-let test_lol =
+let test_m =
+  begin
+    log_ "a successful scenario test for deposit";
     (**The wallets needs mint and rollup (inbox) addresses to be originate**)
     let mint = originate_mint_with () in
     let rollup = originate_inbox_with_state dummy_ticket_info (empty_state mint.originated_address) in
 
     (** Wallets origination **)
-    let gon = originate_wallet mint.originated_address rollup.originated_address dummy_ticket_info in
-    let kirua = originate_wallet mint.originated_address rollup.originated_address dummy_ticket_info in
-    let leolio = originate_wallet mint.originated_address rollup.originated_address dummy_ticket_info in
-
-    (** Mint tickets **)
+    let x = (fun () -> (Tezos.self_address : address)) () in
+    let mk_state (_: Ticket.t) : wallet_state = {
+        owner_address = x ;
+        mint_address = mint.originated_address ;
+        bridge_address = rollup.originated_address;
+        ticket_storage = None
+    } in
+    let gon = originate_wallet mk_state dummy_ticket_info in
     let gon_mint_result = mint_ticket (Unit.start ()) gon 10tez in
-    let kirua_mint_result = mint_ticket gon_mint_result kirua 15tez in
-    let leolio_mint_result = mint_ticket kirua_mint_result leolio 100tez in
 
-    (**Deposit the tickets**)
-    let gon_deposit_result = deposit_ticket leolio_mint_result gon in
-    let kirua_deposit_result = deposit_ticket gon_deposit_result kirua in
-    let leolio_deposit_result = deposit_ticket kirua_deposit_result leolio in
-    Unit.and_list 
-    [  gon_mint_result 
-    // ;  Unit.assert_ (OptionExt.is_some ticket) "the rollup storage must contain a ticket after deposits"
-    // ;  Unit.assert_ ((compute_total_balance rollup) = inbox_ticket_quantity) "The sum of all the quantities stored on messages must be equal to the inbox ticket amount"
-    // ;  Unit.assert_ (msgs <> default_msg) "Messages list must be not empty"
-    // ;  Unit.assert_ (msgs = [leolio_msg;kirua_msg;gon_msg] ) "Messages list must be equal to a list with the 3 messages"
-    // ;  Unit.assert_ ((compute_total_balance rollup) = 125000000n) "After the 3 deposits, the balance should be equal to 125tez"
-    ]
+     Unit.and_list
+    [  gon_mint_result
+    ] 
+  end
 
-
-// let test2 = _test_fail_payload_deposit ()
-
-
-// let test3 = _test_fail_ticketer_deposit ()
-// let test4 = _test_fail_entire_key_deposit ()
-// let test5 = _test_fail_0ticket_deposit ()
+let test2 = _test_fail_payload_deposit ()
+let test3 = _test_fail_ticketer_deposit ()
+let test4 = _test_fail_entire_key_deposit ()
+let test5 = _test_fail_0ticket_deposit ()
