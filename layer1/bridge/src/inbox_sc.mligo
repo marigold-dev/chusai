@@ -22,7 +22,7 @@ type 'a state_ = {
 }
 
 type state = (Ticket.t option) state_
-type human_state = (Ticket.payload human_ticket option) state_
+type human_state = (Ticket.payload human_ticket option) state_ (* only used in test *)
 
 
 let make_deposit_message (owner: address) (quantity: nat) : message =
