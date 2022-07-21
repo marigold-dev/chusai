@@ -11,15 +11,7 @@ type main_mint_test_props = {
   mint_balance : tez;
 }
 
-let extract_ticket_from_storage (x : wallet_storage_human) : nat =
-    OptionExt.default
-      (Option.map
-        (fun (ticket : Ticket.payload human_ticket) ->
-          let {amount ; value = _ ; ticketer = _ } = ticket in
-          amount
-        )
-        x.ticket_storage)
-      0n
+
 
 let dummy_ticket_info = (0x00,0n)
 
@@ -75,7 +67,7 @@ let _test_Wallet_sc_mint_xtz_with_10tez () =
     (fun (result : Unit.result ) ({wallet_storage; wallet_balance; mint_balance} : main_mint_test_props) -> 
       Unit.and_list 
       [ Unit.assert_is_ok result "transaction should have succeeded"
-      ; Unit.assert_equals (extract_ticket_from_storage wallet_storage) 10n "there should be some tickets"
+      ; Unit.assert_equals (Wallet.extract_ticket_from_storage wallet_storage) 10n "there should be some tickets"
       ; Unit.assert_equals mint_balance 10tez "Should be not empty"
       ; Unit.assert_equals wallet_balance 0tez "Should be empty"
       ])
@@ -88,7 +80,7 @@ let _test_Wallet_sc_minted_ticket_and_join_with_existed_ticket_in_storage () =
     (fun (result : Unit.result) ({wallet_storage; wallet_balance; mint_balance} : main_mint_test_props) -> 
       Unit.and_list 
       [ Unit.assert_is_ok result "transaction should have succeeded"
-      ; Unit.assert_equals (extract_ticket_from_storage wallet_storage) 25n "there should be some tickets"
+      ; Unit.assert_equals (Wallet.extract_ticket_from_storage wallet_storage) 25n "there should be some tickets"
       ; Unit.assert_equals mint_balance 25tez "Should be not empty"
       ; Unit.assert_equals wallet_balance 0tez "Should be empty"
       ])
@@ -110,7 +102,7 @@ let _test_Wallet_sc_join_arbitary_ticket_and_ticket_in_storage () =
       let {owner_address = _ ; mint_address = _ ; bridge_address = _; ticket_storage = _} = wallet_storage in
       Unit.and_list 
       [ Unit.assert_rejected_with_error result (Test.compile_value "wallet_sc:Ticket payload is invalid") "Assertion failed: should have been rejected"
-      ; Unit.assert_equals (extract_ticket_from_storage wallet_storage) 10n "there should be some tickets"
+      ; Unit.assert_equals (Wallet.extract_ticket_from_storage wallet_storage) 10n "there should be some tickets"
       ; Unit.assert_equals mint_balance 10tez "Should be not empty"
       ; Unit.assert_equals wallet_balance 0tez "Should be empty"
       ])
