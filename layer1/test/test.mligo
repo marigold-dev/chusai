@@ -6,6 +6,7 @@
 #import "../stdlib_ext/test/suites.mligo" "Stdlib_test"
 #import "../refutation/test/suites.mligo" "Refutation_test"
 #import "../chain/test/suites.mligo" "Chain"
+#import "../transcation/test/suites.mligo" "Transaction_test"
 
 let test = 
   Unit.run_suites 
@@ -16,5 +17,6 @@ let test =
     ; [ Mint.suite ]
     ; [ Inbox.suite ]
     ; Chain.suites 
+    ; Transaction_test.suites
     ]
   )
