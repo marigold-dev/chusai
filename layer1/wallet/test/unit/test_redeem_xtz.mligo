@@ -45,7 +45,7 @@ let run_main_redeem_xtz_test
   let wallet_type_address = (Test.cast_address wallet_address : (wallet_parameter,wallet_storage) typed_address) in
   let wallet_contract = Test.to_contract wallet_type_address in
 
-  let wallet_storage_before_body = Test.get_storage wallet_type_address in
+  // let wallet_storage_before_body = Test.get_storage wallet_type_address in
   let exec_result = body wallet_contract in
 
   let wallet_storage = Test.get_storage wallet_type_address in
@@ -67,7 +67,7 @@ let _test_Wallet_sc_redeem_xtz_with_ticket () =
     (Some ticket)
     (fun (contr : wallet_parameter contract) -> Unit.transfer_to_contract_ contr Redeem_xtz 0tez)
     (fun (result:Unit.result) ({wallet_storage; wallet_balance; mint_balance} : main_redeem_test_props) -> 
-      let {owner_address; mint_address; bridge_address; ticket_storage} = wallet_storage in
+      let {owner_address = _; mint_address = _; bridge_address = _; ticket_storage} = wallet_storage in
       Unit.and_list
       [ Unit.assert_is_ok result ""
       ; Unit.assert_equals ticket_storage (None : chusai_ticket_storage) "" 
@@ -82,7 +82,7 @@ let _test_Wallet_sc_redeem_xtz_with_storage_None () =
     (None : (Ticket.payload * nat) option)
     (fun (contr: wallet_parameter contract) ->
       Unit.transfer_to_contract_ contr Redeem_xtz 0tez)
-    (fun (result:Unit.result) ({wallet_storage; wallet_balance; mint_balance} : main_redeem_test_props) -> 
+    (fun (result:Unit.result) ({wallet_storage = _; wallet_balance; mint_balance} : main_redeem_test_props) -> 
       Unit.and_list 
       [ Unit.assert_rejected_with_error result (Test.compile_value "wallet_sc:No ticket found in storage") "Assertion failed: should have been rejected"
       ; Unit.assert_equals wallet_balance  0tez  ""
