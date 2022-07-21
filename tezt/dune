@@ -1,4 +1,4 @@
-(test
+(executable
  (name tezt_chusai)
  (libraries
   tezt
