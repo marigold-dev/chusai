@@ -43,7 +43,7 @@ let process_storage_until rpc_context block node_messages node_cursor inbox_curs
     let open Lwt_result_syntax in
     let*! () = Event_log.recomputing_inbox_for_cursor node_cursor in
     (* Recompute inboxes at each level *)
-    let* script_cursor = Lwt.return @@ Script.(hash @@ z node_cursor) in
+    let* script_cursor = Lwt.return @@ Script.(to_script_expr_hash @@ z node_cursor) in
     let* big_map_result =
       Contract.get_big_map_value_at rpc_context block index script_cursor
     in
@@ -81,10 +81,10 @@ let patch rpc_context block potential_storage =
   | Some storage ->
     let script = Script.root storage in
     (match Inbox.store_from_script script with
-    | Some (inbox_cursor, message_big_map_index) ->
-      recompute rpc_context block inbox_cursor message_big_map_index
-    | None ->
-      Error.(raise_lwt @@ Chusai_invalid_script_repr (storage, "Invalid Inbox Storage")))
+     | Some (inbox_cursor, message_big_map_index) ->
+       recompute rpc_context block inbox_cursor message_big_map_index
+     | None ->
+       Error.(raise_lwt @@ Chusai_invalid_script_repr (storage, "Invalid Inbox Storage")))
   | None ->
     let*! () = Event_log.store_is_empty () in
     return ()
@@ -93,6 +93,6 @@ let patch rpc_context block potential_storage =
 let is_pending () =
   Lwt.return
     (match !current_state with
-    | Pending -> true
-    | Processing _ -> false)
+     | Pending -> true
+     | Processing _ -> false)
 ;;

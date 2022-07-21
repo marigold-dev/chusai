@@ -23,14 +23,11 @@
 module type S = sig
   include Stdlib.Map.S
 
-  val ( .%[] ) : 'a t -> key -> 'a
   val from_list : (key * 'a) list -> 'a t
 end
 
 module Make (O : Stdlib.Map.OrderedType) = struct
   include Stdlib.Map.Make (O)
-
-  let ( .%[] ) map key = find key map
 
   let from_list list =
     List.fold_left (fun map (key, value) -> add key value map) empty list

@@ -50,6 +50,6 @@ val elt : t list -> t
 
 val encode : t -> bytes tzresult
 val to_hex : t -> string tzresult
-val hash : t -> Chusai_tezos.Protocol.Script_expr_hash.t tzresult
+val to_script_expr_hash : t -> Chusai_tezos.Protocol.Script_expr_hash.t tzresult
 val canonicalize : t -> Chusai_tezos.Protocol.Alpha_context.Script.expr
 val root : Chusai_tezos.Protocol.Alpha_context.Script.expr -> t

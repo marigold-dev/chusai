@@ -60,12 +60,12 @@ let extract_big_map check_key check_value =
   let open Tezos_micheline.Micheline in
   let open Protocol.Alpha_context.Script in
   extract_seq (function
-      | Prim (_, D_Elt, [ key; value ], _) ->
-        let open Preface.Option.Monad in
-        let* key = check_key key in
-        let* value = check_value value in
-        return (key, value)
-      | _ -> None)
+    | Prim (_, D_Elt, [ key; value ], _) ->
+      let open Preface.Option.Monad in
+      let* key = check_key key in
+      let* value = check_value value in
+      return (key, value)
+    | _ -> None)
 ;;
 
 let encode node =
@@ -98,7 +98,7 @@ let elt n =
   Prim (dummy_location, D_Elt, n, [])
 ;;
 
-let hash node =
+let to_script_expr_hash node =
   let open Util.Try_trace.Monad in
   let* bytes = encode node in
   try return @@ Protocol.Script_expr_hash.hash_bytes [ bytes ] with

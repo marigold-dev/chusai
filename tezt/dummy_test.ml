@@ -15,8 +15,8 @@ let test_dummy =
       let* () = Client.bake_for_and_wait tezos_client in
       Lwt.return_unit)
     (fun _protocol _tezos_node _tezos_client _rollup_sc participants chusai_node ->
-      let alice = Chusai_common.Map.String.(participants.%["alice"]).wallet_address in
-      let bob = Chusai_common.Map.String.(participants.%["bob"]).wallet_address in
+      let alice = Chusai_common.Map.String.(find "alice" participants).wallet_address in
+      let bob = Chusai_common.Map.String.(find "bob" participants).wallet_address in
       let open Lwt.Syntax in
       let* alice_balance = Tezt_chusai_lib.Chusai_rpc.get_balance_for alice chusai_node in
       let* bob_balance = Tezt_chusai_lib.Chusai_rpc.get_balance_for bob chusai_node in

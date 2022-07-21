@@ -23,7 +23,7 @@
 open Chusai_tezos
 
 let port =
-  let docv = "A port, mostly used for RPC address" in
+  let docv = "A port used for RPC address" in
   let printer ppf value = Format.fprintf ppf "%d" value in
   let port_parser value =
     match int_of_string_opt value with
@@ -48,11 +48,9 @@ let signature =
   let docv = "A signature" in
   let printer = Tezos_crypto.Signature.pp in
   let sig_parser value =
-    match Tezos_crypto.Signature.of_b58check_opt value with
-    | None ->
-      let msg = `Msg "Invalid Signature" in
-      Result.error msg
-    | Some signature -> Result.ok signature
+    value
+    |> Tezos_crypto.Signature.of_b58check_opt
+    |> Option.to_result ~none:(`Msg "Invalid Signature")
   in
   Cmdliner.Arg.conv ~docv (sig_parser, printer)
 ;;
@@ -60,25 +58,21 @@ let signature =
 let public_key_hash =
   let docv = "A signature's public key hash" in
   let printer = Tezos_crypto.Signature.Public_key_hash.pp in
-  let sig_parser value =
-    match Tezos_crypto.Signature.Public_key_hash.of_b58check_opt value with
-    | None ->
-      let msg = `Msg "Invalid Public key hash" in
-      Result.error msg
-    | Some public_key_hash -> Result.ok public_key_hash
+  let pkh_parser value =
+    value
+    |> Tezos_crypto.Signature.Public_key_hash.of_b58check_opt
+    |> Option.to_result ~none:(`Msg "Invalid Public key hash")
   in
-  Cmdliner.Arg.conv ~docv (sig_parser, printer)
+  Cmdliner.Arg.conv ~docv (pkh_parser, printer)
 ;;
 
 let contract_hash =
   let docv = "A contract hash (prefixed by KT1)" in
   let printer = Protocol.Contract_hash.pp in
   let contract_parser value =
-    match Protocol.Contract_hash.of_b58check_opt value with
-    | None ->
-      let msg = `Msg "Invalid contract hash" in
-      Result.error msg
-    | Some contract_hash -> Result.ok contract_hash
+    value
+    |> Protocol.Contract_hash.of_b58check_opt
+    |> Option.to_result ~none:(`Msg "Invalid contract hash")
   in
   Cmdliner.Arg.conv ~docv (contract_parser, printer)
 ;;

@@ -25,7 +25,6 @@
 module type S = sig
   include Stdlib.Map.S
 
-  val ( .%[] ) : 'a t -> key -> 'a
   val from_list : (key * 'a) list -> 'a t
 end
 

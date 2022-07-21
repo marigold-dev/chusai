@@ -106,7 +106,7 @@ let register_test ?before_chusai_node ~__FILE__ ~title ~tags test =
 ;;
 
 let request_mint participants name amount client =
-  let x = Chusai_common.Map.String.(participants.%[name]) in
+  let x = Chusai_common.Map.String.find name participants in
   let originator = x.key in
   let wallet_address = x.wallet_address in
   Chusai_contract.wallet_request_mint
@@ -117,7 +117,7 @@ let request_mint participants name amount client =
 ;;
 
 let wallet_deposit participants name client =
-  let x = Chusai_common.Map.String.(participants.%[name]) in
+  let x = Chusai_common.Map.String.find name participants in
   let originator = x.key in
   let wallet_address = x.wallet_address in
   Chusai_contract.wallet_deposit ~originator ~wallet_address client
