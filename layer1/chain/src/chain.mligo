@@ -2,8 +2,14 @@
 #import "../../stdlib_ext/src/result.mligo" "Stdlib_Result"
 type hash = bytes
 type index = nat
-type block = 
+type block_proposal = 
     {  parent : index
+    ;  level : nat
+    ;  hash : hash
+    }
+type block = 
+    {  index : index
+    ;  parent : index
     ;  level : nat
     ;  hash : hash
     ;  proposer : address
@@ -21,10 +27,33 @@ type chain =
 (* error type *) // FIXME: pretty minimal, if as no more value with finalization, relevance should be reexamined
 type chain_error = 
     | Invalid_block
+    | Could_not_find_details
+    | No_candidate
+
+let pp_chain_error (e : chain_error) : string =
+    match e with
+    | Invalid_block -> "Invalide block"
+    | Could_not_find_details -> "Could not find the finalization candidate's details"
+    | No_candidate -> "Could not find a finalization candidate"
+
 type result = Stdlib_Result.t
     
 let get_block (index, store : index * chain) : block option = Big_map.find_opt index store.blocks
 let get_children (index, store : index * chain) : index list option = Big_map.find_opt index store.children
+
+let make_block (proposal, index, proposer, now : block_proposal * index * address * timestamp) : block =
+    {  index = index
+    ;  parent = proposal.parent
+    ;  level = proposal.level
+    ;  hash = proposal.hash
+    ;  proposer = proposer
+    ;  date_of_proposition = now
+    }
+
+let increase_index (chain : chain) : chain =
+    { chain with
+      max_index = chain.max_index + 1n
+    }
 
 (* [is_block_valid (block, chain)] checks that a block is at least well formed *)
 let is_block_valid (block, chain : block * chain) : bool = 
@@ -45,11 +74,9 @@ let store_block (block, chain : block * chain) : (chain, chain_error) result =
         Big_map.update parent (Some new_children) chain.children
     in
     if is_block_valid (block,chain) then
-        let new_index = chain.max_index + 1n in
         Ok ({ chain with 
-              blocks = Big_map.update new_index (Some block) chain.blocks 
-            ; max_index =  new_index
-            ; children = add_to_children (new_index, block.parent, chain)
+              blocks = Big_map.update block.index (Some block) chain.blocks 
+            ; children = add_to_children (block.index, block.parent, chain)
         })
     else Error Invalid_block
 
@@ -83,26 +110,35 @@ let find_latest_existing (chain : chain) : block option =
     let max_index = chain.max_index in
     find_existing max_index
 
+(* FINALIZATION *)
 let rec get_last_elt (type a) (l : a list) : a option =
     match l with
     | [] -> (None : a option)
     | t::[] -> Some t
     | t::q -> get_last_elt q 
 
-(* FINALIZATION *)
-let get_finalization_candidate (chain : chain) : index option =
+let get_finalization_candidate_index (chain : chain) : index option =
     match get_children (chain.latest_finalized, chain) with
         | Some children -> get_last_elt children
         | None -> None
 
-let finality_period (chain : chain) : int = 
+let get_finalization_candidate (chain : chain) : (block, chain_error) result = 
+    match get_finalization_candidate_index chain with
+    | None -> Error No_candidate
+    | Some i -> 
+        begin match get_block (i,chain) with
+        | None -> Error Could_not_find_details
+        | Some b -> Ok b
+        end
+
+let compute_finality_period (chain : chain) : int = 
     chain.finality_period_in_days * 84000
 
 let check_age (date_of_birth, interval, date : timestamp * int * timestamp) : bool =
     date_of_birth + interval < date
 
 let is_old_enough (block, chain, today : block * chain * timestamp) : bool =
-   check_age (block.date_of_proposition, finality_period chain, today)
+   check_age (block.date_of_proposition, compute_finality_period chain, today)
 
 let finalize (index, chain : index * chain) : chain =
     {chain with latest_finalized = index}
