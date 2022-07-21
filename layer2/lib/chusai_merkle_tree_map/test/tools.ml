@@ -22,7 +22,8 @@ let remove_key key_to_remove lst =
 ;;
 
 let check_lists = Alcotest.(check (list (pair string int))) "same lists"
+let check_int_opts = Alcotest.(check (option int)) "same ints"
 let check_true = Alcotest.(check bool "assert true" true)
 let check_false = Alcotest.(check bool "assert false" false)
-let get_result (result, _proof, _tree) = result
-let get_tree (_result, _proof, tree) = tree
+let get_result (result, _tree) = result
+let get_tree (_result, tree) = tree
