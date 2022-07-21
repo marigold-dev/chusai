@@ -29,7 +29,7 @@ let wallet_test_main
     : operation list * wallet_storage = 
     match action with
     | Store ticket ->         
-        let (addr, (payload, total)), ticket = Ticket.read_ticket ticket in
+        let (_addr, (_payload, _total)), ticket = Ticket.read_ticket ticket in
         begin
           let ticket = check_ticket ticket in
           [], (Some ticket)
@@ -203,7 +203,7 @@ let _test_redeem_0value_ticket () =
   begin
     let mint = originate_mint mint_default_storage in
     (* the wallet will check the ticket on reception*)
-    let ticket_asserts : ticket_asserts= {addr = Some mint.originated_address ; payload = Some mint_default_storage.payload ; amount_ = Some 100000000n} in
+    let _ticket_asserts : ticket_asserts= {addr = Some mint.originated_address ; payload = Some mint_default_storage.payload ; amount_ = Some 100000000n} in
     let wallet = originate_wallet (turn_into_0value ) in
     (* minting *)
     let status = mint_  {wallet = wallet ; amount_ = 100tz ; mint = mint.originated_address}  (Unit.start ()) in

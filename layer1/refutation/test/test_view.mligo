@@ -161,7 +161,7 @@ let _test_one_game_get_game () =
         ] 
     in
     // act: calling the views
-    let game_0 : game option option  = call_view_test_as ctx.operator "get_game" 0n ctx.arbiter.originated_address in
+    let _game_0 : game option option  = call_view_test_as ctx.operator "get_game" 0n ctx.arbiter.originated_address in
     let game_1 : game option option  = call_view_test_as ctx.operator "get_game" 1n ctx.arbiter.originated_address in
 
     // asserts : a lazy list to make sure that if starting fails, and there is no game, the tests doesn't interrupt the suite

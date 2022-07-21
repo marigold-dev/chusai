@@ -11,7 +11,7 @@ let _test_originate () =
 
 let _test_start_game () = 
     // init: two players, a game
-    let operator,users = Unit.init_default () in
+    let _operator,users = Unit.init_default () in
     let alice,bob,carol = users in
     let arbiter = originate_bissection () in
 
@@ -70,7 +70,7 @@ let _test_start_dissection () =
 let _test_start_wrong_dissection () = 
     // init: two players, a game
     let _operator,users = Unit.init_default () in
-    let alice,bob,carol = users in
+    let alice,bob,_carol = users in
     let arbiter = originate_bissection () in
 
     // run game

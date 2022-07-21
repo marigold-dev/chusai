@@ -23,7 +23,7 @@ let run_main_mint_xtz_test
   let mint_contract = Test.to_contract mint_type_address in
   let mint_address = (Tezos.address mint_contract) in
 
-  let owner_address = let x = "WARNING: Test.get_self_address is weird here. What I write might be better but not sure" in Test.nth_bootstrap_account 1 in
+  let owner_address = Test.nth_bootstrap_account 1 in
   let wallet_initial_storage ( _ : bytes ticket) = {
     // owner_address = (Tezos.get_self_address ());
     owner_address = owner_address ;

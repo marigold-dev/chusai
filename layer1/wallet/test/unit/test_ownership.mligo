@@ -65,7 +65,7 @@ let _test_wallet_origination =
     "When nothing is transfered the balance of the wallet contract should be 0tez"
     (fun () ->
       let (operator, participants) = Unit_test.init_default () in
-      let (alice, bob, carol) = participants in
+      let (alice, _bob, _carol) = participants in
 
       let mint =
         Unit_test.act_as operator
@@ -92,7 +92,7 @@ let _test_wallet_mint_10tez_with_invalid_owner =
     (fun () ->
 
       let (operator, participants) = Unit_test.init_default () in
-      let (alice, bob, carol) = participants in
+      let (alice, bob, _carol) = participants in
 
       let mint =
         Unit_test.act_as operator
@@ -110,7 +110,7 @@ let _test_wallet_mint_10tez_with_invalid_owner =
         Unit_test.act_as bob
           (mint_ticket (Unit_test.start ()) wallet 10tez)
       in
-      let wallet_storage = Test.get_storage wallet.originated_typed_address in
+      let _wallet_storage = Test.get_storage wallet.originated_typed_address in
       let wallet_balance = Test.get_balance wallet.originated_address in
       let mint_balance = Test.get_balance mint.originated_address in
       Unit_test.and_list
@@ -135,7 +135,7 @@ let _test_wallet_redeem_good_owner =
     (fun () ->
 
       let (operator, participants) = Unit_test.init_default () in
-      let (alice, bob, carol) = participants in
+      let (alice, _bob, _carol) = participants in
 
       let mint =
         Unit_test.act_as operator
@@ -163,8 +163,8 @@ let _test_wallet_redeem_good_owner =
       in
 
       let wallet_storage = Test.get_storage wallet.originated_typed_address in
-      let wallet_balance = Test.get_balance wallet.originated_address in
-      let mint_balance = Test.get_balance mint.originated_address in
+      let _wallet_balance = Test.get_balance wallet.originated_address in
+      let _mint_balance = Test.get_balance mint.originated_address in
       let ticket_storage = wallet_storage.ticket_storage in
 
       Unit_test.and_list [

@@ -25,7 +25,7 @@ let _test_ListExt_join () =
   ]
 let _test_ListExt_bind () = 
   Unit.and
-   (Unit.assert_equals (ListExt.bind (fun (x : int) -> [1;2;3;4]) empty_int_list) empty_int_list  "")
+   (Unit.assert_equals (ListExt.bind (fun (_x : int) -> [1;2;3;4]) empty_int_list) empty_int_list  "")
    (Unit.assert_equals (ListExt.bind (fun (x : int) -> [abs x; abs x]) [1;2;3]) [1n;1n;2n;2n;3n;3n] "")
 
 let _test_ListExt_find () = 
