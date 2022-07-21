@@ -2,6 +2,7 @@
 #include "fakes.mligo"
 #include "tools.mligo"
 #import "../../../stdlib_ext/src/unit_test.mligo" "Unit"
+#import "../../../stdlib_ext/src/proxy_ticket.mligo" "Proxy_ticket"
 
 type main_redeem_test_props = {
   wallet_storage : wallet_storage;
@@ -9,9 +10,12 @@ type main_redeem_test_props = {
   mint_balance : tez;
 }
 
+let dummy_ticket_info = (0x00, 0n)
+let default_owner_address = Test.nth_bootstrap_account 1
+
 let run_main_redeem_xtz_test 
     (initial_mint_amount : tez)
-    (ticket_opt : Ticket.t option)
+    (ticket_opt : (Ticket.payload * nat) option)
     (body : wallet_parameter contract -> Unit.result) 
     (run_assertions : Unit.result -> main_redeem_test_props -> Unit.result) : Unit.result = 
   let mint_type_address, _, _ = Test.originate fake_mint_main unit initial_mint_amount in
@@ -19,14 +23,26 @@ let run_main_redeem_xtz_test
   let mint_address = (Tezos.address mint_contract) in
 
 
-  let wallet_initial_storage = {
-    owner_address = (Tezos.get_self_address ());
-    mint_address = mint_address;
-    bridge_address = dummy_address;
-    ticket_storage = ticket_opt
-  } in
-
-  let wallet_type_address, _, _ = Test.originate main wallet_initial_storage 0tez in
+  let wallet_address =
+    match ticket_opt with
+    | None ->
+      let wallet_initial_storage (_t : Ticket.t) = {
+        owner_address = default_owner_address;
+        mint_address = mint_address;
+        bridge_address = dummy_address;
+        ticket_storage = (None : Ticket.t option)
+      } in
+      Proxy_ticket.originate dummy_ticket_info wallet_initial_storage main
+    | Some ticket_info ->
+      let wallet_initial_storage (t : Ticket.t) = {
+        owner_address = default_owner_address;
+        mint_address = mint_address;
+        bridge_address = dummy_address;
+        ticket_storage = Some t
+      } in
+      Proxy_ticket.originate ticket_info wallet_initial_storage main
+  in
+  let wallet_type_address = (Test.cast_address wallet_address : (wallet_parameter,wallet_storage) typed_address) in
   let wallet_contract = Test.to_contract wallet_type_address in
 
   let wallet_storage_before_body = Test.get_storage wallet_type_address in
@@ -45,11 +61,11 @@ let run_main_redeem_xtz_test
 
 let _test_Wallet_sc_redeem_xtz_with_ticket () =
   let ticket_amount = 10n in
-  let ticket = Ticket.create_ticket dummy_address dummy_payload ticket_amount in
+  let ticket = (dummy_payload , ticket_amount) in
   run_main_redeem_xtz_test 
     (ticket_amount * 1tez)
     (Some ticket)
-    (fun (contr : wallet_parameter contract) ->Unit.transfer_to_contract_ contr Redeem_xtz 0tez)
+    (fun (contr : wallet_parameter contract) -> Unit.transfer_to_contract_ contr Redeem_xtz 0tez)
     (fun (result:Unit.result) ({wallet_storage; wallet_balance; mint_balance} : main_redeem_test_props) -> 
       let {owner_address; mint_address; bridge_address; ticket_storage} = wallet_storage in
       Unit.and_list
@@ -63,7 +79,7 @@ let _test_Wallet_sc_redeem_xtz_with_storage_None () =
   let ticket_amount = 10n in
   run_main_redeem_xtz_test 
     (ticket_amount * 1tez)
-    (None : Ticket.t option)
+    (None : (Ticket.payload * nat) option)
     (fun (contr: wallet_parameter contract) ->
       Unit.transfer_to_contract_ contr Redeem_xtz 0tez)
     (fun (result:Unit.result) ({wallet_storage; wallet_balance; mint_balance} : main_redeem_test_props) -> 
