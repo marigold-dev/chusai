@@ -39,7 +39,7 @@ type chusai_balance = nat
 (** Chusai states represent ledgers, which consist of
     balance, contract, return from contract.
 
-    TODO: replace with merkletree instead *)
+    FIXME: replace with merkletree instead *)
 type chusai_states = (address, chusai_balance * (chusai_contract_return * chusai_contract) option) map
 
 (** [transaction] is an operation which means
@@ -63,7 +63,7 @@ let make (source : address) (destination : address)
   { source = source; destination = destination; quantity = quantity; arg = arg }
 
 (** create a [transaction] operation without [arg] for
-    transfer amount only *)
-let make_only_balance (source : address) (destination : address)
+    transfering [quantity] only *)
+let make_only_quantity (source : address) (destination : address)
       (quantity : chusai_balance) : transaction =
   { source = source; destination = destination; quantity = quantity; arg = None }

@@ -34,6 +34,8 @@ module Result = struct
     | Non_existed_source
     | Non_existed_destination
     | Non_existed_arg
+    | Wrong_referee
+    | Unexpected_transited_states
 
   (** [result] is short for Stdlib_Result.t *)
   type result = Stdlib_Result.t
@@ -52,6 +54,8 @@ module Result = struct
     | Non_existed_source -> "Non_existed_source"
     | Non_existed_destination -> "Non_existed_destination"
     | Non_existed_arg -> "Non_existed_arg"
+    | Wrong_referee -> "Wrong_referee"
+    | Unexpected_transited_states -> "Unexpected_transited_states"
 end
 
 (** [update_source_state] takes a transaction operation and [states]
