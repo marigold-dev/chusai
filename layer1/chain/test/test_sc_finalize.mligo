@@ -1,4 +1,5 @@
 #include "../src/chain_sc.mligo"
+#include "utils.mligo"
 #import "../../stdlib_ext/src/unit_test.mligo" "Unit"
 
 let _tbi () = Unit.fail_with "TBI"
@@ -37,7 +38,6 @@ let originate_chain () : originated_chain =
 
 // test sending a block
 let _test_finalize_first () = _tbi ()
-
 let _test_finalize_second = _tbi
 let _test_finalize_old = _tbi
 let _test_finalize_orphan = _tbi

@@ -7,7 +7,7 @@
 
 type chain_storage = chain
 type chain_parameter = 
-    | Receive of block
+    | Receive of block_proposal
     | Remove  of index // only provided for test. In bridge, removal only happens at the end of a refutation (or if sibling is finalized ?)
     | Finalize
 
@@ -20,32 +20,28 @@ let reward (block, chain : block * chain) : operation list =
         // reward         
         [Tezos.transaction () chain.bond_amount winner_contract]
 
+
+
 let apply_finalize (store : chain_storage) : operation list * chain_storage = 
     match get_finalization_candidate store with
-    | None -> 
-        failwith "no candidate for finalization"
-    | Some candidate_index -> 
-        begin 
-        match get_block (candidate_index,store) with
-        | None -> 
-            failwith "could not find candidate"
-        | Some candidate ->  
-            begin 
+    | Error e -> 
+        failwith ("Error during finalization:" ^ (pp_chain_error e))
+    | Ok candidate -> 
             if is_old_enough (candidate, store, Tezos.now) then
-                reward (candidate, store), finalize (candidate_index, store)
+                reward (candidate, store), finalize (candidate.index, store)
             else 
-                failwith "finality period not finished"
-            end
-        end
+                failwith "Error during finalization: finality period not finished"
 
-let apply_receive (block, store : block * chain_storage) : operation list * chain_storage =
+let apply_receive (proposal, store : block_proposal * chain_storage) : operation list * chain_storage =
         // recolt bond
         if Tezos.amount < store.bond_amount then 
             failwith "not enough bond"
         else
         // store block
         begin 
-            match store_block (block, store) with
+            let new_store = increase_index store in
+            let block = make_block (proposal, new_store.max_index, Tezos.source, Tezos.now) in
+            match store_block (block, new_store) with
             | Error _ -> 
                 failwith "could not store"
             | Ok c -> 
@@ -64,5 +60,5 @@ let main (action, store : chain_parameter * chain_storage) : operation list * ch
 [@view] let get_latest ((),s: unit * chain_storage) : block option = find_latest_existing s
 [@view] let get_next_finalization_candidate ((), s : unit * chain_storage) : block option =
     match get_finalization_candidate s with
-    | None -> None
-    | Some i -> get_block (i,s)
+    | Error e -> None
+    | Ok b -> Some b
