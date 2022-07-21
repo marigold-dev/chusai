@@ -59,11 +59,11 @@ type transaction =
 
 (** create a [transaction] operation *)
 let make (source : address) (destination : address)
-      (quantity : chusai_balance) (arg : bytes option) : transfer =
+      (quantity : chusai_balance) (arg : bytes option) : transaction =
   { source = source; destination = destination; quantity = quantity; arg = arg }
 
 (** create a [transaction] operation without [arg] for
     transfer amount only *)
 let make_only_balance (source : address) (destination : address)
-      (quantity : chusai_balance) : transfer =
+      (quantity : chusai_balance) : transaction =
   { source = source; destination = destination; quantity = quantity; arg = None }

@@ -40,10 +40,10 @@ module Result = struct
 
   (** [t] is the type of result value, which is
       either [chusai_states] if ok or [error] if error *)
-  type t = (chusai_states, error) result
+  type t = (Tx.chusai_states, error) result
 
   (** get [states] or raise error *)
-  let get_states_exn : t -> (error -> string) -> chusai_states = Stdlib_Result.get_ok_or_raises
+  let get_states_exn : t -> (error -> string) -> Tx.chusai_states = Stdlib_Result.get_ok_or_raises
 
   (** print error message *)
   let error_to_string (e : error)
