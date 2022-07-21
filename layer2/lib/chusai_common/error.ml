@@ -23,6 +23,33 @@
 open Tezos_base.TzPervasives
 open Chusai_tezos
 
+(* How to define errors:
+   We extends the type [Tezos_base.TzPervasives.error] in order to be compatible
+   with all of Tezos tooling and to be able to produce [tztrace] (and [tzresult]).
+
+   First, we inject a new constructor:
+   {[
+     type t += My_error_definition of k
+   ]}
+   Next, we need to register it in order to be interpretable by tools
+   providing:
+   - an [id] (that can be used for filtering or structural logging)
+   - a [title] that will be showed in [stderr]
+   - a [description] that describe the errors
+   - a [pp] (pretty printer) on [k] (in our example)
+   - a propagation strategy (in the node we will take the habit to define everything
+     as [`Permanent])
+   - an [encoding] for serializing the errors that should be a JSON object that
+     represents [k]. Ie: [type t += My_error of (string * int)] can be projected
+     into this encoding: [Data_encoding.(obj2 (req "title" string) (req "index" int))]
+   - a function from error to option
+   - a function from arguments ([k]) to an error.
+
+   Those two last parameters allow to deal generically with errors.
+
+   /!\ Every errors from Chusai should be prefixed by [Chusai_].
+*)
+
 (* Rexport the type error as an extensible variant. *)
 type t = Tezos_base.TzPervasives.error = ..
 
@@ -38,8 +65,8 @@ let () =
     `Permanent
     Data_encoding.(obj1 (req "message" string))
     (function
-      | Chusai_unknown_error message -> Some message
-      | _ -> None)
+     | Chusai_unknown_error message -> Some message
+     | _ -> None)
     (fun message -> Chusai_unknown_error message)
 ;;
 
@@ -54,8 +81,8 @@ let () =
     `Permanent
     Data_encoding.(obj1 (req "address" string))
     (function
-      | Chusai_unable_to_parse_contract_address address -> Some address
-      | _ -> None)
+     | Chusai_unable_to_parse_contract_address address -> Some address
+     | _ -> None)
     (fun address -> Chusai_unable_to_parse_contract_address address)
 ;;
 
@@ -76,8 +103,8 @@ let () =
         (req "script" Protocol.Alpha_context.Script.expr_encoding)
         (req "message" string))
     (function
-      | Chusai_invalid_script_repr (script, message) -> Some (script, message)
-      | _ -> None)
+     | Chusai_invalid_script_repr (script, message) -> Some (script, message)
+     | _ -> None)
     (fun (script, message) -> Chusai_invalid_script_repr (script, message))
 ;;
 
@@ -92,8 +119,8 @@ let () =
     `Permanent
     Data_encoding.(obj1 (req "write_error" Binary.write_error_encoding))
     (function
-      | Chusai_binary_write_error err -> Some err
-      | _ -> None)
+     | Chusai_binary_write_error err -> Some err
+     | _ -> None)
     (fun err -> Chusai_binary_write_error err)
 ;;
 
@@ -118,8 +145,8 @@ let () =
     Data_encoding.(
       obj2 (req "node_cursor" Data_encoding.z) (req "inbox_cursor" Data_encoding.z))
     (function
-      | Chusai_node_cursor_is_higher_of_inbox_cursor p -> Some p
-      | _ -> None)
+     | Chusai_node_cursor_is_higher_of_inbox_cursor p -> Some p
+     | _ -> None)
     (fun p -> Chusai_node_cursor_is_higher_of_inbox_cursor p)
 ;;
 
@@ -135,8 +162,8 @@ let () =
     `Permanent
     Data_encoding.(obj1 (req "bytes" Data_encoding.bytes))
     (function
-      | Chusai_unable_to_unpack_script_repr b -> Some b
-      | _ -> None)
+     | Chusai_unable_to_unpack_script_repr b -> Some b
+     | _ -> None)
     (fun b -> Chusai_unable_to_unpack_script_repr b)
 ;;
 
