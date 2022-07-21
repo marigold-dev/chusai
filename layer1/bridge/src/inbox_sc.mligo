@@ -1,5 +1,5 @@
 #import "../../commons/inbox_interface.mligo" "Inbox"
-#import "../../commons/ticket/chusai_ticket.mligo" "Ticket"
+#import "../../commons/ticket/tezos_ticket.mligo" "Ticket"
 
 #include "../../stdlib_ext/src/stdlibext.mligo"
 
@@ -14,12 +14,16 @@ type ticket_key = {
 ; payload: Ticket.payload
 }
 
-type state = {
+type 'a state_ = {
   rollup_level: nat
-; ticket: Ticket.t option
+; ticket: 'a
 ; fixed_ticket_key: ticket_key
 ; messages: (nat, message list) big_map
 }
+
+type state = (Ticket.t option) state_
+type human_state = (Ticket.payload human_ticket option) state_ (* only used in test *)
+
 
 let make_deposit_message (owner: address) (quantity: nat) : message =
   Deposit { owner = owner; quantity = quantity }
@@ -60,5 +64,5 @@ let main (action, state : entrypoint * state) : operation list * state =
   let {rollup_level;ticket;fixed_ticket_key;messages} = state in
   match action with
   | Inbox_deposit ticketSent ->
-    let ticketSent_owner = Tezos.sender in
+    let ticketSent_owner = (Tezos.get_sender ()) in
     deposit rollup_level ticket fixed_ticket_key messages ticketSent_owner ticketSent

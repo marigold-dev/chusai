@@ -97,7 +97,7 @@ let pp_suite_result (has_failures : bool) (suite : test_suite) : unit =
       Test.log ("[v] <" ^ suite.suite_name ^ "> has passed." )
 
 (** pretty printing of a test result obtained in the context of a [metric] *)
-let pp_metric ({ test_name; test_desc; test_result } : test_result) : unit = 
+let pp_metric ({ test_name; test_desc = _; test_result } : test_result) : unit = 
   let _ = Test.log "START METRIC" in
   let _ = match test_result with 
     | Test_Failed error -> 

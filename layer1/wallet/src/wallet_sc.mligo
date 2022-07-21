@@ -1,4 +1,4 @@
-#import "../../commons/ticket/chusai_ticket.mligo" "Ticket"
+#import "../../commons/ticket/tezos_ticket.mligo" "Ticket"
 #include "../../commons/mint_interface.mligo"
 #include "../../commons/wallet_interface.mligo"
 #include "../../stdlib_ext/src/stdlibext.mligo"
@@ -11,7 +11,7 @@ let throw_error (type a) (x : string) : a = failwith (error_message x)
 Responsibility: Sends tez to the mint contract in order to obtain a ticket
 *)
 let mint_xtz ({owner_address; mint_address; bridge_address; ticket_storage} : wallet_storage) : wallet_return =
-  let ticket_value = Tezos.amount in
+  let ticket_value = (Tezos.get_amount ()) in
   let _ = if ticket_value = 0tez then throw_error "Amount should be non-zero" in
   let callback_entrypoint = (Tezos.self "%mint_xtz_cb" : Ticket.t contract) in
   let mint_contract : mint_parameter contract = Tezos.get_contract_with_error mint_address (error_message "Mint smart contract address doesn't exist") in
@@ -28,21 +28,24 @@ let mint_xtz ({owner_address; mint_address; bridge_address; ticket_storage} : wa
 Responsibility: Stores the incoming ticket in to the contract storage 
 by joining with the existing ticket, if needed
 *)
-let mint_xtz_cb (ticket_to_add, {owner_address; mint_address; bridge_address; ticket_storage} : Ticket.t*wallet_storage) : wallet_return = 
-  let join_or_fail (existing_ticket : Ticket.t) =  
-    let joined_tickets = Ticket.join_tickets existing_ticket ticket_to_add in
-    let _ =  if (OptionExt.is_none joined_tickets) then throw_error "Ticket payload is invalid" in
-    joined_tickets in 
-  let joined_tickets : Ticket.t option = OptionExt.bind ticket_storage join_or_fail in
-
-  let new_ticket_storage : Ticket.t option = OptionExt.or_else joined_tickets (Some ticket_to_add) in
+let mint_xtz_cb (ticket_to_add, {owner_address; mint_address; bridge_address; ticket_storage} : Ticket.t*wallet_storage) : wallet_return =
+  let new_ticket_storage : Ticket.t option =
+    match ticket_storage with
+    | None -> Some ticket_to_add
+    | Some existing_ticket ->
+      begin
+      match Ticket.join_tickets existing_ticket ticket_to_add with
+      | Some t -> Some t
+      | None ->  throw_error "Ticket payload is invalid"
+      end
+  in
   let new_storage = {
     owner_address = owner_address;
     mint_address = mint_address;
     bridge_address = bridge_address;
     ticket_storage = new_ticket_storage
   } in
-  ([], new_storage) 
+  ([], new_storage)
   
 let redeem_xtz ({owner_address; mint_address; bridge_address; ticket_storage} : wallet_storage) : wallet_return =
   let ticket = Option.unopt_with_error ticket_storage (error_message "No ticket found in storage") in
@@ -75,13 +78,14 @@ let send ({owner_address; mint_address; bridge_address; ticket_storage} : wallet
 (*  
 Rsponsibility: dispatch based on action to the action handler functions
  *)
-let main (parameter, storage : wallet_parameter * wallet_storage) : wallet_return =
-  if Tezos.source = storage.owner_address then
-      match parameter with
-        | Mint_xtz -> mint_xtz storage 
-        | Mint_xtz_cb ticket -> mint_xtz_cb (ticket,storage)
-        | Send -> send storage
-        | Redeem_xtz -> redeem_xtz storage
-        | Redeem_xtz_cb -> redeem_xtz_cb storage
+let main (parameter, {owner_address; mint_address; bridge_address; ticket_storage} : wallet_parameter * wallet_storage) : wallet_return =
+  let storage = {owner_address = owner_address; mint_address = mint_address ; bridge_address = bridge_address ; ticket_storage = ticket_storage} in 
+  if (Tezos.get_source ()) = owner_address then
+    match parameter with
+      | Mint_xtz -> mint_xtz storage
+      | Mint_xtz_cb ticket -> mint_xtz_cb (ticket,storage)
+      | Send -> send storage
+      | Redeem_xtz -> redeem_xtz storage
+      | Redeem_xtz_cb -> redeem_xtz_cb storage
   else
     throw_error "invalid owner for this wallet"

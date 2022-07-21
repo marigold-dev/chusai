@@ -19,9 +19,13 @@ type ('a, 'b) originated = {
     ... my_originated.addr ... is address
     ... my_originated.contr ... is contract
 *)
-let originate_full (type a b) (main : a * b -> operation list * b ) (storage : b) (bal : tez) (log : string) : (a, b) originated =
-  let my_taddr, _, _ = Test.originate main storage bal in
-  let my_contr = Test.to_contract my_taddr in
-  let my_addr = Tezos.address my_contr in
-  let _ = log_ (log, storage, bal, my_addr) in
-  {originated_typed_address = my_taddr ; originated_contract = my_contr ; originated_address = my_addr}
+
+let originate_full (type a b ticket_val) (main : a * b -> operation list * b ) (ticket_info : ticket_val * nat)  (mk_storage : ticket_val ticket -> b) (log : string) : (a, b) originated =
+  let originated_address = Proxy_ticket.originate ticket_info mk_storage main in
+  let originated_typed_address = (Test.cast_address originated_address : (a, b) typed_address) in
+  let originated_contract = (Test.to_contract originated_typed_address : a contract) in
+  let _ = log_ (log, originated_address) in
+  { originated_typed_address = originated_typed_address
+  ; originated_contract = originated_contract 
+  ; originated_address = originated_address
+  }

@@ -1,13 +1,19 @@
-#import "ticket/chusai_ticket.mligo" "Ticket"
+#import "ticket/tezos_ticket.mligo" "Ticket"
 
 type chusai_ticket_storage = Ticket.t option
+type chusai_human_ticket = (Ticket.payload human_ticket)
 
-type wallet_storage = {
+
+type 'a wallet_storage_ = {
   owner_address : address;
   mint_address : address;
   bridge_address : address;
-  ticket_storage : chusai_ticket_storage
+  ticket_storage : 'a
 }
+
+type wallet_storage = chusai_ticket_storage wallet_storage_
+
+type wallet_storage_human = (Ticket.payload human_ticket) option wallet_storage_
 
 type wallet_parameter 
   = Mint_xtz
@@ -18,9 +24,11 @@ type wallet_parameter
 
 type wallet_return = operation list * wallet_storage
 
-type bridge_storage = {
-  tickets : chusai_ticket_storage
+type 'a bridge_storage_ = {
+  tickets : 'a
 }
+type bridge_storage = chusai_ticket_storage bridge_storage_
+type bridge_storage_human = (chusai_human_ticket option) bridge_storage_
 
 type bridge_parameter = Deposit of Ticket.t
 

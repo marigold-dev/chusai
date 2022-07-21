@@ -15,8 +15,8 @@ let _test_choose_right () =
     let dissection = s1,s2 in
     Unit.assert_equals (Seg.choose (Right,dissection)) s2 "Should be s2" 
 
-let string_of_bool (b:bool) = 
-    if b then "true" else "false"
+let string_of_bool (bval:bool) = 
+    if bval then "true" else "false"
 
 let _test_check_dissection_against_segment (dissection,segment : dissection * segment) (expected:bool) () =
     Unit.assert_equals (Seg.check_dissection_against_segment (dissection ,segment)) expected ("Should be "^(string_of_bool expected))

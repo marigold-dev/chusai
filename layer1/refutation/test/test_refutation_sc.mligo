@@ -4,14 +4,14 @@
 
 (* TESTS *)    
 let _test_originate () = 
-    let operator,users = Unit.init_default () in
+    let operator,_users = Unit.init_default () in
     let originated_bissection = Unit.act_as operator originate_bissection in
     Unit.assert_equals (Test.get_balance originated_bissection.originated_address) (0tez) "Should be 0"   
     
 
 let _test_start_game () = 
     // init: two players, a game
-    let operator,users = Unit.init_default () in
+    let _operator,users = Unit.init_default () in
     let alice,bob,carol = users in
     let arbiter = originate_bissection () in
 
@@ -40,8 +40,8 @@ let _test_start_game () =
 
 let _test_start_dissection () = 
     // init: two players, a game
-    let operator,users = Unit.init_default () in
-    let alice,bob,carol = users in
+    let _operator,users = Unit.init_default () in
+    let alice,bob,_carol = users in
     let arbiter = originate_bissection () in
 
     // run game
@@ -69,8 +69,8 @@ let _test_start_dissection () =
    
 let _test_start_wrong_dissection () = 
     // init: two players, a game
-    let operator,users = Unit.init_default () in
-    let alice,bob,carol = users in
+    let _operator,users = Unit.init_default () in
+    let alice,bob,_carol = users in
     let arbiter = originate_bissection () in
 
     // run game
