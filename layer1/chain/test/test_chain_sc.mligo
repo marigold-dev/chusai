@@ -155,13 +155,97 @@ let _test_receive_siblings () =
     ;  Unit.assert_equals (Some [3n ; 2n]) (get_children (1n, storage)) "second block is a child of first"
     ]
 
+let _test_remove_block () =
+    let operator, actors = Unit.init_default () in 
+    let alice, _bob, _carol = actors in 
+    let chain : originated_chain = Unit.act_as operator originate_chain  in
+    let my_block  = 
+        {  parent = 0n
+        ;  level = 0n
+        ;  hash = 0x0101
+        ;  proposer = alice.address
+        } in 
+    let send_block () = Unit.transfer_to_contract_ chain.originated_contract (Receive my_block) 0tez in
+    let result = Unit.act_as alice send_block in
+    let storage = Test.get_storage chain.originated_typed_address in
+    let sanity_check = Unit.and_list 
+    [  result 
+    ;  Unit.assert_equals 1n (storage.max_index) "max_index should be 1"
+    ;  Unit.assert_equals (Some my_block) (get_block (1n, storage)) "the block should have been stored"
+    ] in
+    let remove_block () = Unit.transfer_to_contract_ chain.originated_contract (Remove 1n) 0tez in
+    let result_remove = Unit.act_as operator remove_block in
+    let storage = Test.get_storage chain.originated_typed_address in
+    Unit.and_list 
+    [  sanity_check
+    ;  result_remove
+    ;  Unit.assert_equals 1n (storage.max_index) "max_index should still be 1"
+    ;  Unit.assert_equals (None : block option) (get_block (1n, storage)) "the block should have been deleted"
+    ]
+
+
+let _test_remove_parent_of_two () = 
+    // setup
+    let operator, actors = Unit.init_default () in 
+    let alice, bob, _carol = actors in 
+    let chain : originated_chain = Unit.act_as operator originate_chain  in
+
+    let first_block  = 
+        {  parent = 0n
+        ;  level = 0n
+        ;  hash = 0x0101
+        ;  proposer = alice.address
+        } in 
+    let second_block = 
+        {  parent = 1n
+        ;  level = 10n
+        ;  hash = 0x0101
+        ;  proposer = bob.address
+        } in 
+    let third_block = 
+        {  parent = 1n
+        ;  level = 20n
+        ;  hash = 0x0202
+        ;  proposer = alice.address
+        } in 
+    let send_block (block : block) () = Unit.transfer_to_contract_ chain.originated_contract (Receive block) 0tez in
+    let result_first = Unit.act_as alice (send_block first_block) in
+    let result_second = Unit.act_as bob (send_block second_block) in
+    let result_third = Unit.act_as bob (send_block third_block) in
+
+    // sanity_check
+    let storage = Test.get_storage chain.originated_typed_address in
+    let sanity_check = Unit.and_list 
+    [  Unit.assert_is_ok result_first "first block should have succeeded"
+    ;  Unit.assert_is_ok result_second  "second block should have succeeded"
+    ;  Unit.assert_is_ok result_third  "third block should have succeeded"
+    ;  Unit.assert_equals 3n (storage.max_index) "max_index should be 3"
+    ;  Unit.assert_equals (Some [3n ; 2n]) (get_children (1n, storage)) "second block is a child of first"
+    ] in
+
+    // act
+    let remove_block () = Unit.transfer_to_contract_ chain.originated_contract (Remove 1n) 0tez in
+    let result_remove = Unit.act_as operator remove_block in
+
+    //assert
+    let storage = Test.get_storage chain.originated_typed_address in
+    Unit.and_list 
+    [  sanity_check
+    ;  result_remove
+    ;  Unit.assert_equals 3n (storage.max_index) "max_index should still be 3"
+    ;  Unit.assert_equals (None : block option) (get_block (1n, storage)) "the block 1 should have been deleted"
+    ;  Unit.assert_equals (None : block option) (get_block (2n, storage)) "the block 2 should have been deleted"
+    ;  Unit.assert_equals (None : block option) (get_block (3n, storage)) "the block 3 should have been deleted"
+    ]
 
 (* Creation of test suite *)
 let suite = Unit.make_suite
-"Chain_sc"
-"Test suite of bridge storage of blocks"
-[  Unit.make_test "First block: success" "test sending first block"  _test_receive_first_block           
-;  Unit.make_test "Second block: success" "sending a son" _test_receive_son            
-;  Unit.make_test "Third block: success" "sending two children for first block" _test_receive_siblings                   
-;  Unit.make_test "Second block: failure" "sending an orphan" _test_receive_orphan           
-]
+    "Chain_sc"
+    "Test suite of bridge storage of blocks"
+    [  Unit.make_test "First block: success" "test sending first block"  _test_receive_first_block           
+    ;  Unit.make_test "Second block: success" "sending a son" _test_receive_son            
+    ;  Unit.make_test "Third block: success" "sending two children for first block" _test_receive_siblings                   
+    ;  Unit.make_test "Second block: failure" "sending an orphan" _test_receive_orphan                             
+    ;  Unit.make_test "Remove: success" "removing a block" _test_remove_block
+    ;  Unit.make_test "Remove: success" "removing a parent block" _test_remove_parent_of_two
+    ]
