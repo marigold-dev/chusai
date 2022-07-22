@@ -25,18 +25,15 @@
 
 module Result = Tx.Result
 
-type is_expected_states
+type is_expected_state
   = Yes
-  | No of { error : Result.error; }
+  | No of { error : string; }
   | Nothing
 
 (** storage type *)
 (** [FIXME]: support multiple game *)
 type storage =
-  { referee : address
-  ; is_expected_states : is_expected_states
-  ;
-  }
+  {  is_expected_state : is_expected_state; }
 
 (** parameter of Transaction *)
 type tx_parameter =
@@ -46,43 +43,67 @@ type tx_parameter =
   ;
   }
 
+(** parameter of small step of transaction *)
+type 't tx_step_parameter =
+  { tx : 't
+  ; init_state : chusai_state
+  ; expected_state : chusai_state
+  ;
+  }
+
 (** parameter *)
-type parameter =
-  Transaction of tx_parameter
+type parameter
+  = Transaction of tx_parameter
+  | Transaction_from of (Transaction_from) tx_step_parameter
+  | Transaction_to of (Transaction_to) tx_step_parameter
+
 
 (** return *)
 type return = operation list * storage
 
 (** compare a actual state and a expected states *)
-let check_expected_state (result : Result.t) (expected_states : chusai_states) : is_expected_states = (
+let check_expected_state (result : Result.t) (expected_state : chusai_state) : is_expected_state =
   match result with
-  | Error e -> No { error = e; }
-  | Ok states -> (
-      let b_expected_state = Bytes.pack expected_states in
-      let b_actual_state = Bytes.pack states in
+  | Error e -> No { error = Result.error_to_string e; }
+  | Ok state -> (
+      let b_expected_state = Bytes.pack expected_state in
+      let b_actual_state = Bytes.pack state in
       if b_expected_state = b_actual_state then Yes
-      else Nothing))
+      else No { error = "Unexpected_transited_state" })
 
-(** perform transaction *)
-let transaction ({ tx; init_states; expected_states; } : tx_parameter ) : Result.t =
-  let result = Tx.update_source_state tx init_states in
+(** transit states *)
+let big_step_transit (tx : transaction) (state_src, state_dest : chusai_states) : (Result.t * Result.t option) =
+  (** split in small steps *)
+  let (tx_from, tx_to) = Tx.to_small_step tx in
+
+  (** update the state of source *)
+  let result = Tx.update_source_state tx_from state_src in
+
+  (** update the state of destination *)
   match result with
-  | Error _ -> result
-  | Ok states -> Tx.update_destination_balance tx states
+  | Error _ -> result, None
+  | Ok _ -> result, Some (Tx.update_destination_balance tx_to state_dest)
+
+(** perform transaction action *)
+let transaction (tx_parameter : tx_parameter) : storage =
+   let (r_src, or_dest) = big_step_transit tx_parameter.tx tx_parameter.init_states in
+   let (e_src, e_dest) = tx_parameter.expected_states in
+   let check_src = check_expected_state r_src e_src in
+   let check =
+     begin
+       match check_src, or_dest with
+       | Yes, Some r_dest -> check_expected_state r_dest e_dest
+       | No _, _ -> check_src
+       | _, _ -> failwith "can't be happened"
+     end
+   in ({is_expected_state = check})
 
 (** Main *)
 let main(action, storage : parameter * storage) : return =
-  let checked =
+  let new_storage =
     match action with
-    | Transaction t ->
-      begin
-        let result =
-          if storage.referee <> Tezos.get_sender ()
-          then (Error Wrong_referee : Result.t)
-          else transaction t
-        in
-        check_expected_state result t.expected_states
-      end
+    | Transaction t -> transaction t
+    | Transaction_from _ -> storage
+    | Transaction_to _ -> storage
   in
-  ([], {referee = storage.referee; is_expected_states = checked })
-
+  ([], new_storage)

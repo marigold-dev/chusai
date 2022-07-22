@@ -27,68 +27,62 @@
 
 (** [Result] module provides info on failure *)
 module Result = struct
-
   (** transaction errors *)
   type error
     = Not_enough_balance
-    | Non_existed_source
-    | Non_existed_destination
     | Non_existed_arg
-    | Wrong_referee
-    | Unexpected_transited_states
 
   (** [result] is short for Stdlib_Result.t *)
   type result = Stdlib_Result.t
 
   (** [t] is the type of result value, which is
       either [chusai_states] if ok or [error] if error *)
-  type t = (Tx.chusai_states, error) result
+  type t = (Tx.chusai_state, error) result
 
   (** get [states] or raise error *)
-  let get_states_exn : t -> (error -> string) -> Tx.chusai_states = Stdlib_Result.get_ok_or_raises
+  let get_states_exn : t -> (error -> string) -> Tx.chusai_state = Stdlib_Result.get_ok_or_raises
 
   (** print error message *)
   let error_to_string (e : error)
     = match e with
     | Not_enough_balance -> "Not_enough_balance"
-    | Non_existed_source -> "Non_existed_source"
-    | Non_existed_destination -> "Non_existed_destination"
     | Non_existed_arg -> "Non_existed_arg"
-    | Wrong_referee -> "Wrong_referee"
-    | Unexpected_transited_states -> "Unexpected_transited_states"
 end
 
-(** [update_source_state] takes a transaction operation and [states]
-    to update the state of [transaction.source] in [states] *)
-let update_source_state ({ source; destination = _; quantity; arg = _} : Tx.transaction) (states : Tx.chusai_states) : Result.t =
-  match Map.find_opt source states with
-  | None -> Error Non_existed_source
-  | Some (balance, contract_related) ->
-    begin
-      let new_balance = balance - quantity in
-      if new_balance < 0 then
-        Error Not_enough_balance
-      else
-        Ok (Map.update source (Some (abs(new_balance), contract_related)) states)
-    end
+(** create a [transaction] operation *)
+let make (source : address) (destination : address)
+      (quantity : Tx.chusai_balance) (arg : bytes option) : Tx.transaction =
+  { source = source; destination = destination; quantity = quantity; arg = arg }
 
-(** [update_destination_balance] takes a transaction operation and [states]
-    to update the state of [transaction.destination] in [states] *)
-let update_destination_balance ({ source = _; destination; quantity; arg = _} : Tx.transaction) (states : Tx.chusai_states) : Result.t =
-  match Map.find_opt destination states with
-  | None -> Error Non_existed_destination
-  | Some (balance, contract_related) ->
-    begin
-      let new_balance = balance + quantity in
-      Ok (Map.update destination (Some (new_balance, contract_related)) states)
-    end
+(** create a [transaction] operation without [arg] for
+    transfering [quantity] only *)
+let make_only_quantity (source : address) (destination : address)
+      (quantity : Tx.chusai_balance) : Tx.transaction =
+  { source = source; destination = destination; quantity = quantity; arg = None }
 
-(** [update_destination_contract] takes a transaction operation and [states]
-    to update the state of [transaction.destination] in [states] *)
+(** split [transaction] to [transaction_from] and [transaction_to] in small steps *)
+let to_small_step ({source; destination; quantity; arg; } : Tx.transaction) : (Tx.transaction_from * Tx.transaction_to) =
+  ( {source = source; quantity = quantity; }
+  , {destination = destination; quantity = quantity; arg = arg})
+
+(** [update_source_state] takes a transaction operation and [chusai_state]
+    to update the [chusai_state]. *)
+let update_source_state ({ source = _; quantity; } : Tx.transaction_from) (balance, contract_related : Tx.chusai_state) : Result.t =
+  let new_balance = balance - quantity in
+  if new_balance < 0 then
+    Error Not_enough_balance
+  else
+    Ok (abs(new_balance), contract_related)
+
+(** [update_destination_balance] takes a transaction operation and [chusai_states]
+    to update the [chusai_state] *)
+let update_destination_balance ({ destination = _; quantity; arg = _} : Tx.transaction_to) (balance, contract_related : Tx.chusai_state) : Result.t =
+  let new_balance = balance + quantity in
+  Ok (new_balance, contract_related)
+
+(** [update_destination_contract] takes a transaction operation and [chusai_state]
+    to update the state of [transaction.destination] in [chusai_state] *)
 (** FIXME: implement in other PR *)
 (** FIXME: check destination type (?) *)
-let update_destination_contract ({ source = _; destination; quantity = _; arg} : Tx.transaction) (states : Tx.chusai_states) : Result.t =
-  match arg, Map.find_opt destination states with
-  | None, _ -> Error Non_existed_arg
-  | _, None -> Error Non_existed_destination
-  | Some _arg, Some (_balance, _contract_related) -> Ok states (* TODO *)
+let update_destination_contract (_t : Tx.transaction) (state : Tx.chusai_state) : Result.t =
+  Ok state (* TODO *)
