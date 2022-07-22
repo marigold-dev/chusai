@@ -32,7 +32,7 @@ let assert_not_none (type a)  (val: a option) (msg: string) : result =
 
 let assert_is_ok (current:result) (msg:string) : result = 
     match current with
-    | Test_Failed _ -> fail_with msg
+    | Test_Failed f -> fail_with (msg^": "^(pp_failure f))
     | Test_Passed _ -> current
 
 let assert_exec_error (current:result) (predicate:test_exec_error -> bool) (msg:string) = 
