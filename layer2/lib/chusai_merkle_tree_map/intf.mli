@@ -13,43 +13,13 @@ module type SERIALIZER = sig
   val serialize : 'a -> bytes
 end
 
-(** Generic merkleized key-value storage type*)
-module type STORAGE = sig
-  (** The storage type *)
-  type ('k, 'v) t
-
-  (** the operations available on this storage*)
-  type ('k, 'v) op
-
-  (** the proof type *)
-  type 'k proof
-
-  (** Execute a storage operation and returns:
-     - maybe a value, depending on the operation:
-      Lookup -> return a value if the key was found or None 
-      Upsert -> return the original value if the key was found or None if it wasn't
-      Remove -> return the original value if the key was found or None if it wasn't
-     - the Merkle proof of the execution
-     - the new version of the storage
-     *)
-  val execute : ('k, 'v) op -> ('k, 'v) t -> 'v option * 'k proof * ('k, 'v) t
-end
-
 (** A STORAGE represented as a "merkle map"*)
 module type MERKLEMAP = sig
-  (** the operations available on this storage*)
-  type ('k, 'v) op =
-    | Lookup of { key : 'k }
-    | Upsert of
-        { key : 'k
-        ; value : 'v
-        }
-    | Remove of { key : 'k }
+  type ('k, 'v) t
+  type 'k proof
 
   (** the hash type that is used by this storage *)
   type hash
-
-  include STORAGE with type ('k, 'v) op := ('k, 'v) op
 
   (** Creates an empty map *)
   val empty : ('k, 'v) t
@@ -63,8 +33,12 @@ module type MERKLEMAP = sig
   (** Returns the root hash of the tree *)
   val root_hash : ('k, 'v) t -> hash
 
-  (** Verifies a proof for an operation given the hash before the execution and the hash after the execution *)
-  val verify_proof : ('k, 'v) op -> 'k proof -> hash -> hash -> bool
+  val upsert : 'k -> 'v -> ('k, 'v) t -> 'v option * ('k, 'v) t
+
+  val lookup : 'k -> ('k, 'v) t -> 'v option * 'k proof
+
+  (** Verifies an existence proof given the root hash and the proof *)
+  val verify_proof : 'k proof -> hash -> bool
 
   (** Pretty printer for the map *)
   val pp
@@ -74,12 +48,8 @@ module type MERKLEMAP = sig
     -> string
 
   (** Pretty printer for the proof type *)
-  val pp_proof : (Format.formatter -> 'k -> unit) -> 'k proof -> string
-
-  (** Pretty printer for the operation type *)
-  val pp_op
-    :  (Format.formatter -> 'k -> unit)
-    -> (Format.formatter -> 'v -> unit)
-    -> ('k, 'v) op
+  val pp_proof 
+    : (Format.formatter -> 'k -> unit) 
+    -> 'k proof 
     -> string
 end
