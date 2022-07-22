@@ -5,13 +5,6 @@
 
 (* TESTS *)
 
-let compare_proposal_and_block (proposal : block_proposal) (block_opt : block option) = 
-    match block_opt with 
-    | None -> false
-    | Some block -> 
-           proposal.parent = block.parent
-        && proposal.level = block.level
-        && proposal.hash = block.hash
 
 // test sending a block
 let _test_receive_first_block () = 
