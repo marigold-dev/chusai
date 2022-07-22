@@ -36,16 +36,22 @@ type chusai_contract_return = chusai_storage * chusai_op_emission
 type chusai_balance = nat
 
 
-(** Chusai states represent ledgers, which consist of
+(** Chusai state represent ledgers, which consist of
     balance, contract, return from contract.
 
     FIXME: replace with merkletree instead *)
-type chusai_states = (address, chusai_balance * (chusai_contract_return * chusai_contract) option) map
+type chusai_state = chusai_balance * (chusai_contract_return * chusai_contract) option
+
+(** [chusai_states] consists of the state of source and the state of destination *)
+type chusai_states = chusai_state * chusai_state
 
 (** [transaction] is an operation which means
     [source] transfers [quantity] amount to [destination],
     and applys a contract of [destination] with [arg]
     if the contract is existed.
+
+    A [transaction] can be treated as two parts:
+    [transaction_from] and [transaction_to]
 
     FIXME: needs signature
 *)
@@ -57,13 +63,18 @@ type transaction =
   ;
   }
 
-(** create a [transaction] operation *)
-let make (source : address) (destination : address)
-      (quantity : chusai_balance) (arg : bytes option) : transaction =
-  { source = source; destination = destination; quantity = quantity; arg = arg }
+(** [transaction_from] means [source] transfers [quantity] amount. *)
+type transaction_from =
+  { source      : address
+  ; quantity    : nat
+  ;
+  }
 
-(** create a [transaction] operation without [arg] for
-    transfering [quantity] only *)
-let make_only_quantity (source : address) (destination : address)
-      (quantity : chusai_balance) : transaction =
-  { source = source; destination = destination; quantity = quantity; arg = None }
+(** [transaction_src] means [destination] receives [quantity] amount
+    and applys a contract of [destination] with [arg] *)
+type transaction_to =
+  { destination : address
+  ; quantity    : nat
+  ; arg         : bytes option
+  ;
+  }
