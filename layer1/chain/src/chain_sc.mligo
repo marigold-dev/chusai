@@ -28,7 +28,7 @@ let apply_finalize (store : chain_storage) : operation list * chain_storage =
         failwith ("Error during finalization:" ^ (pp_chain_error e))
     | Ok candidate -> 
             if is_old_enough (candidate, store, Tezos.now) then
-                reward (candidate, store), finalize (candidate.index, store)
+                reward (candidate, store), finalize (candidate, store)
             else 
                 failwith "Error during finalization: finality period not finished"
 

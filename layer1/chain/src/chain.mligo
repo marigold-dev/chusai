@@ -140,5 +140,5 @@ let check_age (date_of_birth, interval, date : timestamp * int * timestamp) : bo
 let is_old_enough (block, chain, today : block * chain * timestamp) : bool =
    check_age (block.date_of_proposition, compute_finality_period chain, today)
 
-let finalize (index, chain : index * chain) : chain =
-    {chain with latest_finalized = index}
+let finalize (block, chain : block * chain) : chain =
+    {chain with latest_finalized = block.index}
