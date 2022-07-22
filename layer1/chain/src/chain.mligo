@@ -30,7 +30,7 @@ let is_block_valid (block, chain : block * chain) : bool =
     | None -> false
     | Some parent -> parent.level < block.level )
 
-(* [store_block (block,chain)] stores a block in the chain, checking validity, referencing it as a children. *)
+(* [store_block (block,chain)] stores a block in the chain, checks validity, references it as a child. *)
 let store_block (block, chain : block * chain) : (chain, chain_error) result =
     let add_to_children (newborn, parent, chain : index * index * chain) : (index, index list)  big_map  =
         let new_children = 
@@ -49,7 +49,7 @@ let store_block (block, chain : block * chain) : (chain, chain_error) result =
         })
     else Error Invalid_block
 
-(* [remove_block (index,chain)] remove block at rank [index] from [chain]. Removes the children also. *)
+(* [remove_block (index,chain)] removes block at rank [index] from [chain]. Removes the children also. *)
 let remove_block (index, chain: index * chain) : chain =
     let delete_block (chain, index: chain * index) : chain =
         {chain with blocks = Big_map.update index (None : block option) chain.blocks} 
