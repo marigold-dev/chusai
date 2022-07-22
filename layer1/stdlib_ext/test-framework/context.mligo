@@ -29,13 +29,12 @@ type actor = {
 ; address: address
 }
 
-(** Initialize a list of actors. *)
-let init_with (actors: (string * tez) list) : actor list =
+let init_with_aux (reset : nat -> tez list -> unit) (actors: (string * tez) list) : actor list =
   let account_number = List.size actors in
   let default_amounts =
     List.map (fun (_name, value: string * tez) -> value) actors
   in
-  let () = Test.reset_state account_number default_amounts in
+  let () = reset account_number default_amounts in
   let init : nat * (actor list) = (0n, []) in
   let _, x =
     List.fold_left (
@@ -49,20 +48,40 @@ let init_with (actors: (string * tez) list) : actor list =
         in ((i + 1n), actor :: xs)
   ) init actors in x
 
-(** Create a pair :
-    - first member is an operator. Usually the account that initiates the rollup.
-    - second member, a triplet with 3 accounts: alice, bob and carol. *)
-let init_default () : actor * (actor * actor * actor) =
+(** Initialize a list of actors, starting the chain at a particular [timestamp]. *)
+let init_at_with (timestamp : timestamp) (actors: (string * tez) list) : actor list =
+  let reset = Test.reset_state_at timestamp in
+  init_with_aux reset actors
+
+(** Initialize a list of actors. *)
+let init_with (actors: (string * tez) list) : actor list =
+  init_with_aux Test.reset_state actors
+
+let init_default_aux (init_function: ((string * tez) list) -> actor list) : actor * (actor * actor * actor) =
   let alice = "Alice", 4000000tez in
   let bob = "Bob", 2000000tez in
   let carol = "Carol", 8000000tez in
   let operator = "Operator", 10000000000tez in
-  let actors = init_with [alice; bob; carol; operator] in
+  let actors = init_function [alice; bob; carol; operator] in
   match actors with
   | [operator; carol; bob; alice] ->
     let () = Test.set_baker operator.address in
     operator, (alice, bob, carol)
   | _ -> failwith "An error occured."
+
+(** Create a pair :
+    - first member is an operator. Usually the account that initiates the rollup.
+    - second member, a triplet with 3 accounts: alice, bob and carol. *)
+let init_default () : actor * (actor * actor * actor) =
+  init_default_aux init_with
+
+(** Create a pair :
+    - first member is an operator. Usually the account that initiates the rollup.
+    - second member, a triplet with 3 accounts: alice, bob and carol. 
+    - state is initialised at [timestamp]*)
+let init_default_at (timestamp : timestamp) : actor * (actor * actor * actor) =
+  let init_function = init_at_with timestamp in
+  init_default_aux init_function
 
 (** Execute an operation as a specific actor 
     ! BEWARE ! changes the source for subsequent actions too *)

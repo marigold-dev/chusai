@@ -39,6 +39,8 @@ let digit_to_str (x: int) : string =
     (* Should never happen ! *)
     failwith "digit_to_str, unknown digit"
 
+let tez_to_str (t: tez) : string = digit_to_str  (int (t / 1mutez))
+
 (** Convert an int to a string. *)
 let int_to_string (x: int) : string =
   let prefix = if x < 0 then "-" else "" in
