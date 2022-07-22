@@ -2,7 +2,7 @@
 
 type chusai_ticket_storage = Ticket.t option
 
-type wallet_storage = {
+type wallet_storage = [@layout:comb] {
   owner_address : address;
   mint_address : address;
   bridge_address : address;

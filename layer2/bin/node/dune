@@ -1,0 +1,24 @@
+(executable
+ (name main)
+ (public_name chusai-node)
+ (libraries
+  lwt
+  lwt.unix
+  cmdliner
+  tezos-stdlib
+  tezos-error-monad
+  tezos-lwt-result-stdlib
+  tezos-shell-services
+  tezos-client-base
+  tezos-client-base-unix
+  tezos-rpc-http-client
+  tezos-rpc-http-client-unix
+  tezos-rpc-http
+  tezos-rpc-http-server
+  tezos-event-logging
+  tezos-micheline
+  chusai_tezos
+  chusai_common
+  chusai_rpc
+  chusai_bridge
+  chusai_cli))

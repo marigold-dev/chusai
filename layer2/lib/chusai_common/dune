@@ -1,0 +1,17 @@
+(library
+ (name chusai_common)
+ (libraries
+  preface
+  lwt
+  lwt.unix
+  tezos-stdlib
+  tezos-error-monad
+  tezos-lwt-result-stdlib
+  tezos-shell-services
+  tezos-client-base
+  tezos-client-base-unix
+  tezos-rpc-http-client
+  tezos-rpc-http-client-unix
+  tezos-event-logging
+  tezos-micheline
+  chusai_tezos))

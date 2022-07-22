@@ -1,0 +1,4 @@
+(library
+ (name chusai_tezos)
+ (modules_without_implementation chusai_tezos)
+ (libraries tezos-protocol-013-PtJakart tezos-client-013-PtJakart))

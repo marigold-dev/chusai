@@ -14,7 +14,7 @@ type ticket_key = {
 ; payload: Ticket.payload
 }
 
-type state = {
+type state = [@layout:comb] {
   rollup_level: nat
 ; ticket: Ticket.t option
 ; fixed_ticket_key: ticket_key

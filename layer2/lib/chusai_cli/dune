@@ -1,0 +1,3 @@
+(library
+ (name chusai_cli)
+ (libraries cmdliner lwt lwt.unix tezos-crypto chusai_tezos chusai_common))

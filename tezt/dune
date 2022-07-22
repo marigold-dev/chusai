@@ -1,0 +1,12 @@
+(executable
+ (name tezt_chusai)
+ (libraries
+  tezt
+  data-encoding
+  tezos-base
+  tezos-base.unix
+  tezos-stdlib-unix
+  chusai_tezos
+  chusai_cli
+  chusai_common
+  tezt_chusai_lib))

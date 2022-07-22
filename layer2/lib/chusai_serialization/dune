@@ -1,0 +1,5 @@
+(library 
+  (name chusai_serialization)
+  (public_name chusai.serialization)
+  (libraries
+    data-encoding))
