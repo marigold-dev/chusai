@@ -49,9 +49,12 @@ let originate_chain_with (chain : chain) (bonds : tez) () : originated_chain =
     
 
 let compare_proposal_and_block (proposal : block_proposal) (block_opt : block option) = 
+    let _ = Test.log ("proposal:",proposal) in
+    let _ = Test.log ("block_opt:",block_opt) in
+    let _ = Test.log  ("block",block) in
     match block_opt with 
     | None -> false
-    | Some block -> 
+    | Some block -> let _ = Test.log ("block:",block) in
            proposal.parent = block.parent
         && proposal.level = block.level
         && proposal.hash = block.hash

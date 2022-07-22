@@ -23,7 +23,9 @@ let _test_receive_first_block () =
     Unit.and_list 
     [  result 
     ;  Unit.assert_equals 1n (storage.max_index) "max_index should be 1"
-    ;  Unit.assert_ (compare_proposal_and_block my_block (get_block (1n, storage))) "the block should have been stored"
+    ;  let b = (compare_proposal_and_block my_block (get_block (1n, storage))) in
+        let _ = Test.log ("bool:",b) in
+        Unit.assert_ b "the block should have been stored"
     ]
 
 
@@ -216,12 +218,13 @@ let _test_remove_parent_of_two () =
 
 (* Creation of test suite *)
 let suite = Unit.make_suite
-    "Chain_sc"
+    "Chain_sc: receive and remove"
     "Test suite of bridge storage of blocks"
-    [  Unit.make_test "First block: success" "test sending first block"  _test_receive_first_block           
-    ;  Unit.make_test "Second block: success" "sending a son" _test_receive_son            
-    ;  Unit.make_test "Third block: success" "sending two children for first block" _test_receive_siblings                   
-    ;  Unit.make_test "Second block: failure" "sending an orphan" _test_receive_orphan                             
-    ;  Unit.make_test "Remove: success" "removing a block" _test_remove_block
-    ;  Unit.make_test "Remove: success" "removing a parent block" _test_remove_parent_of_two
-    ]
+    [  Unit.make_test "" "" (fun () -> Unit.succeed ())
+     ;   Unit.make_test "First block: success" "test sending first block"  _test_receive_first_block            
+    // ;  Unit.make_test "Second block: success" "sending a son" _test_receive_son            
+    // ;  Unit.make_test "Third block: success" "sending two children for first block" _test_receive_siblings                   
+    // ;  Unit.make_test "Second block: failure" "sending an orphan" _test_receive_orphan                             
+    // ;  Unit.make_test "Remove: success" "removing a block" _test_remove_block
+    // ;  Unit.make_test "Remove: success" "removing a parent block" _test_remove_parent_of_two
+    ] 
