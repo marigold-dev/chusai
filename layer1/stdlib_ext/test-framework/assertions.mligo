@@ -25,6 +25,11 @@
 let assert_  (b:bool) (msg:string)  : result = 
     if b then succeed () else fail_with msg
 
+let assert_not_none (type a)  (val: a option) (msg: string) : result = 
+  match val with
+  | Some _ -> succeed ()
+  | None -> fail_with msg
+
 let assert_is_ok (current:result) (msg:string) : result = 
     match current with
     | Test_Failed _ -> fail_with msg
