@@ -51,7 +51,7 @@ let originate_chain_with (chain : chain) (bonds : tez) () : originated_chain =
 let compare_proposal_and_block (proposal : block_proposal) (block_opt : block option) = 
     match block_opt with 
     | None -> false
-    | Some block -> 
-           proposal.parent = block.parent
-        && proposal.level = block.level
-        && proposal.hash = block.hash
+    | Some my_block -> 
+           proposal.parent = my_block.parent
+        && proposal.level = my_block.level
+        && proposal.hash = my_block.hash

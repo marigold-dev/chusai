@@ -1,4 +1,4 @@
-COMPILER_ARGS=--protocol jakarta
+COMPILER_ARGS=--protocol jakarta --no-warn
 LIGO_VERSION=0.45.0
 
 LIGO=docker run --rm -v $(PWD)/layer1:$(PWD)/layer1 -w $(PWD)/layer1 ligolang/ligo:$(LIGO_VERSION)

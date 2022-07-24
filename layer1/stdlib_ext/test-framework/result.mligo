@@ -34,6 +34,8 @@ let pp_exec_error (e : test_exec_error) : string =
   | Rejected (_pgm,_address) -> "Rejected"
   | Other s -> s
 
+(** Returns a string with informations on the error. *)
+// FIXME : use Test.to_string once using LIGO >= 0.46.1
 let pp_failure (f : failure_reason) : string =
   match f with
   | Message s -> s
