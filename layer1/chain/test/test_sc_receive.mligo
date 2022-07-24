@@ -23,7 +23,9 @@ let _test_receive_first_block () =
     Unit.and_list 
     [  result 
     ;  Unit.assert_equals 1n (storage.max_index) "max_index should be 1"
-    ;  Unit.assert_ (compare_proposal_and_block my_block (get_block (1n, storage))) "the block should have been stored"
+    ;  let b = (compare_proposal_and_block my_block (get_block (1n, storage))) in
+        let _ = Test.log ("bool:",b) in
+        Unit.assert_ b "the block should have been stored"
     ]
 
 
@@ -135,6 +137,7 @@ let _test_remove_block () =
     let operator, actors = Unit.init_default () in 
     let alice, _bob, _carol = actors in 
     let chain : originated_chain = Unit.act_as operator originate_chain  in
+    let alice_balance_at_origination = Test.get_balance alice.address in
     let my_block  = 
         {  prototype_block_proposal with
            parent = 0n
@@ -144,17 +147,21 @@ let _test_remove_block () =
     let send_block () = Unit.transfer_to_contract_ chain.originated_contract (Receive my_block) bond in
     let result = Unit.act_as alice send_block in
     let storage = Test.get_storage chain.originated_typed_address in
+    let alice_balance_after_proposal = Test.get_balance alice.address in
     let sanity_check = Unit.and_list 
     [  result 
+    ;  Unit.assert_ (alice_balance_after_proposal + bond < alice_balance_at_origination) "Alice should have send bond"
     ;  Unit.assert_equals 1n (storage.max_index) "max_index should be 1"
     ;  Unit.assert_ (compare_proposal_and_block  my_block (get_block (1n, storage))) "the block should have been stored"
     ] in
     let remove_block () = Unit.transfer_to_contract_ chain.originated_contract (Remove 1n) bond in
     let result_remove = Unit.act_as operator remove_block in
     let storage = Test.get_storage chain.originated_typed_address in
+    let alice_balance_after_remove = Test.get_balance alice.address in
     Unit.and_list 
     [  sanity_check
     ;  result_remove
+    ;  Unit.assert_equals (alice_balance_after_proposal + bond) alice_balance_after_remove "Alice should have been reimbursed"
     ;  Unit.assert_equals 1n (storage.max_index) "max_index should still be 1"
     ;  Unit.assert_equals (None : block option) (get_block (1n, storage)) "the block should have been deleted"
     ]
@@ -165,6 +172,8 @@ let _test_remove_parent_of_two () =
     let operator, actors = Unit.init_default () in 
     let alice, bob, _carol = actors in 
     let chain : originated_chain = Unit.act_as operator originate_chain  in
+    let bob_balance_at_origination = Test.get_balance bob.address in
+    let alice_balance_at_origination = Test.get_balance alice.address in
 
     let first_block  = 
         {  prototype_block_proposal with
@@ -191,12 +200,16 @@ let _test_remove_parent_of_two () =
 
     // sanity_check
     let storage = Test.get_storage chain.originated_typed_address in
+    let bob_balance_after_proposal = Test.get_balance bob.address in
+    let alice_balance_after_proposal = Test.get_balance alice.address in
     let sanity_check = Unit.and_list 
     [  Unit.assert_is_ok result_first "first block should have succeeded"
     ;  Unit.assert_is_ok result_second  "second block should have succeeded"
     ;  Unit.assert_is_ok result_third  "third block should have succeeded"
     ;  Unit.assert_equals 3n (storage.max_index) "max_index should be 3"
     ;  Unit.assert_equals (Some [3n ; 2n]) (get_children (1n, storage)) "second block is a child of first"
+    ;  Unit.assert_ (alice_balance_after_proposal + bond < alice_balance_at_origination) "Alice should have place bonds"
+    ;  Unit.assert_ (bob_balance_after_proposal + bond + bond < bob_balance_at_origination) "Bob should have place 2 bonds"
     ] in
 
     // act
@@ -205,6 +218,8 @@ let _test_remove_parent_of_two () =
 
     //assert
     let storage = Test.get_storage chain.originated_typed_address in
+    let bob_balance_after_remove = Test.get_balance bob.address in
+    let alice_balance_after_remove = Test.get_balance alice.address in
     Unit.and_list 
     [  sanity_check
     ;  result_remove
@@ -212,16 +227,18 @@ let _test_remove_parent_of_two () =
     ;  Unit.assert_equals (None : block option) (get_block (1n, storage)) "the block 1 should have been deleted"
     ;  Unit.assert_equals (None : block option) (get_block (2n, storage)) "the block 2 should have been deleted"
     ;  Unit.assert_equals (None : block option) (get_block (3n, storage)) "the block 3 should have been deleted"
+    ;  Unit.assert_equals alice_balance_after_remove (alice_balance_after_proposal + bond) "Alice should have been reimbursed"
+    ;  Unit.assert_equals bob_balance_after_remove (bob_balance_after_proposal + bond + bond) "Bob should have been reimbursed"
     ]
 
 (* Creation of test suite *)
 let suite = Unit.make_suite
-    "Chain_sc"
+    "Chain_sc: receive and remove"
     "Test suite of bridge storage of blocks"
-    [  Unit.make_test "First block: success" "test sending first block"  _test_receive_first_block           
+    [  Unit.make_test "First block: success" "test sending first block"  _test_receive_first_block            
     ;  Unit.make_test "Second block: success" "sending a son" _test_receive_son            
     ;  Unit.make_test "Third block: success" "sending two children for first block" _test_receive_siblings                   
     ;  Unit.make_test "Second block: failure" "sending an orphan" _test_receive_orphan                             
     ;  Unit.make_test "Remove: success" "removing a block" _test_remove_block
     ;  Unit.make_test "Remove: success" "removing a parent block" _test_remove_parent_of_two
-    ]
+    ] 

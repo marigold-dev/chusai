@@ -4,6 +4,7 @@
 
 #include "chain.mligo"
 #import "../../stdlib_ext/src/result.mligo" "Result"
+#import "../../stdlib_ext/src/stdlibext.mligo" "Stdlib_ext"
 
 type chain_storage = chain
 type chain_parameter = 
@@ -48,12 +49,28 @@ let apply_receive (proposal, store : block_proposal * chain_storage) : operation
                  ([] : operation list) , c 
         end
 
+(* removes a block, making sure to compensate every body who proposed a block based on the removed on (recursively) 
+   /!\ this is for test. Depending on the situation, a proper removal (after refutation) might use a more complexe reimbursement strategy
+*)
+let apply_remove (i, store : index * chain_storage) =
+    let rec reward_deleted (ops, blocks, store : operation list * block list * chain_storage) : operation list = 
+        match blocks with
+        | [] -> ops
+        | b :: q -> 
+            let reward_ops = reward (b, store) in
+            let new_ops = Stdlib_ext.ListExt.concat reward_ops ops in
+            reward_deleted (new_ops, q, store)
+    in
+    let blocks, chain = remove_block (i, store) in
+    let ops = reward_deleted (([] : operation list) , blocks, chain) in
+    ops, chain
+
 (* ENDPOINTS *)
 let main (action, store : chain_parameter * chain_storage) : operation list * chain_storage = 
     match action with
     | Receive b -> apply_receive (b, store)
     | Finalize -> apply_finalize store
-    | Remove i -> [] , remove_block (i, store)
+    | Remove i -> apply_remove (i, store)
 
 (* VIEWS *) 
 

@@ -7,9 +7,10 @@
 
         
 let _test_remove_none () =
-    let new_chain = remove_block (1n, empty_chain) in
+    let blocks, new_chain = remove_block (1n, empty_chain) in
     Unit.and_list 
     [  Unit.assert_equals (None : block option) (Big_map.find_opt 1n new_chain.blocks) "block should not be stored anymore"
+    // ;  Unit.assert_equals ([] : block list) blocks "no block should have been deleted"
     ;  Unit.assert_equals 0n new_chain.max_index "max_index did not change"
     ] 
 
@@ -21,7 +22,7 @@ let _test_remove_one () =
     ; blocks = Big_map.literal [(1n, first)]
     ; children = (Big_map.empty : (index, index list) big_map)
     } in
-    let new_chain = remove_block (1n, chain) in
+    let blocks, new_chain = remove_block (1n, chain) in
     Unit.and_list 
     [  Unit.assert_equals (None : block option) (Big_map.find_opt 1n new_chain.blocks) "block should not be stored anymore"
     ;  Unit.assert_equals 1n new_chain.max_index "max_index did not change"
@@ -36,7 +37,7 @@ let _test_remove_father () =
     ; blocks = Big_map.literal [(1n, first) ; (2n, second)]
     ; children = Big_map.literal [(1n, [2n])]
     } in
-    let new_chain = remove_block (1n, chain) in
+    let blocks, new_chain = remove_block (1n, chain) in
     Unit.and_list 
     [  Unit.assert_equals (None : block option) (Big_map.find_opt 1n new_chain.blocks) "block 1 should not be stored anymore"
     ;  Unit.assert_equals (None : block option) (Big_map.find_opt 2n new_chain.blocks) "block 2 should not be stored anymore"
@@ -52,7 +53,7 @@ let _test_remove_child () =
     ; blocks = Big_map.literal [(1n, first) ; (2n, second)]
     ; children = Big_map.literal [(1n, [2n])]
     } in
-    let new_chain = remove_block (2n, chain) in
+    let blocks,  new_chain = remove_block (2n, chain) in
     Unit.and_list 
     [  Unit.assert_equals (None : block option) (Big_map.find_opt 2n new_chain.blocks) "block 2 should not be stored anymore"
     ;  Unit.assert_equals (Some first) (Big_map.find_opt 1n new_chain.blocks) "the block should have been stored"
@@ -69,7 +70,7 @@ let _test_twins_are_correctly_removed () =
     ; blocks = Big_map.literal [(1n, first) ; (2n, second) ; (3n, third)]
     ; children = Big_map.literal [(1n, [3n;2n])]
     } in
-    let new_chain = remove_block (1n, chain) in
+    let blocks,  new_chain = remove_block (1n, chain) in
     Unit.and_list 
     [  Unit.assert_equals (None : block option) (Big_map.find_opt 1n new_chain.blocks) "block 1 should not be stored anymore"
     ;  Unit.assert_equals (None : block option) (Big_map.find_opt 2n new_chain.blocks) "block 2 should not be stored anymore"
@@ -87,7 +88,7 @@ let _test_grand_child_is_correcty_removed () =
     ; blocks = Big_map.literal [(1n, first) ; (2n, second) ; (3n, third)]
     ; children = Big_map.literal [(1n, [2n]) ; (2n, [3n])]
     } in
-    let new_chain = remove_block (1n, chain) in
+    let blocks,  new_chain = remove_block (1n, chain) in
     Unit.and_list 
     [  Unit.assert_equals (None : block option) (Big_map.find_opt 1n new_chain.blocks) "block 1 should not be stored anymore"
     ;  Unit.assert_equals (None : block option) (Big_map.find_opt 2n new_chain.blocks) "block 2 should not be stored anymore"
