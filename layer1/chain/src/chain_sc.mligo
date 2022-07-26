@@ -22,5 +22,4 @@ let main (action, store : chain_parameter * chain_storage) : operation list * ch
 
 (* VIEWS *)
 
-[@view] let get_chain ((),s: unit * chain_storage) : chain_storage = s
 [@view] let get_latest ((),s: unit * chain_storage) : block option = find_latest_existing s
