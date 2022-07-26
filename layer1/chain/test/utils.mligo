@@ -10,6 +10,7 @@ let empty_chain : chain =
     ; latest_finalized = 0n
     ; finality_period_in_days = 1n
     ; bond_amount = bond
+    ; freezer = (Big_map.empty : fridge)
     }
 type originated = Unit.originated // FIXME LIGO
 type originated_chain = (chain_parameter, chain_storage) originated
@@ -21,6 +22,7 @@ let prototype_block : block =
     ;  hash = 0x0101
     ;  proposer = ("tz1KqTpEZ7Yob7QbPE4Hy4Wo8fHG8LhKxZSx" : address)
     ;  date_of_proposition = ("2000-01-01t10:10:10Z" : timestamp)
+    ;  cooler = (Map.empty : cooler)
     }
 
 let block (index : index) (parent:index) (inbox_level:nat) : block = 
@@ -34,6 +36,7 @@ let prototype_block_proposal =
     {  parent = 0n
     ;  inbox_level = 0n
     ;  hash = 0x0101
+    ;  cooler = (Map.empty : cooler)
     }
 
 let originate_chain () : originated_chain = 
