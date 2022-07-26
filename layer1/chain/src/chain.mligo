@@ -2,11 +2,16 @@
 #import "../../stdlib_ext/src/result.mligo" "Stdlib_Result"
 type hash = bytes
 type index = nat
+type user = address   
+type frozen_amount = nat
+type cooler = (user, frozen_amount) map    
+type fridge = (user, frozen_amount) big_map    
 (** The information sent by a user proposing a block *)
 type block_proposal = 
     {  parent : index
     ;  inbox_level : nat
     ;  hash : hash
+    ;  cooler : cooler
     }
 (** A complete block: proposal + metadata *)
 type block = 
@@ -16,6 +21,7 @@ type block =
     ;  hash : hash
     ;  proposer : address
     ;  date_of_proposition : timestamp
+    ;  cooler : cooler
     }
 (** Storage of blocks, informations on finalized blocks, metadata of a chain (bond, finality period) *)
 type chain = 
@@ -25,6 +31,7 @@ type chain =
     ;   latest_finalized : index                  // index of latest finalized block
     ;   finality_period_in_days : nat             // finality period, in days
     ;   bond_amount : tez                         // amount asked for bond, to be placed when proposing a block
+    ;   freezer : fridge                          // assets that can be withdrawn by users
     }
 
 (* error type *)
@@ -56,6 +63,7 @@ let make_block (proposal, index, proposer, now : block_proposal * index * addres
     ;  hash = proposal.hash
     ;  proposer = proposer
     ;  date_of_proposition = now
+    ;  cooler = proposal.cooler
     }
 
 (** [increase_index (chain)] returns a new chain with the max_index increased *)
@@ -153,6 +161,22 @@ let get_finalization_candidate (chain : chain) : (block, chain_error) result =
         | Some b -> Ok b
         end
 
+(* WITHDRAWAL *)
+
+let set_aside_frozen_assets (block, chain : block * chain) : chain = 
+    let put_in_frige (freezer, (user, assets): fridge * (user * frozen_amount)) : fridge =
+        match Big_map.find_opt user freezer with
+        | None -> Big_map.update user (Some assets) freezer
+        | Some previous_assets -> Big_map.update user (Some (assets + previous_assets)) freezer
+    in
+    let new_freezer = Map.fold put_in_frige block.cooler chain.freezer in
+    {chain with freezer = new_freezer}
+
+let withdraw (user, chain : user * chain) : frozen_amount option * chain =
+    let assets_opt = Big_map.find_opt user chain.freezer in
+    let new_freezer = Big_map.update user (None : frozen_amount option) chain.freezer in
+    let new_chain = {chain with freezer = new_freezer} in
+    assets_opt , new_chain
 
 (* FINALITY PERIOD CALCULATION *)
 let compute_finality_period_seconds (chain : chain) : int = 
@@ -168,4 +192,6 @@ let is_old_enough (block, chain, today : block * chain * timestamp) : bool =
 
 (** [finalize (block, chain)] registers in [chain] that [block] is finalized *)
 let finalize (block, chain : block * chain) : chain =
-    {chain with latest_finalized = block.index}
+    let new_chain = set_aside_frozen_assets (block, chain) in
+    {new_chain with latest_finalized = block.index }
+
