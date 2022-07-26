@@ -23,9 +23,34 @@
 #import "transaction.mligo" "Tx"
 #include "../../commons/transaction.mligo"
 
+(** This contract provides three entries: [Transaction],
+    [Transaction_from], and [Transaction_to].
+
+    When either entries is called, the transaction operation,
+    [init_state(s)] and [expected_state(s)] are needed to provide.
+    This contract will base on transaction operation and
+    [init_state(s)] to evaluate new state, compare the new state
+    with [expected_state(s)] and set compared result in storage.
+
+    [Transaction] is equal to [Transaction_from] and
+    [Transaction_to]. [Transaction_from] and [Transaction_to]
+    are for performing small steps.
+
+    Note that
+      - currently, transaction operation is only support
+        transfer tokens.
+      - this version doesn't support merkle proof.
+      - transaction operaion doesn't require to sign.
+*)
+
+
 module Result = Tx.Result
 
-(* [is_expected_state] is for storage type *)
+(* [is_expected_state] is for storage type.
+   [Nothing] should be the default value of this contract.
+   When we perform either entres of this contract, if the
+   evaluated result is the same as [expected_state(s)], [Yes]
+   will be set. Otherwise, [No] will be set. See [storage] type*)
 type is_expected_state
   = Yes
   | No of { error : string; }
