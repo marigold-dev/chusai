@@ -5,14 +5,14 @@ type index = nat
 (** The information sent by a user proposing a block *)
 type block_proposal = 
     {  parent : index
-    ;  level : nat
+    ;  inbox_level : nat
     ;  hash : hash
     }
 (** A complete block: proposal + metadata *)
 type block = 
     {  index : index
     ;  parent : index
-    ;  level : nat
+    ;  inbox_level : nat
     ;  hash : hash
     ;  proposer : address
     ;  date_of_proposition : timestamp
@@ -52,7 +52,7 @@ let get_children (index, chain : index * chain) : index list option = Big_map.fi
 let make_block (proposal, index, proposer, now : block_proposal * index * address * timestamp) : block =
     {  index = index
     ;  parent = proposal.parent
-    ;  level = proposal.level
+    ;  inbox_level = proposal.inbox_level
     ;  hash = proposal.hash
     ;  proposer = proposer
     ;  date_of_proposition = now
@@ -70,7 +70,7 @@ let is_block_valid (block, chain : block * chain) : bool =
     ( let parent_opt = get_block (block.parent, chain) in
     match parent_opt with
     | None -> false
-    | Some parent -> parent.level < block.level )
+    | Some parent -> parent.inbox_level < block.inbox_level )
 
 (* [store_block (block,chain)] stores a block in the chain, checks validity, references it as a child. *)
 let store_block (block, chain : block * chain) : (chain, chain_error) result =

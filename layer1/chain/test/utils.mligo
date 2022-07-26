@@ -16,22 +16,22 @@ type originated_chain = (chain_parameter, chain_storage) originated
 let prototype_block : block = 
     {  index = 1n
     ;  parent = 0n
-    ;  level = 0n
+    ;  inbox_level = 0n
     ;  hash = 0x0101
     ;  proposer = ("tz1KqTpEZ7Yob7QbPE4Hy4Wo8fHG8LhKxZSx" : address)
     ;  date_of_proposition = ("2000-01-01t10:10:10Z" : timestamp)
     }
 
-let block (index : index) (parent:index) (level:nat) : block = 
+let block (index : index) (parent:index) (inbox_level:nat) : block = 
     {  prototype_block with
        index = index
     ;  parent = parent
-    ;  level = level
+    ;  inbox_level = inbox_level
     }
         
 let prototype_block_proposal = 
     {  parent = 0n
-    ;  level = 0n
+    ;  inbox_level = 0n
     ;  hash = 0x0101
     }
 
@@ -53,5 +53,5 @@ let compare_proposal_and_block (proposal : block_proposal) (block_opt : block op
     | None -> false
     | Some my_block -> 
            proposal.parent = my_block.parent
-        && proposal.level = my_block.level
+        && proposal.inbox_level = my_block.inbox_level
         && proposal.hash = my_block.hash

@@ -14,7 +14,7 @@ let _test_receive_first_block () =
     let my_block  = 
         {  prototype_block_proposal with
            parent = 0n
-        ;  level = 0n
+        ;  inbox_level = 0n
         } in 
     let _ = Test.compile_value (Receive my_block) in 
     let send_block () = Unit.transfer_to_contract_ chain.originated_contract (Receive my_block) bond in
@@ -40,12 +40,12 @@ let _test_receive_son () =
     let first_block  = 
         {  prototype_block_proposal with
            parent = 0n
-        ;  level = 0n
+        ;  inbox_level = 0n
         } in 
     let second_block = 
         {  prototype_block_proposal with
            parent = 1n
-        ;  level = 10n
+        ;  inbox_level = 10n
         } in 
     let send_block (block : block_proposal) () = Unit.transfer_to_contract_ chain.originated_contract (Receive block) bond in
     let result_alice = Unit.act_as alice (send_block first_block) in
@@ -73,12 +73,12 @@ let _test_receive_orphan () =
     let first_block  = 
         {  prototype_block_proposal with
            parent = 0n
-        ;  level = 0n
+        ;  inbox_level = 0n
         } in 
     let second_block = 
         {  prototype_block_proposal with
            parent = 3n
-        ;  level = 10n
+        ;  inbox_level = 10n
         } in 
     let send_block (block : block_proposal) () = Unit.transfer_to_contract_ chain.originated_contract (Receive block) bond in
     let result_alice = Unit.act_as alice (send_block first_block) in
@@ -106,17 +106,17 @@ let _test_receive_siblings () =
     let first_block  = 
         {  prototype_block_proposal with
            parent = 0n
-        ;  level = 0n
+        ;  inbox_level = 0n
         } in 
     let second_block = 
         {  prototype_block_proposal with
            parent = 1n
-        ;  level = 10n
+        ;  inbox_level = 10n
         } in 
     let third_block = 
         {  prototype_block_proposal with
            parent = 1n
-        ;  level = 20n
+        ;  inbox_level = 20n
         } in 
     let send_block (block : block_proposal) () = Unit.transfer_to_contract_ chain.originated_contract (Receive block) bond in
     let result_first = Unit.act_as alice (send_block first_block) in
@@ -141,7 +141,7 @@ let _test_remove_block () =
     let my_block  = 
         {  prototype_block_proposal with
            parent = 0n
-        ;  level = 0n
+        ;  inbox_level = 0n
         ;  hash = 0x0101
         } in 
     let send_block () = Unit.transfer_to_contract_ chain.originated_contract (Receive my_block) bond in
@@ -178,19 +178,19 @@ let _test_remove_parent_of_two () =
     let first_block  = 
         {  prototype_block_proposal with
            parent = 0n
-        ;  level = 0n
+        ;  inbox_level = 0n
         ;  hash = 0x0101
         } in 
     let second_block =
         {  prototype_block_proposal with
            parent = 1n
-        ;  level = 10n
+        ;  inbox_level = 10n
         ;  hash = 0x0101
         } in 
     let third_block = 
         {  prototype_block_proposal with
            parent = 1n
-        ;  level = 20n
+        ;  inbox_level = 20n
         ;  hash = 0x0202
         } in 
     let send_block (block : block_proposal) () = Unit.transfer_to_contract_ chain.originated_contract (Receive block) bond in
