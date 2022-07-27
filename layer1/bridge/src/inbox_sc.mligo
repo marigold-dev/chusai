@@ -91,6 +91,11 @@ let finalize_block ({max_inbox_level;ticket;fixed_ticket_key;inboxes;chain} : st
   let new_state = {  max_inbox_level = max_inbox_level; ticket = ticket ; fixed_ticket_key = fixed_ticket_key ; inboxes = inboxes ; chain = new_chain} in
   ops, new_state
 
+let withdraw ({max_inbox_level;ticket;fixed_ticket_key;inboxes;chain} : state) =
+  let ops, new_chain =  Chain.Endpoints.apply_withdraw chain  in
+  let new_state = {  max_inbox_level = max_inbox_level; ticket = ticket ; fixed_ticket_key = fixed_ticket_key ; inboxes = inboxes ; chain = new_chain} in
+  ops, new_state
+
 let main (action, state : entrypoint * state) : operation list * state =
   match action with
   | Inbox_deposit ticketSent ->
@@ -105,6 +110,9 @@ let main (action, state : entrypoint * state) : operation list * state =
     remove_block state index
   | Inbox_finalize_block -> 
     finalize_block state
+  | Inbox_freeze _ -> [], state
+  | Inbox_withdraw ->
+    withdraw state
 
 [@view] let get_latest ((),state: unit * state) : Chain.block option = Chain.Views.get_latest ((), state.chain)
 [@view] let get_next_finalization_candidate ((), state : unit * state) : Chain.block option = Chain.Views.get_next_finalization_candidate ((), state.chain)
