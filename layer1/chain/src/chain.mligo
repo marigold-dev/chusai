@@ -137,6 +137,7 @@ let rec get_last_elt (type a) (l : a list) : a option =
     | t::q -> get_last_elt q 
 
 (** [get_finalization_candidate_index (chain)] returns the index of a block, which is the first registered child of last finalized block *)
+// FIXME: review candidate selection strategy: one of assumptions for optimistic rollup is that the head of children is last added and it should be first finalization candidate
 let get_finalization_candidate_index (chain : chain) : index option =
     match get_children (chain.latest_finalized, chain) with
         | Some children -> get_last_elt children

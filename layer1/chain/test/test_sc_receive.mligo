@@ -24,7 +24,6 @@ let _test_receive_first_block () =
     [  result 
     ;  Unit.assert_equals 1n (storage.max_index) "max_index should be 1"
     ;  let b = (compare_proposal_and_block my_block (get_block (1n, storage))) in
-        let _ = Test.log ("bool:",b) in
         Unit.assert_ b "the block should have been stored"
     ]
 

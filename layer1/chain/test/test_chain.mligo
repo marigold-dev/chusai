@@ -10,7 +10,7 @@ let _test_remove_none () =
     let blocks, new_chain = remove_block (1n, empty_chain) in
     Unit.and_list 
     [  Unit.assert_equals (None : block option) (Big_map.find_opt 1n new_chain.blocks) "block should not be stored anymore"
-    // ;  Unit.assert_equals ([] : block list) blocks "no block should have been deleted"
+    ;  Unit.assert_equals ([] : block list) blocks "no block should have been deleted"
     ;  Unit.assert_equals 0n new_chain.max_index "max_index did not change"
     ] 
 
