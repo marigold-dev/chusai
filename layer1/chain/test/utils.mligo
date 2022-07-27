@@ -1,5 +1,6 @@
 #include "../src/chain.mligo"
 #include "../src/chain_sc.mligo"
+#import "../../stdlib_ext/src/unit_test.mligo" "Unit"
 
 let bond : tez = 1000tez
 let empty_chain : chain = 
