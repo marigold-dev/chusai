@@ -15,6 +15,7 @@ build:
 	make -C refutation build
 	make -C chain build
 	make -C bridge build
+	make -C transaction build
 
 test:
 	$(LIGO_TEST) test/test.mligo
