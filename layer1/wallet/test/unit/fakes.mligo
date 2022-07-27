@@ -24,3 +24,9 @@ let fake_bridge_main (parameter, storage: bridge_parameter * bridge_storage) : b
       ([], new_storage)
     | Transaction _ ->
       ([], storage)
+    | Receive_block _ ->
+      ([], storage)
+    | Remove_block  _ ->
+      ([], storage)
+    | Finalize_block ->
+      ([], storage)
