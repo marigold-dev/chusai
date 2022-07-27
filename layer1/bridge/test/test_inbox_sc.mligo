@@ -91,6 +91,7 @@ let compute_total_balance (inbox: (inbox_entrypoint,inbox_state) originated) : n
       List.fold_left (fun (acc, message: nat * message) ->
         match message with
         | Deposit {owner; quantity} -> acc + quantity
+        | _ -> acc
       ) 0n messages
 
 let empty_ticket () : Ticket.t option = None
@@ -214,6 +215,35 @@ let _test_fail_0ticket_deposit () =
     ] 
   end
 
+let _test_simple_transaction_message () =
+  begin
+    log_ "test transaction message";
+
+    (* setup *)
+    let operator, actors = Unit.init_default () in
+    let alice, bob, _ = actors in
+    let mint = originate_mint_with () in
+
+    let init_storage = (empty_state mint.originated_address) in
+    let originate_inbox_sc () = Unit.originate Inbox.main init_storage 0tez in
+    let inbox_sc = Unit.act_as operator originate_inbox_sc in
+
+    (* perform *)
+    let inbox_tx () = Unit.transfer_to_contract_ inbox_sc.originated_contract (Inbox_transaction { destination = alice.address; quantity = 1n; }) 0tez in
+
+    (* check *)
+    let result = Unit.act_as bob inbox_tx in
+    let inbox_storage = Test.get_storage inbox_sc.originated_typed_address in
+    let messages = inbox_storage.messages in
+    let opt_msgs = Big_map.find_opt 0n messages in
+    let msgs = OptionExt.default opt_msgs ([] : message list) in
+    let expected_bob_message = Transaction { source = bob.address; destination = alice.address; quantity = 1n; arg = (None : bytes option) } in
+
+    Unit.and_list
+    [ result
+    ; Unit.assert_ (msgs = [expected_bob_message]) "Messages list must have bob's message"
+    ]
+  end
 
 let suite = Unit.make_suite
 "Bridge_sc"
@@ -224,4 +254,5 @@ let suite = Unit.make_suite
 ; Unit.make_test "failure test deposit 2" "A fail test with a deposit with a different ticketer than the ones fixed at inbox originattion" _test_fail_ticketer_deposit
 ; Unit.make_test "failure test deposit 3" "A fail test with a deposit with a different ticketer and payload than the ones fixed at inbox originattion" _test_fail_entire_key_deposit
 ; Unit.make_test "should reject deposit" "A test which verify that the 0-value ticket deposit is rejected" _test_fail_0ticket_deposit
+; Unit.make_test "successful make a transaction" "test to make a transaction message" _test_simple_transaction_message
 ]

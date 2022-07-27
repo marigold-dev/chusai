@@ -1,4 +1,5 @@
 #import "../../commons/inbox_interface.mligo" "Inbox"
+#import "../../commons/transaction.mligo" "Tx"
 #import "../../commons/ticket/chusai_ticket.mligo" "Ticket"
 
 #include "../../stdlib_ext/src/stdlibext.mligo"
@@ -23,6 +24,9 @@ type state = [@layout:comb] {
 
 let make_deposit_message (owner: address) (quantity: nat) : message =
   Deposit { owner = owner; quantity = quantity }
+
+let make_transaction_message (source: address) (destination: address) (quantity: nat) : message =
+  Transaction { source = source ; destination = destination; quantity = quantity; arg = (None : bytes option) }
 
 (** Push a message into the inbox, indexed by the current rollup level **)
 let push_message (rollup_level: nat) (messages : (nat, message list) big_map) (message: message) : messages =
@@ -55,6 +59,12 @@ let deposit (rollup_level : nat) (state_ticket : Ticket.t option) (fixed_ticket_
   let new_state = {  rollup_level = rollup_level ; ticket = (Some joined_ticket) ; fixed_ticket_key = fixed_ticket_key ; messages = new_messages} in
   ([], new_state)
 
+let transaction (rollup_level: nat) (source : address) (destination: address) (quantity: nat) (fixed_ticket_key: ticket_key) (messages: (nat, message list) big_map) (ticket: Ticket.t option) : operation list * state =
+  let message = make_transaction_message source destination quantity in
+  let new_messages = push_message rollup_level messages message in
+  let new_state = {  rollup_level = rollup_level ; ticket = ticket ; fixed_ticket_key = fixed_ticket_key ; messages = new_messages} in
+  ([], new_state)
+
 
 let main (action, state : entrypoint * state) : operation list * state =
   let {rollup_level;ticket;fixed_ticket_key;messages} = state in
@@ -62,3 +72,6 @@ let main (action, state : entrypoint * state) : operation list * state =
   | Inbox_deposit ticketSent ->
     let ticketSent_owner = Tezos.sender in
     deposit rollup_level ticket fixed_ticket_key messages ticketSent_owner ticketSent
+  | Inbox_transaction { destination; quantity; } ->
+    let source = Tezos.sender in
+    transaction rollup_level source destination quantity fixed_ticket_key messages ticket

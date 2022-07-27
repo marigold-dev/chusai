@@ -22,6 +22,8 @@ type bridge_storage = {
   tickets : chusai_ticket_storage
 }
 
-type bridge_parameter = Deposit of Ticket.t
+type bridge_parameter
+  = Deposit of Ticket.t
+  | Transaction of { destination : address; quantity : nat;  }
 
 type bridge_return = operation list * bridge_storage
