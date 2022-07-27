@@ -6,6 +6,8 @@
 #import "../../commons/wallet_interface.mligo" "Wallet_interface"
 #import "../../stdlib_ext/src/unit_test.mligo" "Unit"
 #import "../../wallet/test/unit/tools.mligo" "Tools"
+#import "../../chain/src/chain.mligo" "Chain"
+#import "../../chain/test/utils.mligo" "Chain_utils"
 
 #include "../../stdlib_ext/src/stdlibext.mligo"
 #include "../../stdlib_ext/src/originate_utils.mligo"
@@ -22,17 +24,19 @@ type mint_entrypoint = Mint_interface.mint_parameter
 
 let empty_state (mint : address) : inbox_state = {
     max_inbox_level = 0n
-;   ticket = None
+;   ticket = (None : Ticket.t option)
 ;   fixed_ticket_key = {mint_address= mint; payload= Tools.dummy_payload}
 ;   inboxes = (Big_map.empty : Inbox.inboxes)
+;   chain = Chain_utils.empty_chain
 }
 
 (**same payload but different ticketer**)
 let empty_state2 : inbox_state = {
     max_inbox_level = 0n
-;   ticket = None
+;   ticket = (None : Ticket.t option)
 ;   fixed_ticket_key = {mint_address= ("tz1fVd2fmqYy1TagTo4Pahgad2n3n8GzUX1N" : address); payload= Tools.dummy_payload}
 ;   inboxes = (Big_map.empty : Inbox.inboxes)
+;   chain = Chain_utils.empty_chain
 }
 
 let zero_ticket : Ticket.t = Ticket.create_ticket Tools.dummy_address 0x00 0n

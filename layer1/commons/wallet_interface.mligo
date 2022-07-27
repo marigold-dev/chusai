@@ -1,4 +1,5 @@
 #import "ticket/chusai_ticket.mligo" "Ticket"
+#import "../chain/src/chain_endpoints.mligo" "Chain"
 
 type chusai_ticket_storage = Ticket.t option
 
@@ -25,5 +26,9 @@ type bridge_storage = {
 type bridge_parameter
   = Deposit of Ticket.t
   | Transaction of { destination : address; quantity : nat;  }
+  | Receive_block of Chain.block_proposal
+  | Remove_block  of Chain.index // FIXME: delete when refutation is in place
+  | Finalize_block
+
 
 type bridge_return = operation list * bridge_storage
