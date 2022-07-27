@@ -5,7 +5,7 @@
 // #import "chain.mligo" "Chain_lib"
 #import "../../stdlib_ext/src/result.mligo" "Result"
 #import "../../stdlib_ext/src/stdlibext.mligo" "Stdlib_ext"
-#import "chain_endpoints.mligo" "Chain"
+#import "../src/chain_endpoints.mligo" "Chain"
 
 type chain_storage = Chain.chain
 type chain_parameter = 
