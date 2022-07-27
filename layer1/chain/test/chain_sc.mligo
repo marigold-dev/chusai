@@ -12,6 +12,7 @@ type chain_parameter =
     | Receive of Chain.block_proposal
     | Remove  of Chain.index // only provided for test. In bridge, removal only happens at the end of a refutation (or if sibling is finalized ?)
     | Finalize
+    | Withdraw
 
 
 (* ENDPOINTS *)
@@ -20,6 +21,7 @@ let main (action, store : chain_parameter * chain_storage) : operation list * ch
     | Receive b -> Chain.Endpoints.apply_receive (b, store)
     | Finalize -> Chain.Endpoints.apply_finalize store
     | Remove i -> Chain.Endpoints.apply_remove (i, store)
+    | Withdraw -> Chain.Endpoints.apply_withdraw store
 
 (* VIEWS *) 
 
