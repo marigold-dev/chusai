@@ -14,4 +14,4 @@ type entrypoint =
   | Inbox_remove_block  of Chain.index // FIXME: delete when refutation is in place
   | Inbox_finalize_block
   | Inbox_freeze of {quantity: nat}
-  | Inbox_withdraw
+  | Inbox_withdraw of Ticket.t contract
