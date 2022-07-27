@@ -81,18 +81,27 @@ let deposit_ticket
       Send
       0tez
 
-let compute_total_balance (inbox: (inbox_entrypoint,inbox_state) originated) : nat = 
+let compute_total_balance (inbox: (inbox_entrypoint,inbox_state) originated) : nat =
     let state = Test.get_storage inbox.originated_typed_address in
-    let map = state.inboxes in
-    let current = Big_map.find_opt 0n map in
-    match current with
-    | None -> 0n
-    | Some inboxes ->
-      List.fold_left (fun (acc, message: nat * message) ->
-        match message with
-        | Deposit {owner; quantity} -> acc + quantity
-        | _ -> acc
-      ) 0n inboxes
+    let max_inbox_level = state.max_inbox_level in
+    let inboxes = state.inboxes in
+    let rec loop_map (idx : nat) (map : Inbox.inboxes) (acc : nat) : nat =
+      if idx = 0n then acc
+      else
+        (let opt_inbox = Big_map.find_opt idx map in
+         let total = match opt_inbox with
+         | None -> 0n
+         | Some inbox ->
+            begin
+              List.fold_left (fun ((acc, message) : (nat * message)) ->
+              match message with
+              | Deposit {owner; quantity} -> acc + quantity
+              | _ -> acc
+              ) 0n inbox
+            end
+         in
+         loop_map (abs(idx-1n)) map (total + acc))
+    in loop_map max_inbox_level inboxes 0n
 
 let empty_ticket () : Ticket.t option = None
 
@@ -121,9 +130,7 @@ let _test_success_deposit () =
 
     let inbox_storage = Test.get_storage rollup.originated_typed_address in
     let inboxes = inbox_storage.inboxes in
-    let opt_msgs = Big_map.find_opt 0n inboxes in
-    let default_msg = [Deposit {owner = Tools.dummy_address; quantity = 0n}] in
-    let msgs = OptionExt.default opt_msgs default_msg in
+    let opt_inbox = Big_map.find_opt 0n inboxes in
 
     let inbox_ticket = OptionExt.default inbox_storage.ticket zero_ticket in
     let ((_,(_,inbox_ticket_quantity)),_) = Ticket.read_ticket inbox_ticket in
@@ -136,8 +143,7 @@ let _test_success_deposit () =
     [  leolio_deposit_result
     ;  Unit.assert_ (OptionExt.is_some inbox_storage.ticket) "the rollup storage must contain a ticket after deposits"
     ;  Unit.assert_ ((compute_total_balance rollup) = inbox_ticket_quantity) "The sum of all the quantities stored on messages must be equal to the inbox ticket amount"
-    ;  Unit.assert_ (msgs <> default_msg) "Messages list must be not empty"
-    ;  Unit.assert_ (msgs = [leolio_msg;kirua_msg;gon_msg] ) "Messages list must be equal to a list with the 3 messages"
+    ;  Unit.assert_equals (Big_map.literal [(1n, [gon_msg]); (2n, [kirua_msg]); (3n, [leolio_msg]);]) inboxes "inboxes must contain 3 inboxes, each with one message only"
     ;  Unit.assert_ ((compute_total_balance rollup) = 125000000n) "After the 3 deposits, the balance should be equal to 125tez"
     ]
   end
@@ -235,7 +241,7 @@ let _test_simple_transaction_message () =
     let result = Unit.act_as bob inbox_tx in
     let inbox_storage = Test.get_storage inbox_sc.originated_typed_address in
     let inboxes = inbox_storage.inboxes in
-    let opt_msgs = Big_map.find_opt 0n inboxes in
+    let opt_msgs = Big_map.find_opt 1n inboxes in
     let msgs = OptionExt.default opt_msgs ([] : message list) in
     let expected_bob_message = Transaction { source = bob.address; destination = alice.address; quantity = 1n; arg = (None : bytes option) } in
 
