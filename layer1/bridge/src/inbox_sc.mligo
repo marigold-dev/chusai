@@ -34,13 +34,17 @@ let make_deposit_message (owner: address) (quantity: nat) : message =
 let make_transaction_message (source: address) (destination: address) (quantity: nat) : message =
   Transaction { source = source ; destination = destination; quantity = quantity; arg = (None : bytes option) }
 
-(** Push a message into the inbox, indexed by the current inbox level **)
-let push_message (max_inbox_level: nat) (inboxes : inboxes) (message: message) : inboxes =
-  let current_level = max_inbox_level in
-  let current_inboxes = inboxes in
-  match Big_map.find_opt current_level current_inboxes with
-  | None -> Big_map.add current_level [ message ] current_inboxes
-  | Some xs -> Big_map.add current_level ( message :: xs ) current_inboxes
+(** When a message is push into an inbox, [current_inbox_level]
+    will be bumped and is used as index of the inbox. One inbox
+    only includes one message.
+
+    [push_message] will return new [inbox_level] and new
+    [inboxes].*)
+let rec push_message (current_inbox_level : nat) (current_inboxes : inboxes) (message: message) : inbox_level * inboxes =
+  let next_inbox_level = current_inbox_level + 1n in
+  match Big_map.find_opt next_inbox_level current_inboxes with
+  | None -> (next_inbox_level, Big_map.add next_inbox_level [ message ] current_inboxes)
+  | Some _ -> push_message next_inbox_level current_inboxes message
 
 let is_same_ticket_key (k1 : ticket_key) (mint_address, payload : address * Ticket.payload) : bool =
   k1.mint_address = mint_address && k1.payload = payload
@@ -61,14 +65,14 @@ let deposit (max_inbox_level : nat) (state_ticket : Ticket.t option) (fixed_tick
      | None -> failwith "Ticket key is invalid"
      | Some ticket -> ticket in
   let message = make_deposit_message owner quantity in
-  let new_inboxes = push_message max_inbox_level inboxes message in
-  let new_state = {  max_inbox_level = max_inbox_level ; ticket = (Some joined_ticket) ; fixed_ticket_key = fixed_ticket_key ; inboxes = new_inboxes} in
+  let new_inbox_level, new_inboxes = push_message max_inbox_level inboxes message in
+  let new_state = {  max_inbox_level = new_inbox_level; ticket = (Some joined_ticket) ; fixed_ticket_key = fixed_ticket_key ; inboxes = new_inboxes} in
   ([], new_state)
 
 let transaction (max_inbox_level: nat) (source : address) (destination: address) (quantity: nat) (fixed_ticket_key: ticket_key) (inboxes: inboxes) (ticket: Ticket.t option) : operation list * state =
   let message = make_transaction_message source destination quantity in
-  let new_inboxes = push_message max_inbox_level inboxes message in
-  let new_state = {  max_inbox_level = max_inbox_level; ticket = ticket ; fixed_ticket_key = fixed_ticket_key ; inboxes = new_inboxes} in
+  let new_inbox_level, new_inboxes = push_message max_inbox_level inboxes message in
+  let new_state = {  max_inbox_level = new_inbox_level; ticket = ticket ; fixed_ticket_key = fixed_ticket_key ; inboxes = new_inboxes} in
   ([], new_state)
 
 
