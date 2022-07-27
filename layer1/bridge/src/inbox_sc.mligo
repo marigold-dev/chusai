@@ -35,6 +35,9 @@ let make_deposit_message (owner: address) (quantity: nat) : message =
 let make_transaction_message (source: address) (destination: address) (quantity: nat) : message =
   Transaction { source = source ; destination = destination; quantity = quantity; arg = (None : bytes option) }
 
+let make_freeze_message (owner: address) (quantity: nat) : message =
+  Freeze { owner = owner; quantity = quantity }
+
 (** When a message is push into an inbox, [current_inbox_level]
     will be bumped and is used as index of the inbox. One inbox
     only includes one message.
@@ -96,6 +99,13 @@ let withdraw ({max_inbox_level;ticket;fixed_ticket_key;inboxes;chain} : state) =
   let new_state = {  max_inbox_level = max_inbox_level; ticket = ticket ; fixed_ticket_key = fixed_ticket_key ; inboxes = inboxes ; chain = new_chain} in
   ops, new_state
 
+let freeze ({max_inbox_level;ticket;fixed_ticket_key;inboxes;chain} : state) (owner: address) (quantity: Chain.frozen_amount) : operation list * state=
+  let message = make_freeze_message owner quantity in
+  let new_inbox_level, new_inboxes = push_message max_inbox_level inboxes message in
+  let new_state = {  max_inbox_level = new_inbox_level; ticket = ticket ; fixed_ticket_key = fixed_ticket_key ; inboxes = new_inboxes ; chain = chain} in
+  ([], new_state)
+
+
 let main (action, state : entrypoint * state) : operation list * state =
   match action with
   | Inbox_deposit ticketSent ->
@@ -110,7 +120,9 @@ let main (action, state : entrypoint * state) : operation list * state =
     remove_block state index
   | Inbox_finalize_block -> 
     finalize_block state
-  | Inbox_freeze _ -> [], state
+  | Inbox_freeze {quantity} -> 
+    let user = Tezos.sender in
+    freeze state user quantity
   | Inbox_withdraw ->
     withdraw state
 
