@@ -365,7 +365,7 @@ let _test_simple_finalize () =
 
 let _test_simple_withdraw () =
   begin
-    log_ "test sending block proposals";
+    log_ "test withdraw";
 
     (* setup *)
     let operator, actors = Unit.init_default_at ("2020-01-01t10:10:10Z" : timestamp)in
@@ -403,6 +403,39 @@ let _test_simple_withdraw () =
     ;  Unit.assert_ (alice_initial_balance < alice_new_balance) "Alice should have received the funds"
     ]
   end
+
+
+let _test_simple_freeze_message () =
+  begin
+    log_ "test transaction message";
+
+    (* setup *)
+    let operator, actors = Unit.init_default () in
+    let alice, _, _ = actors in
+    let mint = originate_mint_with () in
+
+    let asset_amount = 10000000n in // should be high enough to compensate for gas
+    let init_storage = (empty_state mint.originated_address) in
+    let originate_inbox_sc () = Unit.originate Inbox.main init_storage 0tez in
+    let inbox_sc = Unit.act_as operator originate_inbox_sc in
+
+    (* perform *)
+    let inbox_freeze () = Unit.transfer_to_contract_ inbox_sc.originated_contract (Inbox_freeze {  quantity = asset_amount; }) 0tez in
+
+    (* check *)
+    let result = Unit.act_as alice inbox_freeze in
+    let inbox_storage = Test.get_storage inbox_sc.originated_typed_address in
+    let inboxes = inbox_storage.inboxes in
+    let opt_msgs = Big_map.find_opt 1n inboxes in
+    let msgs = OptionExt.default opt_msgs ([] : message list) in
+    let expected_alice_message = Freeze { owner = alice.address ; quantity = asset_amount } in
+
+    Unit.and_list
+    [ result
+    ; Unit.assert_equals msgs  [expected_alice_message] "Messages list must have alice's message"
+    ]
+  end
+
 let suite = Unit.make_suite
 "Bridge_sc"
 "Test suite of Bridge sc"
@@ -416,4 +449,5 @@ let suite = Unit.make_suite
 ; Unit.make_test "successful reception of block proposal" "test that block are correctly received" _test_simple_send_two_blocks
 ; Unit.make_test "successful finalization of block" "test that a block can be finalized" _test_simple_finalize
 ; Unit.make_test "successful withdrawal" "test that a user can withdraw frozen asseys" _test_simple_withdraw
+; Unit.make_test "successful freeze message" "test that a user can send a freeze message" _test_simple_freeze_message
 ]
