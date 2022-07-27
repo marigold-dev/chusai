@@ -22,7 +22,7 @@
    SOFTWARE. *)
    
 (* Wrapping of Test module *)
-
+#include "context.mligo"
 (** Try to perform a failable computation ([block]) and fold the two possible
     results. *)
 let try_catch
@@ -61,3 +61,18 @@ let transfer_to_contract_
     (action: param)
     (fund: tez) : result =
     transfer_to_contract (start ()) contract action fund
+
+    
+(* VIEW CALLING UTILS*)
+(** [call_view_test view data addr] calls a view [view] on a contract originated at address [addr] with parameter [data] *)
+let call_view_test (type p res) (name:string) (data:p) (addr:address) : res option =
+  let x =
+    Test.run
+      (fun (addr:address) -> (Tezos.call_view name data addr : res option))
+      addr
+  in
+  (Test.decompile x : res option)
+
+(** [call_view_test_as actor view data addr] calls a view [view] on a contract originated at address [addr] with parameter [data] as if the call came from [actor] *)
+let call_view_test_as (type p res) (actor:actor) (name:string) (data:p) (addr:address) : res option =
+    act_as actor (fun () -> (call_view_test name data addr : res option))

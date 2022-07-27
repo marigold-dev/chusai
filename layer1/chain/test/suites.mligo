@@ -1,4 +1,6 @@
-#import "test_chain_sc.mligo" "SC"
+#import "test_sc_receive.mligo" "Receive_sc"
+#import "test_sc_finalize.mligo" "Finalize_sc"
 #import "test_chain.mligo" "Lib"
-
-let suites = [SC.suite ; Lib.suite]
+#import "test_finalize.mligo" "Finalize_lib"
+#import "../../stdlib_ext/src/unit_test.mligo" "Unit"
+let suites = [Receive_sc.suite ; Finalize_sc.suite ; Finalize_lib.suite ; Lib.suite]

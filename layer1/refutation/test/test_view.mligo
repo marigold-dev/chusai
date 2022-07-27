@@ -24,26 +24,12 @@ let init_context () =
     }
 
 (* ************************************ *)
-(* VIEW CALLING UTILS*)
-
-let call_view_test (type p res) (name:string) (data:p) (addr:address) : res option =
-  let x =
-    Test.run
-      (fun (addr:address) -> (Tezos.call_view name data addr : res option))
-      addr
-  in
-  (Test.decompile x : res option)
-
-let call_view_test_as (type p res) (actor:Unit.actor) (name:string) (data:p) (addr:address) : res option =
-    Unit.act_as actor (fun () -> (call_view_test name data addr : res option))
-
-(* ************************************ *)
 (* TESTS my_games *)
 
 let _test_init_my_games () = 
     let ctx = init_context () in
 
-    let game_list_alice : (game_id list) option option = call_view_test_as ctx.alice "my_games" ()  ctx.arbiter.originated_address  in
+    let game_list_alice : (game_id list) option option = Unit.call_view_test_as ctx.alice "my_games" ()  ctx.arbiter.originated_address  in
     Unit.and_list 
     [  Unit.assert_not_none game_list_alice "view calling my_games should have been success (not none)"
     ;  Unit.assert_equals game_list_alice (Some (None : (game_id list) option) : (game_id list) option option) "Should be None"   
@@ -72,8 +58,8 @@ let _test_one_game_my_games () =
     in
 
     // act: call the view
-    let game_list_alice : (game_id list) option option  = call_view_test_as ctx.alice "my_games" ()  ctx.arbiter.originated_address  in
-    let game_list_bob : (game_id list) option option = call_view_test_as ctx.bob "my_games" ()  ctx.arbiter.originated_address  in
+    let game_list_alice : (game_id list) option option  = Unit.call_view_test_as ctx.alice "my_games" ()  ctx.arbiter.originated_address  in
+    let game_list_bob : (game_id list) option option = Unit.call_view_test_as ctx.bob "my_games" ()  ctx.arbiter.originated_address  in
 
     // asserts : a lazy list to make sure that if starting fails, and there is no game, the tests doesn't interrupt the suite
     Unit.and_lazy_list
@@ -115,9 +101,9 @@ let _test_two_game_my_games () =
     in
 
     // act: calling the views
-    let game_list_alice : (game_id list) option option  = call_view_test_as ctx.alice "my_games" ()  ctx.arbiter.originated_address  in
-    let game_list_bob : (game_id list) option option = call_view_test_as ctx.bob "my_games" ()  ctx.arbiter.originated_address  in
-    let game_list_carol : (game_id list) option option = call_view_test_as ctx.carol "my_games" ()  ctx.arbiter.originated_address  in
+    let game_list_alice : (game_id list) option option  = Unit.call_view_test_as ctx.alice "my_games" ()  ctx.arbiter.originated_address  in
+    let game_list_bob : (game_id list) option option = Unit.call_view_test_as ctx.bob "my_games" ()  ctx.arbiter.originated_address  in
+    let game_list_carol : (game_id list) option option = Unit.call_view_test_as ctx.carol "my_games" ()  ctx.arbiter.originated_address  in
 
     // asserts : a lazy list to make sure that if starting fails, and there is no game, the tests doesn't interrupt the suite
     Unit.and_lazy_list
@@ -132,7 +118,7 @@ let _test_two_game_my_games () =
 
 let _test_init_get_game () = 
     let ctx = init_context () in
-    let game_0 : game option option  = call_view_test_as ctx.operator "get_game" 0n ctx.arbiter.originated_address in
+    let game_0 : game option option  = Unit.call_view_test_as ctx.operator "get_game" 0n ctx.arbiter.originated_address in
     Unit.and_list 
     [  Unit.assert_not_none game_0 "view calling get_game should have been success (not none)"
     ;  Unit.assert_equals game_0 (Some (None : game option) : game option option) "Should be None"
@@ -161,8 +147,8 @@ let _test_one_game_get_game () =
         ] 
     in
     // act: calling the views
-    let game_0 : game option option  = call_view_test_as ctx.operator "get_game" 0n ctx.arbiter.originated_address in
-    let game_1 : game option option  = call_view_test_as ctx.operator "get_game" 1n ctx.arbiter.originated_address in
+    let game_0 : game option option  = Unit.call_view_test_as ctx.operator "get_game" 0n ctx.arbiter.originated_address in
+    let game_1 : game option option  = Unit.call_view_test_as ctx.operator "get_game" 1n ctx.arbiter.originated_address in
 
     // asserts : a lazy list to make sure that if starting fails, and there is no game, the tests doesn't interrupt the suite
     Unit.and_lazy_list

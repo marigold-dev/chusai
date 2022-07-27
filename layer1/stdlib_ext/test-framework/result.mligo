@@ -19,7 +19,7 @@
    LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
    OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
    SOFTWARE. *)
-
+#include "helper.mligo"
 (** An convenient alias for describing gas *)
 type gas = nat
 
@@ -27,6 +27,19 @@ type gas = nat
 type failure_reason 
   = Message of string
   | Execution of test_exec_error
+
+let pp_exec_error (e : test_exec_error) : string =
+  match e with
+  | Balance_too_low _btle -> "balance too low"
+  | Rejected (_pgm,_address) -> "Rejected"
+  | Other s -> s
+
+(** Returns a string with informations on the error. *)
+// FIXME : use Test.to_string once using LIGO >= 0.46.1
+let pp_failure (f : failure_reason) : string =
+  match f with
+  | Message s -> s
+  | Execution e -> pp_exec_error e
 
 (** The result of a test which can be passed or failed. If the test [passed]
     it returns the gas consumption *)

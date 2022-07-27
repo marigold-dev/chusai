@@ -29,7 +29,7 @@ type ('a, 'b) originated = {
 ; originated_address : address
 }
 
-(** [originate log_level label main default_storage quantity] will originated
+(** [originate main default_storage quantity] will originated
     a contract:
     - [main] : the main function of the contract
     - [storage] : the default value of the storage
@@ -46,3 +46,27 @@ let originate
   { originated_typed_address = typed_address
   ; originated_contract = contract
   ; originated_address = address }
+
+
+(** [originate_from_file  "foo/bar/contract.mligo" "main" ["view1" ; "view2"] default_storage quantity] will originated
+    a contract:
+    - [file] : file containing the contract
+    - [main] : the name of the main function of the contract
+    - [views] : list of the names of the views
+    - [storage] : the default value of the storage (as a ligo expression)
+    - [quantity] : the given amount of tez
+ *)
+let originate_from_file 
+    (type a b)
+    (file: string)
+    (main: string)
+    (views : string list)
+    (storage: b)
+    (quantity: tez) : (a, b) originated =
+    let michelson_storage = Test.compile_value storage in
+    let address, _, _ = Test.originate_from_file file main views michelson_storage quantity in
+    let typed_address : (a, b) typed_address = Test.cast_address address in    
+    let contract = Test.to_contract typed_address in
+    { originated_typed_address = typed_address
+    ; originated_contract = contract
+    ; originated_address = address }
