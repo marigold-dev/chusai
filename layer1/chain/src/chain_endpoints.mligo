@@ -2,60 +2,76 @@
 #include "chain.mligo"
 #import "../../stdlib_ext/src/result.mligo" "Result"
 #import "../../stdlib_ext/src/stdlibext.mligo" "Stdlib_ext"
+#import "../../stdlib_ext/test-framework/helper.mligo" "Helper"
 
 module Endpoints = struct
-let reward (block, chain : block * chain) : operation list =
-    match (Tezos.get_contract_opt block.proposer : unit contract option) with
-    | None -> 
-        // could not find proposer, but we don't want to fail finalization, so just return no op (and dont fail)
-        []
-    | Some winner_contract -> 
-        // reward         
-        [Tezos.transaction () chain.bond_amount winner_contract]
+    let reward (block, chain : block * chain) : operation list =
+        match (Tezos.get_contract_opt block.proposer : unit contract option) with
+        | None -> 
+            // could not find proposer, but we don't want to fail finalization, so just return no op (and dont fail)
+            []
+        | Some winner_contract -> 
+            // reward         
+            [Tezos.transaction () chain.bond_amount winner_contract]
 
 
 
-let apply_finalize (store : chain) : operation list * chain = 
-    match get_finalization_candidate store with
-    | Error e -> 
-        failwith ("Error during finalization:" ^ (pp_chain_error e))
-    | Ok candidate -> 
-            if is_old_enough (candidate, store, Tezos.now) then
-                reward (candidate, store), finalize (candidate, store)
-            else 
-                failwith "Error during finalization: finality period not finished"
+    let apply_finalize (store : chain) : operation list * chain = 
+        match get_finalization_candidate store with
+        | Error e -> 
+            failwith ("Error during finalization:" ^ (pp_chain_error e))
+        | Ok candidate -> 
+                if is_old_enough (candidate, store, Tezos.now) then
+                    reward (candidate, store), finalize (candidate, store)
+                else 
+                    failwith "Error during finalization: finality period not finished"
 
-let apply_receive (proposal, store : block_proposal * chain) : operation list * chain =
-        // recolt bond
-        if Tezos.amount < store.bond_amount then 
-            failwith "not enough bond"
-        else
-        // store block
-        begin 
-            let new_store = increase_index store in
-            let block = make_block (proposal, new_store.max_index, Tezos.source, Tezos.now) in
-            match store_block (block, new_store) with
-            | Error _ -> 
-                failwith "could not store"
-            | Ok c -> 
-                 ([] : operation list) , c 
-        end
+    let apply_receive (proposal, store : block_proposal * chain) : operation list * chain =
+            // recolt bond
+            if Tezos.amount < store.bond_amount then 
+                failwith "not enough bond"
+            else
+            // store block
+            begin 
+                let new_store = increase_index store in
+                let block = make_block (proposal, new_store.max_index, Tezos.source, Tezos.now) in
+                match store_block (block, new_store) with
+                | Error _ -> 
+                    failwith "could not store"
+                | Ok c -> 
+                     ([] : operation list) , c 
+            end
 
-(* removes a block, making sure to compensate every body who proposed a block based on the removed on (recursively) 
-   /!\ this is for test. Depending on the situation, a proper removal (after refutation) might use a more complexe reimbursement strategy
-*)
-let apply_remove (i, store : index * chain) =
-    let rec reward_deleted (ops, blocks, store : operation list * block list * chain) : operation list = 
-        match blocks with
-        | [] -> ops
-        | b :: q -> 
-            let reward_ops = reward (b, store) in
-            let new_ops = Stdlib_ext.ListExt.concat reward_ops ops in
-            reward_deleted (new_ops, q, store)
-    in
-    let blocks, chain = remove_block (i, store) in
-    let ops = reward_deleted (([] : operation list) , blocks, chain) in
-    ops, chain
+    (* removes a block, making sure to compensate every body who proposed a block based on the removed on (recursively) 
+       /!\ this is for test. Depending on the situation, a proper removal (after refutation) might use a more complexe reimbursement strategy
+    *)
+    let apply_remove (i, store : index * chain) =
+        let rec reward_deleted (ops, blocks, store : operation list * block list * chain) : operation list = 
+            match blocks with
+            | [] -> ops
+            | b :: q -> 
+                let reward_ops = reward (b, store) in
+                let new_ops = Stdlib_ext.ListExt.concat reward_ops ops in
+                reward_deleted (new_ops, q, store)
+        in
+        let blocks, chain = remove_block (i, store) in
+        let ops = reward_deleted (([] : operation list) , blocks, chain) in
+        ops, chain
+
+    // FIXME: what to we send back ? ticket ? XTZ ?
+    let send_asset (user, asset_amount: user * frozen_amount) : operation = 
+            let contract : unit contract = Tezos.get_contract_with_error user "Could not find contract for withdrawing user " in
+            let asset = asset_amount * 1mutez in
+            Tezos.transaction () asset contract
+
+    let apply_withdraw (store : chain) : operation list * chain =
+        let user = Tezos.source in
+        let assets_opt, new_chain = withdraw (user, store) in
+        match assets_opt with
+        | None -> failwith "no asset to withdraw"
+        | Some assets -> 
+            let op = send_asset (user, assets) in
+            [op], new_chain
 end
 
 module Views = struct
