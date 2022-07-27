@@ -6,6 +6,9 @@
 #import "../../commons/wallet_interface.mligo" "Wallet_interface"
 #import "../../stdlib_ext/src/unit_test.mligo" "Unit"
 #import "../../wallet/test/unit/tools.mligo" "Tools"
+#import "../../chain/src/chain.mligo" "Chain"
+#import "../../chain/test/utils.mligo" "Chain_utils"
+#import "../../stdlib_ext/src/result.mligo" "Stdlib_Result"
 
 #include "../../stdlib_ext/src/stdlibext.mligo"
 #include "../../stdlib_ext/src/originate_utils.mligo"
@@ -22,17 +25,27 @@ type mint_entrypoint = Mint_interface.mint_parameter
 
 let empty_state (mint : address) : inbox_state = {
     max_inbox_level = 0n
-;   ticket = None
+;   ticket = (None : Ticket.t option)
 ;   fixed_ticket_key = {mint_address= mint; payload= Tools.dummy_payload}
 ;   inboxes = (Big_map.empty : Inbox.inboxes)
+;   chain = Chain_utils.empty_chain
+}
+
+let empty_state_chain (mint : address) (chain: Chain.chain) : inbox_state = {
+    max_inbox_level = 0n
+;   ticket = (None : Ticket.t option)
+;   fixed_ticket_key = {mint_address= mint; payload= Tools.dummy_payload}
+;   inboxes = (Big_map.empty : Inbox.inboxes)
+;   chain = chain
 }
 
 (**same payload but different ticketer**)
 let empty_state2 : inbox_state = {
     max_inbox_level = 0n
-;   ticket = None
+;   ticket = (None : Ticket.t option)
 ;   fixed_ticket_key = {mint_address= ("tz1fVd2fmqYy1TagTo4Pahgad2n3n8GzUX1N" : address); payload= Tools.dummy_payload}
 ;   inboxes = (Big_map.empty : Inbox.inboxes)
+;   chain = Chain_utils.empty_chain
 }
 
 let zero_ticket : Ticket.t = Ticket.create_ticket Tools.dummy_address 0x00 0n
@@ -251,6 +264,105 @@ let _test_simple_transaction_message () =
     ]
   end
 
+// FIXME: LIGO
+let prototype_block_proposal = Chain_utils.prototype_block_proposal
+
+let _test_simple_send_two_blocks () = 
+  begin
+    log_ "test sending block proposals";
+
+    (* setup *)
+    let operator, actors = Unit.init_default () in
+    let alice, bob, _ = actors in
+    let mint = originate_mint_with () in
+
+    let init_storage = (empty_state mint.originated_address) in
+    let originate_inbox_sc () = Unit.originate Inbox.main init_storage 0tez in
+    let inbox_sc = Unit.act_as operator originate_inbox_sc in
+
+    (* perform *)
+    let inbox_send (proposal : Chain.block_proposal) () = Unit.transfer_to_contract_ inbox_sc.originated_contract (Inbox_receive_block proposal) Chain_utils.bond in
+    let first_block  = 
+        {  prototype_block_proposal with
+           parent = 0n
+        ;  inbox_level = 10n
+        } in 
+    let second_block = 
+        {  prototype_block_proposal with
+           parent = 1n
+        ;  inbox_level = 20n
+        } in 
+    let result_alice = Unit.act_as alice (inbox_send first_block) in
+    let result_bob = Unit.act_as bob (inbox_send second_block) in
+    let storage = Test.get_storage inbox_sc.originated_typed_address in
+    let chain = storage.chain in
+
+
+    (* check *)
+    Unit.and_list
+    [  Unit.assert_is_ok result_alice "first block should have succeeded"
+    ;  Unit.assert_is_ok result_bob  "second block should have succeeded"
+    ;  Unit.assert_equals 2n (chain.max_index) "max_index should be 2"
+    ;  Unit.assert_ (Chain_utils.compare_proposal_and_block first_block (Chain.get_block (1n, chain))) "the first block should have been stored"
+    ;  Unit.assert_ (Chain_utils.compare_proposal_and_block second_block (Chain.get_block (2n, chain))) "the second block should have been stored"
+    ;  Unit.assert_equals (Some [2n]) (Chain.get_children (1n, chain)) "second block is a child of first"
+    ]
+  end
+
+//FIXME: LIGO  
+let empty_chain = Chain_utils.empty_chain
+type result = Stdlib_Result.t
+
+let _test_simple_finalize () =
+  begin
+    log_ "test sending block proposals";
+
+    (* setup *)
+    let operator, actors = Unit.init_default_at ("2020-01-01t10:10:10Z" : timestamp)in
+    let alice, bob, _ = actors in    
+    let mint = originate_mint_with () in
+    let alice_initial_balance = Test.get_balance alice.address in
+
+    let block_alice  = 
+        let b = Chain_utils.block 1n 0n 10n  in 
+        {b with proposer = alice.address} 
+        in
+    let init_chain = 
+        { empty_chain with
+          max_index = 1n 
+        ; blocks = Big_map.literal [(1n, block_alice)]
+        ; children = Big_map.literal [(0n, [1n])]
+        } in
+
+    // sanity check
+    let candidate = Chain.get_finalization_candidate init_chain in
+    let sanity_check = 
+        Unit.and_lazy_list 
+        [  fun () -> Unit.assert_ (Stdlib_Result.is_ok candidate) "a candidate should have been found"
+        ;  fun () -> Unit.assert_equals ((Ok block_alice) : (Chain.block, Chain.chain_error) result ) candidate "alice's block should be next candidate"
+        ] in
+
+    let init_storage = (empty_state_chain mint.originated_address init_chain) in
+    let originate_inbox_sc () = Unit.originate Inbox.main init_storage Chain_utils.bond in
+    let inbox_sc = Unit.act_as operator originate_inbox_sc in
+
+    (* perform *)
+    let inbox_finalize () = Unit.transfer_to_contract_ inbox_sc.originated_contract (Inbox_finalize_block) Chain_utils.bond  in
+    let result = Unit.act_as operator inbox_finalize in
+
+    (* check *)
+    let storage = Test.get_storage inbox_sc.originated_typed_address in
+    let alice_new_balance = Test.get_balance alice.address in
+    let chain = storage.chain in
+    Unit.and_list 
+    [  sanity_check 
+    ;  Unit.assert_is_ok result "finalization should have succeeded" 
+    ;  Unit.assert_equals 1n chain.latest_finalized "block 1n should have been finalize"
+    ;  Unit.assert_equals (alice_initial_balance + Chain_utils.bond) alice_new_balance "Alice should have received the reward"
+    ]
+
+  end
+
 let suite = Unit.make_suite
 "Bridge_sc"
 "Test suite of Bridge sc"
@@ -261,4 +373,6 @@ let suite = Unit.make_suite
 ; Unit.make_test "failure test deposit 3" "A fail test with a deposit with a different ticketer and payload than the ones fixed at inbox originattion" _test_fail_entire_key_deposit
 ; Unit.make_test "should reject deposit" "A test which verify that the 0-value ticket deposit is rejected" _test_fail_0ticket_deposit
 ; Unit.make_test "successful make a transaction" "test to make a transaction message" _test_simple_transaction_message
+; Unit.make_test "successful reception of block proposal" "test that block are correctly received" _test_simple_send_two_blocks
+; Unit.make_test "successful finalization of block" "test that a block can be finalized" _test_simple_finalize
 ]

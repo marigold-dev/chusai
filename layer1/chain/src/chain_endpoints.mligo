@@ -1,17 +1,9 @@
-(*
-    This smart contract is used only as a placeholder to try the /chain/ library. 
-*)
 
 #include "chain.mligo"
 #import "../../stdlib_ext/src/result.mligo" "Result"
 #import "../../stdlib_ext/src/stdlibext.mligo" "Stdlib_ext"
 
-type chain_storage = chain
-type chain_parameter = 
-    | Receive of block_proposal
-    | Remove  of index // only provided for test. In bridge, removal only happens at the end of a refutation (or if sibling is finalized ?)
-    | Finalize
-
+module Endpoints = struct
 let reward (block, chain : block * chain) : operation list =
     match (Tezos.get_contract_opt block.proposer : unit contract option) with
     | None -> 
@@ -23,7 +15,7 @@ let reward (block, chain : block * chain) : operation list =
 
 
 
-let apply_finalize (store : chain_storage) : operation list * chain_storage = 
+let apply_finalize (store : chain) : operation list * chain = 
     match get_finalization_candidate store with
     | Error e -> 
         failwith ("Error during finalization:" ^ (pp_chain_error e))
@@ -33,7 +25,7 @@ let apply_finalize (store : chain_storage) : operation list * chain_storage =
             else 
                 failwith "Error during finalization: finality period not finished"
 
-let apply_receive (proposal, store : block_proposal * chain_storage) : operation list * chain_storage =
+let apply_receive (proposal, store : block_proposal * chain) : operation list * chain =
         // recolt bond
         if Tezos.amount < store.bond_amount then 
             failwith "not enough bond"
@@ -52,8 +44,8 @@ let apply_receive (proposal, store : block_proposal * chain_storage) : operation
 (* removes a block, making sure to compensate every body who proposed a block based on the removed on (recursively) 
    /!\ this is for test. Depending on the situation, a proper removal (after refutation) might use a more complexe reimbursement strategy
 *)
-let apply_remove (i, store : index * chain_storage) =
-    let rec reward_deleted (ops, blocks, store : operation list * block list * chain_storage) : operation list = 
+let apply_remove (i, store : index * chain) =
+    let rec reward_deleted (ops, blocks, store : operation list * block list * chain) : operation list = 
         match blocks with
         | [] -> ops
         | b :: q -> 
@@ -64,18 +56,13 @@ let apply_remove (i, store : index * chain_storage) =
     let blocks, chain = remove_block (i, store) in
     let ops = reward_deleted (([] : operation list) , blocks, chain) in
     ops, chain
+end
 
-(* ENDPOINTS *)
-let main (action, store : chain_parameter * chain_storage) : operation list * chain_storage = 
-    match action with
-    | Receive b -> apply_receive (b, store)
-    | Finalize -> apply_finalize store
-    | Remove i -> apply_remove (i, store)
+module Views = struct
 
-(* VIEWS *) 
-
-[@view] let get_latest ((),s: unit * chain_storage) : block option = find_latest_existing s
-[@view] let get_next_finalization_candidate ((), s : unit * chain_storage) : block option =
-    match get_finalization_candidate s with
-    | Error e -> None
-    | Ok b -> Some b
+    let get_latest ((),s: unit * chain) : block option = find_latest_existing s
+    let get_next_finalization_candidate ((), s : unit * chain) : block option =
+        match get_finalization_candidate s with
+        | Error e -> None
+        | Ok b -> Some b
+end

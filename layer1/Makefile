@@ -13,7 +13,6 @@ build:
 	make -C wallet build
 	make -C mint build 
 	make -C refutation build
-	make -C chain build
 	make -C bridge build
 
 test:
