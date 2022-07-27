@@ -1,4 +1,4 @@
-#include "../src/chain_sc.mligo"
+#include "../test/chain_sc.mligo"
 #include "utils.mligo"
 #import "../../stdlib_ext/src/unit_test.mligo" "Unit"
 
