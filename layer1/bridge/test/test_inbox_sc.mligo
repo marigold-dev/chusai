@@ -21,18 +21,18 @@ type mint_entrypoint = Mint_interface.mint_parameter
 
 
 let empty_state (mint : address) : inbox_state = {
-    rollup_level = 0n
+    max_inbox_level = 0n
 ;   ticket = None
 ;   fixed_ticket_key = {mint_address= mint; payload= Tools.dummy_payload}
-;   messages = (Big_map.empty : (nat, message list) big_map)
+;   inboxes = (Big_map.empty : Inbox.inboxes)
 }
 
 (**same payload but different ticketer**)
 let empty_state2 : inbox_state = {
-    rollup_level = 0n
+    max_inbox_level = 0n
 ;   ticket = None
 ;   fixed_ticket_key = {mint_address= ("tz1fVd2fmqYy1TagTo4Pahgad2n3n8GzUX1N" : address); payload= Tools.dummy_payload}
-;   messages = (Big_map.empty : (nat, message list) big_map)
+;   inboxes = (Big_map.empty : Inbox.inboxes)
 }
 
 let zero_ticket : Ticket.t = Ticket.create_ticket Tools.dummy_address 0x00 0n
@@ -83,16 +83,16 @@ let deposit_ticket
 
 let compute_total_balance (inbox: (inbox_entrypoint,inbox_state) originated) : nat = 
     let state = Test.get_storage inbox.originated_typed_address in
-    let map = state.messages in
+    let map = state.inboxes in
     let current = Big_map.find_opt 0n map in
     match current with
     | None -> 0n
-    | Some messages ->
+    | Some inboxes ->
       List.fold_left (fun (acc, message: nat * message) ->
         match message with
         | Deposit {owner; quantity} -> acc + quantity
         | _ -> acc
-      ) 0n messages
+      ) 0n inboxes
 
 let empty_ticket () : Ticket.t option = None
 
@@ -120,8 +120,8 @@ let _test_success_deposit () =
 
 
     let inbox_storage = Test.get_storage rollup.originated_typed_address in
-    let messages = inbox_storage.messages in
-    let opt_msgs = Big_map.find_opt 0n messages in
+    let inboxes = inbox_storage.inboxes in
+    let opt_msgs = Big_map.find_opt 0n inboxes in
     let default_msg = [Deposit {owner = Tools.dummy_address; quantity = 0n}] in
     let msgs = OptionExt.default opt_msgs default_msg in
 
@@ -234,8 +234,8 @@ let _test_simple_transaction_message () =
     (* check *)
     let result = Unit.act_as bob inbox_tx in
     let inbox_storage = Test.get_storage inbox_sc.originated_typed_address in
-    let messages = inbox_storage.messages in
-    let opt_msgs = Big_map.find_opt 0n messages in
+    let inboxes = inbox_storage.inboxes in
+    let opt_msgs = Big_map.find_opt 0n inboxes in
     let msgs = OptionExt.default opt_msgs ([] : message list) in
     let expected_bob_message = Transaction { source = bob.address; destination = alice.address; quantity = 1n; arg = (None : bytes option) } in
 
