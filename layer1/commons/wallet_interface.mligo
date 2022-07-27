@@ -30,7 +30,7 @@ type bridge_parameter
   | Remove_block  of Chain.index // FIXME: delete when refutation is in place
   | Finalize_block
   | Freeze of {quantity: nat}
-  | Withdraw
+  | Withdraw of Ticket.t contract
 
 
 type bridge_return = operation list * bridge_storage

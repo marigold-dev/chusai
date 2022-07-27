@@ -94,10 +94,32 @@ let finalize_block ({max_inbox_level;ticket;fixed_ticket_key;inboxes;chain} : st
   let new_state = {  max_inbox_level = max_inbox_level; ticket = ticket ; fixed_ticket_key = fixed_ticket_key ; inboxes = inboxes ; chain = new_chain} in
   ops, new_state
 
-let withdraw ({max_inbox_level;ticket;fixed_ticket_key;inboxes;chain} : state) =
-  let ops, new_chain =  Chain.Endpoints.apply_withdraw chain  in
-  let new_state = {  max_inbox_level = max_inbox_level; ticket = ticket ; fixed_ticket_key = fixed_ticket_key ; inboxes = inboxes ; chain = new_chain} in
-  ops, new_state
+let extract_ticket (ticket, asset_amount: Ticket.t option * Chain.frozen_amount) : Ticket.t * Ticket.t=
+  let ticket = Option.unopt_with_error ticket "No ticket in storage" in
+  let (_addr, (_payload, asset_total)),ticket = Ticket.read_ticket ticket in
+  if asset_total < asset_amount then 
+    failwith "Not enough funds in the rollup"
+  else if asset_amount = 0n then
+    failwith "Can not withdraw nothing"
+  else begin
+    let asset_left = abs(asset_total - asset_amount) in
+    match Ticket.split_ticket ticket asset_left asset_amount with
+    | None -> failwith "ticket split failed"
+    | Some (ticket_left,ticket_to_send) -> (ticket_left,ticket_to_send)
+  end
+
+let withdraw ({max_inbox_level;ticket;fixed_ticket_key;inboxes;chain} : state) (callback : Ticket.t contract) : operation list * state =
+  let user = Tezos.sender in
+  let asset_amount_opts,new_chain = Chain.withdraw (user, chain) in
+  match asset_amount_opts with
+  | None -> failwith "Nothing to withdraw"
+  | Some asset_amount -> 
+    begin
+      let ticket_left, ticket_to_send = extract_ticket (ticket, asset_amount) in
+      let op = Tezos.transaction ticket_to_send 0tez callback in
+      let new_state = {  max_inbox_level = max_inbox_level; ticket = Some ticket_left ; fixed_ticket_key = fixed_ticket_key ; inboxes = inboxes ; chain = new_chain} in
+      [op], new_state
+    end
 
 let freeze ({max_inbox_level;ticket;fixed_ticket_key;inboxes;chain} : state) (owner: address) (quantity: Chain.frozen_amount) : operation list * state=
   let message = make_freeze_message owner quantity in
@@ -123,8 +145,8 @@ let main (action, state : entrypoint * state) : operation list * state =
   | Inbox_freeze {quantity} -> 
     let user = Tezos.sender in
     freeze state user quantity
-  | Inbox_withdraw ->
-    withdraw state
+  | Inbox_withdraw callback ->
+    withdraw state callback
 
 [@view] let get_latest ((),state: unit * state) : Chain.block option = Chain.Views.get_latest ((), state.chain)
 [@view] let get_next_finalization_candidate ((), state : unit * state) : Chain.block option = Chain.Views.get_next_finalization_candidate ((), state.chain)

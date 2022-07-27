@@ -363,6 +363,18 @@ let _test_simple_finalize () =
 
   end
 
+let check_for_amount (asset_expected: nat) (ticket: Ticket.t) : Ticket.t =
+  let (_addr, (_payload, asset_total)),ticket = Ticket.read_ticket ticket in
+  if asset_total <> asset_expected then failwith "check ticket: wrong amount"
+  else ticket
+
+let ticket_checker_contract (check: Ticket.t -> Ticket.t) (ticket, storage : Ticket.t * Ticket.t option) : operation list * Ticket.t option =
+  [], Some (check ticket)
+
+let originate_ticket_checker (check: Ticket.t -> Ticket.t) : (Ticket.t , Ticket.t option) originated  = 
+  Unit.originate (ticket_checker_contract check) (None : Ticket.t option) 0tez
+
+
 let _test_simple_withdraw () =
   begin
     log_ "test withdraw";
@@ -371,9 +383,8 @@ let _test_simple_withdraw () =
     let operator, actors = Unit.init_default_at ("2020-01-01t10:10:10Z" : timestamp)in
     let alice, bob, _ = actors in    
     let mint = originate_mint_with () in
-    let alice_initial_balance = Test.get_balance alice.address in
 
-    let asset_amount = 10000000n in // should be high enough to compensate for gas
+    let asset_amount = 10000000n in     
     let init_chain = 
         { empty_chain with
           freezer = Big_map.literal [(alice.address, asset_amount)]
@@ -386,25 +397,104 @@ let _test_simple_withdraw () =
     ] in
 
     let init_storage = (empty_state_chain mint.originated_address init_chain) in
+    let init_storage = {init_storage with ticket = Some (Ticket.create_ticket Tools.dummy_address 0x00 asset_amount)} in
     let originate_inbox_sc () = Unit.originate Inbox.main init_storage (asset_amount * 1mutez) in
     let inbox_sc = Unit.act_as operator originate_inbox_sc in
 
+    (* create callback*)
+    let check = check_for_amount asset_amount in
+    let ticket_storage : (Ticket.t, Ticket.t option) originated= 
+      Unit.act_as operator (fun () -> originate_ticket_checker check) in
+    let callback_with_check : Ticket.t contract = ticket_storage.originated_contract in
+
     (* perform *)
-    let inbox_withdraw () = Unit.transfer_to_contract_ inbox_sc.originated_contract (Inbox_withdraw) 0tez  in
+    let inbox_withdraw () = Unit.transfer_to_contract_ inbox_sc.originated_contract (Inbox_withdraw callback_with_check) 0tez  in
     let result = Unit.act_as alice inbox_withdraw in
 
     (* check *)
     let storage = Test.get_storage inbox_sc.originated_typed_address in
-    let alice_new_balance = Test.get_balance alice.address in
     let chain = storage.chain in
     Unit.and_list 
     [  sanity_check 
     ;  Unit.assert_is_ok result "withdrawal should have succeeded" 
-    ;  Unit.assert_ (alice_initial_balance < alice_new_balance) "Alice should have received the funds"
+    ;  Unit.assert_equals (None : Chain.frozen_amount option) (Big_map.find_opt alice.address chain.freezer) "There should be no more asset to withdraw"
     ]
   end
 
 
+let _test_simple_withdraw_fail_0 () =
+  begin
+    log_ "test withdraw";
+
+    (* setup *)
+    let operator, actors = Unit.init_default_at ("2020-01-01t10:10:10Z" : timestamp)in
+    let alice, bob, _ = actors in    
+    let mint = originate_mint_with () in
+
+    let asset_amount = 10000000n in     
+    let init_chain = 
+        { empty_chain with
+          freezer = Big_map.literal [(alice.address, 0n)] // no asset frozen
+        } in
+
+    let init_storage = (empty_state_chain mint.originated_address init_chain) in
+    let init_storage = {init_storage with ticket = Some (Ticket.create_ticket Tools.dummy_address 0x00 asset_amount)} in
+    let originate_inbox_sc () = Unit.originate Inbox.main init_storage (asset_amount * 1mutez) in
+    let inbox_sc = Unit.act_as operator originate_inbox_sc in
+
+    (* create callback*)
+    let check = check_for_amount 0n in
+    let ticket_storage : (Ticket.t, Ticket.t option) originated= 
+      Unit.act_as operator (fun () -> originate_ticket_checker check) in
+    let callback_with_check : Ticket.t contract = ticket_storage.originated_contract in
+
+    (* perform *)
+    let inbox_withdraw () = Unit.transfer_to_contract_ inbox_sc.originated_contract (Inbox_withdraw callback_with_check) 0tez  in
+    let result = Unit.act_as alice inbox_withdraw in
+
+    (* check *)
+    let storage = Test.get_storage inbox_sc.originated_typed_address in
+    let chain = storage.chain in
+    Unit.and_list 
+    [  Unit.assert_rejected result "withdrawal should not have succeeded" 
+    ;  Unit.assert_rejected_at result (inbox_sc.originated_address) "withdrawal should have been rejected by inbox_sc" 
+    ]
+  end
+
+let _test_simple_withdraw_fail_None () =
+  begin
+    log_ "test withdraw";
+
+    (* setup *)
+    let operator, actors = Unit.init_default_at ("2020-01-01t10:10:10Z" : timestamp)in
+    let alice, bob, _ = actors in    
+    let mint = originate_mint_with () in
+
+    let asset_amount = 10000000n in     
+
+    let init_storage = (empty_state_chain mint.originated_address empty_chain) in
+    let init_storage = {init_storage with ticket = Some (Ticket.create_ticket Tools.dummy_address 0x00 asset_amount)} in
+    let originate_inbox_sc () = Unit.originate Inbox.main init_storage (asset_amount * 1mutez) in
+    let inbox_sc = Unit.act_as operator originate_inbox_sc in
+
+    (* create callback*)
+    let check = check_for_amount 0n in
+    let ticket_storage : (Ticket.t, Ticket.t option) originated= 
+      Unit.act_as operator (fun () -> originate_ticket_checker check) in
+    let callback_with_check : Ticket.t contract = ticket_storage.originated_contract in
+
+    (* perform *)
+    let inbox_withdraw () = Unit.transfer_to_contract_ inbox_sc.originated_contract (Inbox_withdraw callback_with_check) 0tez  in
+    let result = Unit.act_as alice inbox_withdraw in
+
+    (* check *)
+    let storage = Test.get_storage inbox_sc.originated_typed_address in
+    let chain = storage.chain in
+    Unit.and_list 
+    [  Unit.assert_rejected result "withdrawal should not have succeeded" 
+    ;  Unit.assert_rejected_at result (inbox_sc.originated_address) "withdrawal should have been rejected by inbox_sc" 
+    ]
+  end
 let _test_simple_freeze_message () =
   begin
     log_ "test transaction message";
@@ -448,6 +538,8 @@ let suite = Unit.make_suite
 ; Unit.make_test "successful make a transaction" "test to make a transaction message" _test_simple_transaction_message
 ; Unit.make_test "successful reception of block proposal" "test that block are correctly received" _test_simple_send_two_blocks
 ; Unit.make_test "successful finalization of block" "test that a block can be finalized" _test_simple_finalize
-; Unit.make_test "successful withdrawal" "test that a user can withdraw frozen asseys" _test_simple_withdraw
+; Unit.make_test "successful withdrawal" "test that a user can withdraw frozen assets" _test_simple_withdraw
+; Unit.make_test "failed withdrawal" "test that a user with no frozen assets (amount 0n) cannot withdraw" _test_simple_withdraw_fail_0
+; Unit.make_test "failed withdrawal" "test that a user with no frozen assets (None) cannot withdraw" _test_simple_withdraw_fail_None
 ; Unit.make_test "successful freeze message" "test that a user can send a freeze message" _test_simple_freeze_message
 ]
