@@ -30,3 +30,7 @@ let fake_bridge_main (parameter, storage: bridge_parameter * bridge_storage) : b
       ([], storage)
     | Finalize_block ->
       ([], storage)
+    | Freeze _ ->
+      ([], storage)
+    | Withdraw ->
+      ([], storage)

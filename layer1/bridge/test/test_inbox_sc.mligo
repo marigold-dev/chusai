@@ -363,6 +363,46 @@ let _test_simple_finalize () =
 
   end
 
+let _test_simple_withdraw () =
+  begin
+    log_ "test sending block proposals";
+
+    (* setup *)
+    let operator, actors = Unit.init_default_at ("2020-01-01t10:10:10Z" : timestamp)in
+    let alice, bob, _ = actors in    
+    let mint = originate_mint_with () in
+    let alice_initial_balance = Test.get_balance alice.address in
+
+    let asset_amount = 10000000n in // should be high enough to compensate for gas
+    let init_chain = 
+        { empty_chain with
+          freezer = Big_map.literal [(alice.address, asset_amount)]
+        } in
+    // sanity check
+    let assets_opt, new_chain = Chain.withdraw (alice.address, init_chain) in
+    let sanity_check = Unit.and_list 
+    [  Unit.assert_equals (Some asset_amount) assets_opt "Alice should have some assets to withdraw"
+    ;  Unit.assert_equals (None : Chain.frozen_amount option) (Big_map.find_opt alice.address new_chain.freezer) "There should be no more asset to withdraw"
+    ] in
+
+    let init_storage = (empty_state_chain mint.originated_address init_chain) in
+    let originate_inbox_sc () = Unit.originate Inbox.main init_storage (asset_amount * 1mutez) in
+    let inbox_sc = Unit.act_as operator originate_inbox_sc in
+
+    (* perform *)
+    let inbox_withdraw () = Unit.transfer_to_contract_ inbox_sc.originated_contract (Inbox_withdraw) 0tez  in
+    let result = Unit.act_as alice inbox_withdraw in
+
+    (* check *)
+    let storage = Test.get_storage inbox_sc.originated_typed_address in
+    let alice_new_balance = Test.get_balance alice.address in
+    let chain = storage.chain in
+    Unit.and_list 
+    [  sanity_check 
+    ;  Unit.assert_is_ok result "withdrawal should have succeeded" 
+    ;  Unit.assert_ (alice_initial_balance < alice_new_balance) "Alice should have received the funds"
+    ]
+  end
 let suite = Unit.make_suite
 "Bridge_sc"
 "Test suite of Bridge sc"
@@ -375,4 +415,5 @@ let suite = Unit.make_suite
 ; Unit.make_test "successful make a transaction" "test to make a transaction message" _test_simple_transaction_message
 ; Unit.make_test "successful reception of block proposal" "test that block are correctly received" _test_simple_send_two_blocks
 ; Unit.make_test "successful finalization of block" "test that a block can be finalized" _test_simple_finalize
+; Unit.make_test "successful withdrawal" "test that a user can withdraw frozen asseys" _test_simple_withdraw
 ]
