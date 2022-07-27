@@ -1,0 +1,135 @@
+name: "Layer1 Build and test"
+
+on:
+  # pull_request:
+  #   types:
+  #     - opened
+  #   branches:    
+  #     - 'main'
+  push:
+    branches:
+      - 'cyr@pipelines'
+
+env:
+  LIGO_VERSION: 0.45.0
+  OCAML_VERSION: 4.12.1
+  COMPILER_ARGS: "--protocol jakarta --no-warn"
+  BUILD_DIRECTORY: "_build"
+
+jobs:
+  set_env_vars:
+    runs-on: ubuntu-latest
+    outputs:
+      ligo_container: ${{ steps.save_var.outputs.ligo_container }}
+    steps:
+      - id: save_var
+        run: echo "::set-output name=ligo_container::ligolang/ligo:${{ env.LIGO_VERSION }}"
+
+  layer1_tests:
+    needs: set_env_vars
+    runs-on: ubuntu-latest
+    container: ${{ needs.set_env_vars.outputs.ligo_container }}
+    steps:
+      - uses: actions/checkout@v2
+      - name: Run layer1 tests
+        run:  |
+          echo "ligo version: " ; /root/ligo --version 
+          echo "current dir: " ; pwd ; ls -last .
+          cd layer1
+          /root/ligo run test ${{ env.COMPILER_ARGS }} ./test/test.mligo
+
+  layer1_build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out
+        uses: actions/checkout@v2
+      - name: Set up ocaml
+        uses: ocaml/setup-ocaml@v2
+        with:
+          ocaml-compiler: ${{ env.OCAML_VERSION }}
+      - name: Install libs
+        run: |
+          sudo apt update && sudo apt install -y unzip wget jq git gcc make pkg-config cargo debianutils libgmp-dev libev-dev libffi-dev patch rsync m4 build-essential libhidapi-dev zlib1g-dev bc autoconf
+          wget -q https://gitlab.com/ligolang/ligo/-/jobs/2507456718/artifacts/raw/ligo
+          chmod +x ./ligo
+          ./ligo --version
+          opam --version
+          opam install dune
+          eval $(opam env)
+          dune --version
+      - name: Install opam deps
+        run: |
+          pwd
+          ls -al
+          eval $(opam env)
+          opam install . --deps-only --with-doc --with-test -y
+          opam install tezt -y
+          opam install utop merlin ocamlformat ocp-indent -y
+      - name: Git SHA
+        run: |
+          echo "GIT_SHORT_SHA=$(git describe --always)" >> $GITHUB_ENV
+          echo ${{ env.GIT_SHORT_SHA }}
+      - name: Compile wallet_sc
+        run: |
+          ls -al layer1/wallet/src/
+          mkdir -p ${{ env.BUILD_DIRECTORY }}/layer1
+          ./ligo compile contract ${{ env.COMPILER_ARGS }} layer1/wallet/src/wallet_sc.mligo > ${{ env.BUILD_DIRECTORY }}/layer1/wallet_sc.tez
+          ls -al ${{ env.BUILD_DIRECTORY }}/layer1
+          cat ${{ env.BUILD_DIRECTORY }}/layer1/wallet_sc.tez
+      - name: Compile mint_sc
+        #if: always()
+        run: |
+          ls -al layer1/mint/src/
+          mkdir -p ${{ env.BUILD_DIRECTORY }}/layer1
+          ./ligo compile contract ${{ env.COMPILER_ARGS }} layer1/mint/src/mint_sc.mligo > ${{ env.BUILD_DIRECTORY }}/layer1/mint_sc.tez
+          ls -al ${{ env.BUILD_DIRECTORY }}/layer1
+          cat ${{ env.BUILD_DIRECTORY }}/layer1/mint_sc.tez
+      - name: Compile bissection_sc
+        #if: always()
+        run: |
+          ls -al layer1/refutation/src/
+          mkdir -p ${{ env.BUILD_DIRECTORY }}/layer1
+          ./ligo compile contract ${{ env.COMPILER_ARGS }} layer1/refutation/src/bissection_sc.mligo > ${{ env.BUILD_DIRECTORY }}/layer1/bissection_sc.tez
+          ls -al ${{ env.BUILD_DIRECTORY }}/layer1
+          cat ${{ env.BUILD_DIRECTORY }}/layer1/bissection_sc.tez
+      - name: Compile chain_sc
+        #if: always()
+        run: |
+          ls -al layer1/chain/src/
+          mkdir -p ${{ env.BUILD_DIRECTORY }}/layer1
+          ./ligo compile contract ${{ env.COMPILER_ARGS }} layer1/chain/src/chain_sc.mligo > ${{ env.BUILD_DIRECTORY }}/layer1/chain_sc.tez
+          ls -al ${{ env.BUILD_DIRECTORY }}/layer1
+          cat ${{ env.BUILD_DIRECTORY }}/layer1/chain_sc.tez
+      - name: Compile bridge inbox_sc
+        #if: always()
+        run: |
+          ls -al layer1/bridge/src/
+          mkdir -p ${{ env.BUILD_DIRECTORY }}/layer1
+          ./ligo compile contract ${{ env.COMPILER_ARGS }} layer1/bridge/src/inbox_sc.mligo > ${{ env.BUILD_DIRECTORY }}/layer1/inbox_sc.tez
+          ls -al ${{ env.BUILD_DIRECTORY }}/layer1
+          cat ${{ env.BUILD_DIRECTORY }}/layer1/inbox_sc.tez
+      - name: Wrap in tgz
+        #if: always()
+        run: |
+          ls -al ${{ env.BUILD_DIRECTORY }}/layer1
+          tar czvf ${{ env.BUILD_DIRECTORY }}/chusai-layer1-${{ env.GIT_SHORT_SHA }}.tar.gz ${{ env.BUILD_DIRECTORY }}/layer1/*.tez
+          ls -al ${{ env.BUILD_DIRECTORY }}/
+      - name: Upload artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: chusai-layer1-${{ env.GIT_SHORT_SHA }}.tar.gz
+          path: |
+            ${{ env.BUILD_DIRECTORY }}/*.tar.gz
+
+  layer1-metrics:
+    if: ${{ false }}  # to disable this block for now
+    needs: set_env_vars
+    runs-on: ubuntu-latest
+    container: ${{ needs.set_env_vars.outputs.ligo_container }}
+    steps:
+      - uses: actions/checkout@v2
+      - name: Layer1 metrics
+        run:  |
+          echo "ligo version: " ; /root/ligo --version 
+          echo "current dir: " ; pwd ; ls -last .
+          /root/ligo run test ${{ env.COMPILER_ARGS }} layer1/wallet/metrics/metrics.mligo
